@@ -9,11 +9,11 @@ namespace Wki.EventSourcing.Messages
     /// In order to be able to dispatch a command an actor ID
     /// must be inside the command.
     /// </description>
-    public class DispatchableCommand
+    public class DispatchableCommand<TIndex>
     {
-        public int Id { get; private set; }
+        public TIndex Id { get; private set; }
 
-        public DispatchableCommand(int id)
+        public DispatchableCommand(TIndex id)
         {
             Id = id;
         }

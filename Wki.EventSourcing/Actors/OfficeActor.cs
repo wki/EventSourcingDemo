@@ -28,7 +28,7 @@ namespace Wki.EventSourcing.Actors
     ///     }
     /// }
     ///</example>
-    public class OfficeActor<TActor> : ReceiveActor
+    public class OfficeActor<TActor, TIndex> : ReceiveActor
     {
         private class CheckInactiveActors { }
 
@@ -56,8 +56,18 @@ namespace Wki.EventSourcing.Actors
                    );
             Receive<CheckInactiveActors>(_ => RemoveInactiveActors());
 
+            // OBSOLETE -- use unhandled instead to give child class a chance for special behavior
             // forward all commands
-            Receive<DispatchableCommand>(c => ForwardToDestinationActor(c));
+            //Receive<DispatchableCommand>(c => ForwardToDestinationActor(c));
+        }
+
+        protected override void Unhandled(object message)
+        {
+            var command = message as DispatchableCommand<TIndex>;
+            if (command != null)
+                ForwardToDestinationActor(command);
+            else
+                Context.System.Log.Warning("Received {0} -- ignoring", message);
         }
 
         private void RemoveInactiveActors()
@@ -79,7 +89,7 @@ namespace Wki.EventSourcing.Actors
             }
         }
 
-        private void ForwardToDestinationActor(DispatchableCommand cmd)
+        private void ForwardToDestinationActor(DispatchableCommand<TIndex> cmd)
         {
             var destination = CreateOrLoadChild(cmd.Id);
             LastContact[destination.Path.Name] = DateTime.Now;
@@ -87,7 +97,7 @@ namespace Wki.EventSourcing.Actors
             destination.Forward(cmd);
         }
 
-        private IActorRef CreateOrLoadChild(int id)
+        private IActorRef CreateOrLoadChild(TIndex id)
         {
             var type = typeof(TActor);
             var name = id.ToString();

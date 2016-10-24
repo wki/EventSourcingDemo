@@ -52,20 +52,22 @@ namespace Wki.EventSourcing.Actors
             Id = id;
             commands = new List<Handler>();
             events = new List<Handler>();
+
             IsRestoring = false;
-        }
-
-        protected override void PreStart()
-        {
-            base.PreStart();
             StartRestoring();
         }
 
-        protected override void PostRestart(Exception reason)
-        {
-            base.PostRestart(reason);
-            StartRestoring();
-        }
+        //protected override void PreStart()
+        //{
+        //    base.PreStart();
+        //    StartRestoring();
+        //}
+
+        //protected override void PostRestart(Exception reason)
+        //{
+        //    base.PostRestart(reason);
+        //    StartRestoring();
+        //}
 
         private void StartRestoring()
         {

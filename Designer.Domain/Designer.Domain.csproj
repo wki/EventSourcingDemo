@@ -45,6 +45,16 @@
     <Compile Include="PersonManagement\Actors\Person.cs" />
     <Compile Include="PersonManagement\Actors\PersonRegistrator.cs" />
     <Compile Include="PersonManagement\Messages\RegisterPerson.cs" />
+    <Compile Include="PersonManagement\Messages\PersonRegistered.cs" />
+    <Compile Include="PersonManagement\Messages\AddLanguage.cs" />
+    <Compile Include="PersonManagement\Messages\RemoveLanguage.cs" />
+    <Compile Include="PersonManagement\Messages\UpdateAddress.cs" />
+    <Compile Include="PersonManagement\Messages\LanguageAdded.cs" />
+    <Compile Include="PersonManagement\Messages\LanguageRemoved.cs" />
+    <Compile Include="PersonManagement\Messages\AddressUpdated.cs" />
+    <Compile Include="PersonManagement\Actors\PersonList.cs" />
+    <Compile Include="PersonManagement\DTOs\PersonInfo.cs" />
+    <Compile Include="PersonManagement\Messages\PersonListUpdated.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wki.EventSourcing\Wki.EventSourcing.csproj">
@@ -59,6 +69,7 @@
     <Folder Include="PersonManagement\" />
     <Folder Include="PersonManagement\Actors\" />
     <Folder Include="PersonManagement\Messages\" />
+    <Folder Include="PersonManagement\DTOs\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

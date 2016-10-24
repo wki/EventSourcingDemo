@@ -1,5 +1,6 @@
 ﻿using System;
 using Akka.Actor;
+using Designer.Domain.PersonManagement.Actors;
 
 namespace Designer.Domain
 {
@@ -9,12 +10,15 @@ namespace Designer.Domain
     public class DesignerService
     {
         private readonly ActorSystem actorSystem;
+        private readonly IActorRef personOffice;
+        private readonly IActorRef personList;
 
         public DesignerService()
         {
             actorSystem = ActorSystem.Create("Designer");
 
-            // bestimmte Aktoren anlegen...
+            personOffice = actorSystem.ActorOf(Props.Create<PersonOffice>(), "person");
+            personList = actorSystem.ActorOf(Props.Create<PersonList>(), "person-list");
         }
     }
 }
