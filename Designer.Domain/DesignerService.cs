@@ -1,6 +1,9 @@
 ﻿using System;
 using Akka.Actor;
+using Designer.Domain.HangtagCreation.Actors;
 using Designer.Domain.PersonManagement.Actors;
+using Designer.Domain.Rendering.Actors;
+using Designer.Domain.Todos.Actors;
 
 namespace Designer.Domain
 {
@@ -10,15 +13,34 @@ namespace Designer.Domain
     public class DesignerService
     {
         private readonly ActorSystem actorSystem;
-        private readonly IActorRef personOffice;
+
+        #pragma warning disable 0414
+        private readonly IActorRef personAggregateOffice;
         private readonly IActorRef personList;
+
+        private readonly IActorRef hangtagAggregateOffice;
+        private readonly IActorRef hangtagDetailOffice;
+        private readonly IActorRef hangtagList;
+
+        private readonly IActorRef renderObserverOffice; // process manager
+
+        private readonly IActorRef todoListOffice;
+        #pragma warning restore 0414
 
         public DesignerService()
         {
             actorSystem = ActorSystem.Create("Designer");
 
-            personOffice = actorSystem.ActorOf(Props.Create<PersonOffice>(), "person");
+            personAggregateOffice = actorSystem.ActorOf(Props.Create<PersonOffice>(), "person");
             personList = actorSystem.ActorOf(Props.Create<PersonList>(), "person-list");
+
+            hangtagAggregateOffice = actorSystem.ActorOf(Props.Create<HangtagOffice>(), "hangtag");
+            hangtagDetailOffice = actorSystem.ActorOf(Props.Create<HangtagDetailOffice>(), "hangtag-detail");
+            hangtagList = actorSystem.ActorOf(Props.Create<HangtagList>(), "hangtag-list");
+
+            renderObserverOffice = actorSystem.ActorOf(Props.Create<RenderObserver>(), "render-observer");
+
+            todoListOffice = actorSystem.ActorOf(Props.Create<TodoListOffice>(), "todos");
         }
     }
 }
@@ -26,6 +48,12 @@ namespace Designer.Domain
 /*
 
 Hierarchie der Aktoren für unseren "Hangtag Designer"
+
+Bereiche:
+  * PersonManagement
+  * HangtagCreation
+  * Todos
+  * Rendering
 
     User
      |
@@ -56,6 +84,4 @@ Hierarchie der Aktoren für unseren "Hangtag Designer"
      +-- todos                Office mit ToDos für einzelne Person (Dependency: hangtag-list)
      |    |
      |    +-- 1..n            View: ToDo für Person ID, lauscht auf person-id Änderungen, subscribe hangtag-list changes
-
-
  */

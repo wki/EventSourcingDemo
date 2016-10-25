@@ -6,12 +6,16 @@ namespace Designer.Domain.PersonManagement.Actors
 {
     public class PersonRegistrator : DurableActor<Person>
     {
-        // the Id for the next person being registered
-        private int nextId;
+        // after persisting this id is updated
+        private int lastPersistedId;
+
+        // id to be used for next registration to avoid race conditions
+        private int nextUsableId;
 
         public PersonRegistrator()
         {
-            nextId = 1;
+            lastPersistedId = 0;
+            nextUsableId = 1;
 
             Command<RegisterPerson>(r => RegisterPerson(r));
             Recover<PersonRegistered>(p => PersonRegistered(p));
@@ -21,13 +25,15 @@ namespace Designer.Domain.PersonManagement.Actors
         {
             // TODO: can we check for a duplicate registration?
             //       maybe keep a list of already-known email addresses
-            // here we have a race condition when 2 registrations arrive too fast.
-            Persist(new PersonRegistered(nextId));
+            Persist(new PersonRegistered(nextUsableId++));
         }
 
         private void PersonRegistered(PersonRegistered personRegistered)
         {
-            nextId = personRegistered.Id + 1;
+            lastPersistedId = personRegistered.Id;
+
+            if (nextUsableId < lastPersistedId +1)
+                nextUsableId = lastPersistedId + 1;
         }
     }
 }

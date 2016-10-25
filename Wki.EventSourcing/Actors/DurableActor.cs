@@ -103,6 +103,14 @@ namespace Wki.EventSourcing.Actors
         }
 
         /// <summary>
+        /// Receive an event (alias to command)
+        /// </summary>
+        /// <param name="eventHandler">Event handler.</param>
+        /// <typeparam name="E">Type of the event to receive</typeparam>
+        protected void Receive<E>(Action<E> eventHandler) => 
+            Command(eventHandler);
+
+        /// <summary>
         /// Declare a command to handle
         /// </summary>
         /// <param name="commandHandler">Command handler.</param>
