@@ -53,11 +53,16 @@ namespace Wki.EventSourcing.Actors
         {
             var config = Context.System.Settings.Config.GetConfig("eventstore");
             var storageDir = config.GetString("dir");
-            Context.System.Log.Info("Storage Dir:D {0}", storageDir);
+            Context.System.Log.Info("Storage Dir: {0}", storageDir);
 
-            journalReader = Context.ActorOf(Props.Create<FileJournalReader>(storageDir), "reader");
-            journalWriter = Context.ActorOf(Props.Create<FileJournalWriter>(storageDir), "writer");
+            var readerTypeName = config.GetString("reader");
+            var readerType = Type.GetType(readerTypeName ?? "") ?? typeof(FileJournalReader);
+            journalReader = Context.ActorOf(Props.Create(readerType, storageDir), "reader");
             journalReader.Tell(new LoadJournal());
+
+            var writerTypeName = config.GetString("writer");
+            var writerType = Type.GetType(writerTypeName ?? "") ?? typeof(FileJournalWriter);
+            journalWriter = Context.ActorOf(Props.Create(writerType, storageDir), "writer");
 
             startedAt = SystemTime.Now;
 
