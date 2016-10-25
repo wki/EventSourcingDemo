@@ -62,9 +62,13 @@
     <Compile Include="Messages\StartRestore.cs" />
     <Compile Include="Messages\StillAlive.cs" />
     <Compile Include="Serialisation\EventSerializer.cs" />
+    <Compile Include="Util\SystemTime.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Util\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

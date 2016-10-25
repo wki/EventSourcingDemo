@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="EventSerializerTest.cs" />
     <Compile Include="InterestingEventsTest.cs" />
+    <Compile Include="SystemTimeTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wki.EventSourcing\Wki.EventSourcing.csproj">

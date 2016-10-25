@@ -55,6 +55,21 @@
     <Compile Include="PersonManagement\Actors\PersonList.cs" />
     <Compile Include="PersonManagement\DTOs\PersonInfo.cs" />
     <Compile Include="PersonManagement\Messages\PersonListUpdated.cs" />
+    <Compile Include="HangtagCreation\Actors\Hangtag.cs" />
+    <Compile Include="HangtagCreation\Actors\HangtagCreator.cs" />
+    <Compile Include="HangtagCreation\Actors\HangtagDetail.cs" />
+    <Compile Include="HangtagCreation\Actors\HangtagDetailOffice.cs" />
+    <Compile Include="HangtagCreation\Actors\HangtagList.cs" />
+    <Compile Include="HangtagCreation\Actors\HangtagOffice.cs" />
+    <Compile Include="HangtagCreation\Messages\CloneHangtag.cs" />
+    <Compile Include="HangtagCreation\Messages\CreateHangtag.cs" />
+    <Compile Include="HangtagCreation\Messages\HangtagCloned.cs" />
+    <Compile Include="HangtagCreation\Messages\HangtagCreated.cs" />
+    <Compile Include="HangtagCreation\Messages\RenderingCompleted.cs" />
+    <Compile Include="HangtagCreation\Messages\RenderingRequested.cs" />
+    <Compile Include="Rendering\Actors\RenderObserver.cs" />
+    <Compile Include="Todos\Actors\TodoList.cs" />
+    <Compile Include="Todos\Actors\TodoListOffice.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wki.EventSourcing\Wki.EventSourcing.csproj">
@@ -70,6 +85,7 @@
     <Folder Include="PersonManagement\Actors\" />
     <Folder Include="PersonManagement\Messages\" />
     <Folder Include="PersonManagement\DTOs\" />
+    <Folder Include="HangtagCreation\DTOs\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

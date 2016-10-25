@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Akka.Actor;
 using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Util;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -23,7 +24,7 @@ namespace Wki.EventSourcing.Actors
             {
                 Actor = actor;
                 Restoring = true;
-                LastSeen = DateTime.Now;
+                LastSeen = SystemTime.Now;
                 NextMessageIndex = 0;
                 InterestingEvents = interestingEvents;
             }
@@ -58,7 +59,7 @@ namespace Wki.EventSourcing.Actors
             journalWriter = Context.ActorOf(Props.Create<FileJournalWriter>(storageDir), "writer");
             journalReader.Tell(new LoadJournal());
 
-            startedAt = DateTime.Now;
+            startedAt = SystemTime.Now;
 
             actors = new Dictionary<string,ActorState>();
             events = new List<Event>();
@@ -78,7 +79,7 @@ namespace Wki.EventSourcing.Actors
 
         private void Operating()
         {
-            var loadDuration = DateTime.Now - startedAt;
+            var loadDuration = SystemTime.Now - startedAt;
             Context.System.Log.Info("Events loaded in {0:F1}s . Starting regular operation", loadDuration.TotalMilliseconds / 1000);
 
             // messages from actors
@@ -108,7 +109,7 @@ namespace Wki.EventSourcing.Actors
         private void RestoreEvents(RestoreEvents restoreEvents)
         {
             var actorState = actors[Sender.Path.ToString()];
-            actorState.LastSeen = DateTime.Now;
+            actorState.LastSeen = SystemTime.Now;
 
             var nrEvents = restoreEvents.NrEvents;
             var index = actorState.NextMessageIndex; // next index to test and send
@@ -133,7 +134,7 @@ namespace Wki.EventSourcing.Actors
         private void StillAlive()
         {
             var actorState = actors[Sender.Path.ToString()];
-            actorState.LastSeen = DateTime.Now;
+            actorState.LastSeen = SystemTime.Now;
         }
 
         // readJournal loaded an event -- save it in our list

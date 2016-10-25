@@ -4,6 +4,7 @@ using Designer.Domain.HangtagCreation.Actors;
 using Designer.Domain.PersonManagement.Actors;
 using Designer.Domain.Rendering.Actors;
 using Designer.Domain.Todos.Actors;
+using Wki.EventSourcing.Actors;
 
 namespace Designer.Domain
 {

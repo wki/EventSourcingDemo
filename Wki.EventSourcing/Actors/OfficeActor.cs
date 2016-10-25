@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Akka.Actor;
 using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Util;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -80,7 +81,7 @@ namespace Wki.EventSourcing.Actors
                     Context.System.Log.Debug("Office {0}: removing dead Child {1}", Self.Path.Name, actorName);
                     LastContact.Remove(actorName);
                 }
-                else if (LastContact[actorName] < DateTime.Now - IdleTime)
+                else if (LastContact[actorName] < SystemTime.Now - IdleTime)
                 {
                     Context.System.Log.Debug("Office {0}: removing inactive Child {1}", Self.Path.Name, actorName);
                     Context.Stop(child);
@@ -92,7 +93,7 @@ namespace Wki.EventSourcing.Actors
         private void ForwardToDestinationActor(DispatchableCommand<TIndex> cmd)
         {
             var destination = CreateOrLoadChild(cmd.Id);
-            LastContact[destination.Path.Name] = DateTime.Now;
+            LastContact[destination.Path.Name] = SystemTime.Now;
 
             destination.Forward(cmd);
         }

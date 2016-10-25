@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.IO;
 using Akka.Actor;
 using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Serialisation;
+using Wki.EventSourcing.Util;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -21,7 +22,7 @@ namespace Wki.EventSourcing.Actors
             Context.System.Log.Debug("Persist Event {0}", persistEvent.GetType().Name);
 
             var @event = persistEvent.Event;
-            var now = DateTime.Now;
+            var now = SystemTime.Now;
             var file = Path.Combine(Dir(now), String.Format("{0:dd}.json", now));
 
             File.AppendAllText(file, EventSerializer.ToJson(@event));

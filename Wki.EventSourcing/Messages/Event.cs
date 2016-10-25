@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using Wki.EventSourcing.Util;
 
 namespace Wki.EventSourcing.Messages
 {
@@ -13,7 +14,7 @@ namespace Wki.EventSourcing.Messages
         /// <value>The occured on.</value>
         public DateTime OccuredOn { get; private set; }
 
-        public Event() : this(DateTime.Now) {}
+        public Event() : this(SystemTime.Now) {}
         public Event(DateTime occuredOn)
         {
             OccuredOn = occuredOn;
@@ -32,8 +33,8 @@ namespace Wki.EventSourcing.Messages
         /// <value>The persistence identifier.</value>
         public TIndex Id { get; protected set; }
 
-        public Event() : this(DateTime.Now) { }
-        public Event(TIndex id) : this(DateTime.Now, id) { }
+        public Event() : this(SystemTime.Now) { }
+        public Event(TIndex id) : this(SystemTime.Now, id) { }
         public Event(DateTime occuredOn) : this(occuredOn, default(TIndex)) { }
         public Event(DateTime occuredOn, TIndex id) : base(occuredOn)
         {
