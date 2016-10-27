@@ -1,15 +1,27 @@
 ﻿using System;
 using System.Collections.Immutable;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Wki.EventSourcing.Messages
 {
     /// <summary>
-    /// Abstract base class for a list of interesting events
+    /// a list of interesting events without an Id
     /// </summary>
-    public abstract class InterestingEvents
+    public class InterestingEvents
     {
-        public abstract bool Matches(Event @event);
+        public ImmutableHashSet<Type> Events { get; private set; }
+
+        public InterestingEvents() : this(null) {}
+        public InterestingEvents(IEnumerable<Type> events)
+        {
+            Events = (events ?? new Type[] { })
+                .Where(e => e != null)
+                .ToImmutableHashSet();
+        }
+
+        public virtual bool Matches(Event @event) =>
+            Events.Contains(@event.GetType());
     }
 
     /// <summary>
@@ -18,14 +30,12 @@ namespace Wki.EventSourcing.Messages
     public class InterestingEvents<TIndex> : InterestingEvents
     {
         public TIndex Id { get; private set; }
-        public ImmutableHashSet<Type> Events { get; private set; }
 
         public InterestingEvents() : this(default(TIndex), null) { }
 
-        public InterestingEvents(TIndex id, IEnumerable<Type> events)
+        public InterestingEvents(TIndex id, IEnumerable<Type> events) : base(events)
         {
             Id = id;
-            Events = (events ?? new Type[] { }).ToImmutableHashSet();
         }
 
         public override bool Matches(Event @event)
@@ -33,18 +43,9 @@ namespace Wki.EventSourcing.Messages
             var typedEvent = @event as Event<TIndex>;
 
             // when cast fails, event cannot be right (different TIndex)
-            if (typedEvent == null)
-                return false;
-
-            // filter the interesting events
-            if (!Events.Contains(@event.GetType()))
-                return false;
-
-            // if we are interested in an id, it must be the same
-            if (Id != null && !typedEvent.Id.Equals(Id))
-                return false;
-
-            return true;
+            return typedEvent != null
+                && base.Matches(@event)
+                && typedEvent.Id.Equals(Id);
         }
     }
 }

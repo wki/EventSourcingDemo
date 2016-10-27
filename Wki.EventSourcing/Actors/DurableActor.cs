@@ -6,8 +6,12 @@ using Wki.EventSourcing.Messages;
 
 namespace Wki.EventSourcing.Actors
 {
-    public abstract class DurableActor<TIndex> : UntypedActor, IWithUnboundedStash
+    public abstract class DurableActor : UntypedActor, IWithUnboundedStash
     {
+        /// <summary>
+        /// Stash for unhandled messages. Will be processed after restore
+        /// </summary>
+        /// <value>The stash.</value>
         public IStash Stash { get; set; }
 
         /// <summary>
@@ -16,26 +20,6 @@ namespace Wki.EventSourcing.Actors
         /// <value><c>true</c> if currently restoring; otherwise, <c>false</c>.</value>
         public bool IsRestoring { get; set; }
 
-        /// <summary>
-        /// ID for an aggregate root (aggregates or specific views)
-        /// </summary>
-        /// <value>The persistent identifier.</value>
-        /// <description>
-        /// Das mit den IDs ist so eine sache...
-        /// wenn wir viele Aggregate-Roots haben, die sich eine gemeinsame ID
-        /// teilen, aber einen Summary View, brauchen wir eine besondere Gruppierung
-        /// 
-        /// Idee: "PersistenceId" ist 
-        ///  * z.B. numerisch "42"
-        ///  * oder bezeichnet etwas größeres "article-42"
-        ///  * wird evtl. für mehrere miteinander "verwandte" Entities eingesetzt
-        /// 
-        ///  * Dann können wir nach allen Events suchen, die bestimmte Klassen _und_ 42 haben
-        ///  * gibt es eine völlig andere Entity (z.B. Order #42 vs. Artikel #42), dann haben
-        ///    wir keine Kollission, solange beide unterschiedliche Events auslösen.
-        /// </description>
-        public TIndex Id { get; private set; }
-
         // keep all events and commands we may respond to
         protected List<Handler> commands;
         protected List<Handler> events;
@@ -43,31 +27,27 @@ namespace Wki.EventSourcing.Actors
         // during restore count events for aquiring next junk before completion
         private const int NrRestoreEvents = 100;    // Size of a block of events to request
         private const int BufferLowLimit = 10;      // if we are expecting less than this -- re-request!
-        private int eventsToReceive;
+        private int eventsToReceive;                // events still awaiting to receive
 
-        public DurableActor() : this(default(TIndex)) {}
-
-        public DurableActor(TIndex id)
+        public DurableActor()
         {
-            Id = id;
             commands = new List<Handler>();
             events = new List<Handler>();
 
             IsRestoring = false;
+        }
+
+        protected override void PreStart()
+        {
+            base.PreStart();
             StartRestoring();
         }
 
-        //protected override void PreStart()
-        //{
-        //    base.PreStart();
-        //    StartRestoring();
-        //}
-
-        //protected override void PostRestart(Exception reason)
-        //{
-        //    base.PostRestart(reason);
-        //    StartRestoring();
-        //}
+        protected override void PostRestart(Exception reason)
+        {
+            base.PostRestart(reason);
+            StartRestoring();
+        }
 
         private void StartRestoring()
         {
@@ -75,12 +55,15 @@ namespace Wki.EventSourcing.Actors
             IsRestoring = true;
             BecomeStacked(Restoring);
 
-            Context.EventStore().Tell(
-                new StartRestore(new InterestingEvents<TIndex>(Id, events.Select(e => e.Type)))
-            );
+            Context.EventStore().Tell(new StartRestore(GenerateInterestingEvents()));
 
             eventsToReceive = 0;
             RequestEventsToRestore();
+        }
+
+        protected virtual InterestingEvents GenerateInterestingEvents()
+        {
+            return new InterestingEvents(events.Select(e => e.Type));
         }
 
         private void RequestEventsToRestore()
@@ -97,28 +80,16 @@ namespace Wki.EventSourcing.Actors
         /// </summary>
         /// <param name="eventHandler">Event handler.</param>
         /// <typeparam name="E">The 1st type parameter.</typeparam>
-        protected void Recover<E>(Action<E> eventHandler)
-        {
+        protected void Recover<E>(Action<E> eventHandler) =>
             events.Add(new Handler(typeof(E), e => eventHandler((E)e)));
-        }
 
         /// <summary>
         /// Receive an event (alias to command)
         /// </summary>
         /// <param name="eventHandler">Event handler.</param>
         /// <typeparam name="E">Type of the event to receive</typeparam>
-        protected void Receive<E>(Action<E> eventHandler) => 
-            Command(eventHandler);
-
-        /// <summary>
-        /// Declare a command to handle
-        /// </summary>
-        /// <param name="commandHandler">Command handler.</param>
-        /// <typeparam name="C">The 1st type parameter.</typeparam>
-        protected void Command<C>(Action<C> commandHandler)
-        {
-            commands.Add(new Handler(typeof(C), c => commandHandler((C)c)));
-        }
+        protected void Receive<E>(Action<E> eventHandler) =>
+            commands.Add(new Handler(typeof(E), c => eventHandler((E)c)));
 
         /// <summary>
         /// Persist (and subsequently handle) an event
@@ -140,7 +111,7 @@ namespace Wki.EventSourcing.Actors
             var handler =
                 events.Find(e => e.Type == message.GetType())
                       ?? commands.Find(c => c.Type == message.GetType());
-            
+
             if (handler != null)
                 handler.Action(message);
             else
@@ -180,6 +151,21 @@ namespace Wki.EventSourcing.Actors
                     Stash.Stash();
                 }
             }
+        }
+    }
+
+    public abstract class DurableActor<TIndex> : DurableActor
+    {
+        public TIndex Id { get; private set; }
+
+        public DurableActor(TIndex id)
+        {
+            Id = id;
+        }
+
+        protected override InterestingEvents GenerateInterestingEvents()
+        {
+            return new InterestingEvents<TIndex>(Id, events.Select(e => e.Type));
         }
     }
 }
