@@ -63,6 +63,9 @@
     <Compile Include="Messages\StillAlive.cs" />
     <Compile Include="Serialisation\EventSerializer.cs" />
     <Compile Include="Util\SystemTime.cs" />
+    <Compile Include="Messages\GetSize.cs" />
+    <Compile Include="Messages\GetActors.cs" />
+    <Compile Include="Messages\RemoveLostActors.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

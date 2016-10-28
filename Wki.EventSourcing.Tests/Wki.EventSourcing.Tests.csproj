@@ -53,12 +53,17 @@
     <Compile Include="InterestingEventsTest.cs" />
     <Compile Include="SystemTimeTest.cs" />
     <Compile Include="EventStoreTest.cs" />
+    <Compile Include="Actors\NullWriter.cs" />
+    <Compile Include="Actors\NullReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wki.EventSourcing\Wki.EventSourcing.csproj">
       <Project>{041C375E-55DC-4E76-9010-D6F9A0D0300D}</Project>
       <Name>Wki.EventSourcing</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Actors\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

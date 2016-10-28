@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Util;
@@ -14,14 +15,16 @@ namespace Wki.EventSourcing.Actors
         // hold information about an actor we are in contact with
         private class ActorState
         {
+            public string Path { get; set; }
             public IActorRef Actor { get; set; }
             public bool Restoring { get; set; }
             public DateTime LastSeen { get; set; }
             public int NextMessageIndex { get; set; }
             public InterestingEvents InterestingEvents { get; set; }
 
-            public ActorState(IActorRef actor, InterestingEvents interestingEvents)
+            public ActorState(string path, IActorRef actor, InterestingEvents interestingEvents)
             {
+                Path = path;
                 Actor = actor;
                 Restoring = true;
                 LastSeen = SystemTime.Now;
@@ -30,6 +33,14 @@ namespace Wki.EventSourcing.Actors
             }
 
             public bool InterestedIn(Event @event) => InterestingEvents.Matches(@event);
+
+            public override string ToString()
+            {
+                var restoreFlag = Restoring ? ">" : "=";
+                var age = (SystemTime.Now - LastSeen).TotalSeconds;
+
+                return string.Format($"{restoreFlag}{Path}-{age:N0}");
+            }
         }
 
         public IStash Stash { get; set; }
@@ -39,6 +50,9 @@ namespace Wki.EventSourcing.Actors
         private const int BufferLowLimit = 10;
         private int eventsToReceive;
 
+        // idle time in seconds after which an actor is removed
+        private const int MaxActorIdleSeconds = 300; // 5 min.
+
         // responsible for writing persisted events to persistent storage
         private IActorRef journalWriter;
 
@@ -46,7 +60,7 @@ namespace Wki.EventSourcing.Actors
         private IActorRef journalReader;
 
         // list of all actors (Path => ActorState) we are in contact with
-        private Dictionary<string,ActorState> actors;
+        private Dictionary<string, ActorState> actors;
 
         // complete event list in memory for fast access
         private List<Event> events;
@@ -54,21 +68,26 @@ namespace Wki.EventSourcing.Actors
         // actor start time to measure durations
         private DateTime startedAt;
 
-        public EventStore()
+        public EventStore(string dir, IActorRef reader, IActorRef writer)
         {
             var config = Context.System.Settings.Config.GetConfig("eventstore");
-            var storageDir = config.GetString("dir");
-            Context.System.Log.Info("Storage Dir: {0}", storageDir);
 
-            var readerTypeName = config.GetString("reader");
-            var readerType = Type.GetType(readerTypeName ?? "") ?? typeof(FileJournalReader);
-            journalReader = Context.ActorOf(Props.Create(readerType, storageDir), "reader");
-            eventsToReceive = 0;
-            RequestEventsToLoad();
+            journalReader = reader;
+            journalWriter = writer;
 
-            var writerTypeName = config.GetString("writer");
-            var writerType = Type.GetType(writerTypeName ?? "") ?? typeof(FileJournalWriter);
-            journalWriter = Context.ActorOf(Props.Create(writerType, storageDir), "writer");
+            if (config != null)
+            {
+                var storageDir = dir ?? config.GetString("dir");
+                Context.System.Log.Info("Storage Dir: {0}", storageDir);
+
+                var readerTypeName = config.GetString("reader");
+                var readerType = Type.GetType(readerTypeName ?? "") ?? typeof(FileJournalReader);
+                journalReader = reader ?? Context.ActorOf(Props.Create(readerType, storageDir), "reader");
+
+                var writerTypeName = config.GetString("writer");
+                var writerType = Type.GetType(writerTypeName ?? "") ?? typeof(FileJournalWriter);
+                journalWriter = writer ?? Context.ActorOf(Props.Create(writerType, storageDir), "writer");
+            }
 
             startedAt = SystemTime.Now;
 
@@ -86,6 +105,9 @@ namespace Wki.EventSourcing.Actors
             Receive<EventLoaded>(e => EventLoaded(e));
             Receive<End>(_ => Become(Operating));
             Receive<object>(_ => Stash.Stash());
+
+            eventsToReceive = 0;
+            RequestEventsToLoad();
         }
 
         private void Operating()
@@ -102,6 +124,11 @@ namespace Wki.EventSourcing.Actors
             // message from journal writer
             Receive<EventPersisted>(p => EventPersisted(p));
 
+            // diagnostic messages for testing
+            Receive<GetSize>(_ => Sender.Tell(events.Count));
+            Receive<GetActors>(_ => Sender.Tell(String.Join("|", actors.Values.Select(a => a.ToString()))));
+            Receive<RemoveLostActors>(_ => RemoveLostActors());
+
             // process everything lost so far
             Stash.UnstashAll();
         
@@ -113,7 +140,7 @@ namespace Wki.EventSourcing.Actors
         private void StartRestore(StartRestore startRestore)
         {
             // hint: might override existing entry.
-            actors[Sender.Path.ToString()] = new ActorState(Sender, startRestore.InterestingEvents);
+            actors[Sender.Path.ToString()] = new ActorState(Sender.Path.ToString(), Sender, startRestore.InterestingEvents);
         }
 
         // an actor wants n more Events
@@ -127,8 +154,12 @@ namespace Wki.EventSourcing.Actors
 
             while (nrEvents > 0 && index < events.Count)
             {
-                Sender.Tell(events[index]);
-                nrEvents--;
+                var @event = events[index];
+                if (actorState.InterestingEvents.Matches(@event))
+                {
+                    Sender.Tell(@event);
+                    nrEvents--;
+                }
                 index++;
                 actorState.NextMessageIndex++;
             }
@@ -148,16 +179,42 @@ namespace Wki.EventSourcing.Actors
             actorState.LastSeen = SystemTime.Now;
         }
 
+        // remove all actors not alive for a long time
+        private void RemoveLostActors()
+        {
+            // TODO: maybe we should send a "ping" to an actor not responding
+            //       for some time. If nothing happens then, we remove it.
+            var oldestAllowedTime = SystemTime.Now - TimeSpan.FromSeconds(MaxActorIdleSeconds);
+
+            // Console.WriteLine($"Oldest time: {oldestAllowedTime}");
+            // actors.Values.ToList().ForEach(a => Console.WriteLine($"{a.Path} - {a.LastSeen}"));
+
+            actors
+                .Values
+                .Where(actor => actor.LastSeen < oldestAllowedTime)
+                .ToList()
+                .ForEach(actor =>
+                {
+                    Context.System.Log.Debug(
+                        "Removing actor {0}, last Seen {1} seconds ago", 
+                        actor.Path, (SystemTime.Now - actor.LastSeen).TotalSeconds
+                    );
+                    actors.Remove(actor.Path);
+                });
+        }
+
         // readJournal loaded an event -- save it in our list
         private void EventLoaded(EventLoaded eventLoaded)
         {
+            eventsToReceive--;
+
             events.Add(eventLoaded.Event);
             RequestEventsToLoad();
         }
 
         private void RequestEventsToLoad()
         {
-            if (eventsToReceive < BufferLowLimit)
+            if (eventsToReceive <= BufferLowLimit)
             {
                 eventsToReceive += NrRestoreEvents;
                 journalReader.Tell(new LoadJournal(NrRestoreEvents));

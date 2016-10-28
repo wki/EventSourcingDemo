@@ -1,6 +1,7 @@
 ﻿using System;
 using Wki.EventSourcing.Messages;
 using NUnit.Framework;
+using System.Threading;
 
 namespace Wki.EventSourcing.Tests
 {
@@ -28,7 +29,7 @@ namespace Wki.EventSourcing.Tests
         }
 
         private InterestingEvents<string> interestingSpecificEvents;
-        private InterestingEvents<string> interestingAllEvents;
+        private InterestingEvents interestingAllEvents;
 
         [SetUp]
         public void Setup()
@@ -38,8 +39,7 @@ namespace Wki.EventSourcing.Tests
                 new[] { typeof(GoodEvent), typeof(AnotherEvent) }
             );
 
-            interestingAllEvents = new InterestingEvents<string>(
-                null,
+            interestingAllEvents = new InterestingEvents(
                 new[] { typeof(GoodEvent), typeof(AnotherEvent) }
             );
         }
@@ -89,6 +89,7 @@ namespace Wki.EventSourcing.Tests
         {
             // Arrange
             var @event = new GoodEvent("xxx");
+            Thread.Sleep(TimeSpan.FromSeconds(1));
 
             // Assert
             Assert.IsTrue(interestingAllEvents.Matches(@event));
