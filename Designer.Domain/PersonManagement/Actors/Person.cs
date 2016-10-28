@@ -1,4 +1,5 @@
 ﻿using System;
+using Akka.Actor;
 using Designer.Domain.PersonManagement.Messages;
 using Wki.EventSourcing.Actors;
 
@@ -6,11 +7,11 @@ namespace Designer.Domain.PersonManagement.Actors
 {
     public class Person : DurableActor<int>
     {
-        public Person(int id) : base(id)
+        public Person(IActorRef eventStore, int id) : base(eventStore, id)
         {
-            Command<AddLanguage>(l => AddLanguage(l));
-            Command<RemoveLanguage>(l => RemoveLanguage(l));
-            Command<UpdateAddress>(a => UpdateAddress(a));
+            Receive<AddLanguage>(l => AddLanguage(l));
+            Receive<RemoveLanguage>(l => RemoveLanguage(l));
+            Receive<UpdateAddress>(a => UpdateAddress(a));
 
             Recover<PersonRegistered>(p => PersonRegistered(p));
             Recover<LanguageAdded>(l => LanguageAdded(l));

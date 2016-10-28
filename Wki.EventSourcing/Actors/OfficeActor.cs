@@ -19,19 +19,23 @@ namespace Wki.EventSourcing.Actors
     ///<example>
     /// public class ArticleOffice : OfficeActor&lt;ArticleActor, int&gt;
     /// {
-    ///     public ArticleOffice()
+    ///     public ArticleOffice(IActorRef eventStore) : base(eventStore)
     ///     {
     ///         // set idle time (if different from 60 seconds)
     ///         IdleTime = TimeSpan.
     /// 
-    ///         // set type of actor to forward
-    ///         ActorType = typeof(ArticleActor);
+    ///         // handle some commands in the office.
+    ///         // all unhandled will be forwarded to a child actor
+    ///         Receive<SomeMessage>(...);
     ///     }
     /// }
     ///</example>
-    public class OfficeActor<TActor, TIndex> : ReceiveActor
+    public abstract class OfficeActor<TActor, TIndex> : ReceiveActor
     {
         private class CheckInactiveActors { }
+
+        // we need to know the eventStore to forward it to our children
+        private readonly IActorRef eventStore;
 
         // Idle time and its default value
         private const int DefaultIdleSeconds = 60;
@@ -40,9 +44,10 @@ namespace Wki.EventSourcing.Actors
         // remember last contact with an actor
         private Dictionary<string, DateTime> LastContact;
 
-        public OfficeActor()
+        protected OfficeActor(IActorRef eventStore)
         {
             // initialize
+            this.eventStore = eventStore;
             IdleTime = TimeSpan.FromSeconds(DefaultIdleSeconds);
             LastContact = new Dictionary<string, DateTime>();
 
@@ -109,7 +114,7 @@ namespace Wki.EventSourcing.Actors
 
             Context.System.Log.Debug("Office {0}: creating Child {1}", Self.Path.Name, name);
 
-            return Context.ActorOf(Props.Create(type, id), name);
+            return Context.ActorOf(Props.Create(type, eventStore, id), name);
         }
     }
 }

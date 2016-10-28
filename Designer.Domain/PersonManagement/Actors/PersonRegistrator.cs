@@ -1,10 +1,11 @@
 ﻿using System;
+using Akka.Actor;
 using Designer.Domain.PersonManagement.Messages;
 using Wki.EventSourcing.Actors;
 
 namespace Designer.Domain.PersonManagement.Actors
 {
-    public class PersonRegistrator : DurableActor<Person>
+    public class PersonRegistrator : DurableActor<int>
     {
         // after persisting this id is updated
         private int lastPersistedId;
@@ -12,12 +13,12 @@ namespace Designer.Domain.PersonManagement.Actors
         // id to be used for next registration to avoid race conditions
         private int nextUsableId;
 
-        public PersonRegistrator()
+        public PersonRegistrator(IActorRef eventStore, int id) : base(eventStore, id)
         {
             lastPersistedId = 0;
             nextUsableId = 1;
 
-            Command<RegisterPerson>(r => RegisterPerson(r));
+            Receive<RegisterPerson>(r => RegisterPerson(r));
             Recover<PersonRegistered>(p => PersonRegistered(p));
         }
 

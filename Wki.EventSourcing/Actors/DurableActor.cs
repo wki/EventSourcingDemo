@@ -6,6 +6,23 @@ using Wki.EventSourcing.Messages;
 
 namespace Wki.EventSourcing.Actors
 {
+    /// <summary>
+    /// An actor with persisted state without an Id
+    /// </summary>
+    /// <example>
+    /// public class MyActor : DurableActor
+    /// {
+    ///     public MyActor(IActorRef eventStore) : base(eventStore)
+    ///     {
+    ///         // specify events (for restoring or changing state)
+    ///         Recover<SomethingHappened>(...);
+    /// 
+    ///         // specify other messages (commands, queries, ...)
+    ///         Receive<LetSomethingHappen>(...);
+    ///     }
+    /// }
+    /// 
+    /// </example>
     public abstract class DurableActor : UntypedActor, IWithUnboundedStash
     {
         /// <summary>
@@ -24,13 +41,21 @@ namespace Wki.EventSourcing.Actors
         protected List<Handler> commands;
         protected List<Handler> events;
 
+        // we must know our event store. Typically the office will tell us
+        private readonly IActorRef eventStore;
+
         // during restore count events for aquiring next junk before completion
         private const int NrRestoreEvents = 100;    // Size of a block of events to request
         private const int BufferLowLimit = 10;      // if we are expecting less than this -- re-request!
         private int eventsToReceive;                // events still awaiting to receive
 
-        public DurableActor()
+        protected DurableActor(IActorRef eventStore)
         {
+            if (eventStore == null)
+                throw new ArgumentNullException(nameof(eventStore));
+
+            this.eventStore = eventStore;
+
             commands = new List<Handler>();
             events = new List<Handler>();
 
@@ -55,7 +80,7 @@ namespace Wki.EventSourcing.Actors
             IsRestoring = true;
             BecomeStacked(Restoring);
 
-            Context.EventStore().Tell(new StartRestore(GenerateInterestingEvents()));
+            eventStore.Tell(new StartRestore(GenerateInterestingEvents()));
 
             eventsToReceive = 0;
             RequestEventsToRestore();
@@ -71,7 +96,7 @@ namespace Wki.EventSourcing.Actors
             if (eventsToReceive < BufferLowLimit)
             {
                 eventsToReceive += NrRestoreEvents;
-                Context.EventStore().Tell(new RestoreEvents(NrRestoreEvents));
+                eventStore.Tell(new RestoreEvents(NrRestoreEvents));
             }
         }
 
@@ -99,7 +124,7 @@ namespace Wki.EventSourcing.Actors
         {
             Context.System.Log.Debug("Actor {0}: Persist {1}", Self.Path.Name, @event.GetType().Name);
 
-            Context.EventStore().Tell(new PersistEvent(@event));
+            eventStore.Tell(new PersistEvent(@event));
         }
 
         /// <summary>
@@ -119,7 +144,7 @@ namespace Wki.EventSourcing.Actors
         }
 
         /// <summary>
-        /// Behaviour during restore.
+        /// Behaviour during restore: Receive events but stash other messages
         /// </summary>
         /// <param name="message">Message.</param>
         private void Restoring(object message)
@@ -154,11 +179,14 @@ namespace Wki.EventSourcing.Actors
         }
     }
 
+    /// <summary>
+    /// An actor with persisted state with an Id
+    /// </summary>
     public abstract class DurableActor<TIndex> : DurableActor
     {
         public TIndex Id { get; private set; }
 
-        public DurableActor(TIndex id)
+        protected DurableActor(IActorRef eventStore, TIndex id) : base(eventStore)
         {
             Id = id;
         }

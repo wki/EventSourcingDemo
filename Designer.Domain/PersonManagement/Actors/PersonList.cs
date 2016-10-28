@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using Akka.Actor;
 using Designer.Domain.PersonManagement.DTOs;
 using Designer.Domain.PersonManagement.Messages;
 using Wki.EventSourcing.Actors;
 
 namespace Designer.Domain.PersonManagement.Actors
 {
-    public class PersonList : DurableActor<int>
+    public class PersonList : DurableActor
     {
         private List<PersonInfo> Persons;
 
-        public PersonList()
+        public PersonList(IActorRef eventStore) : base(eventStore)
         {
             Persons = new List<PersonInfo>();
 

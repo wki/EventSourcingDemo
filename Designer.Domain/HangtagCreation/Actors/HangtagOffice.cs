@@ -9,7 +9,7 @@ namespace Designer.Domain.HangtagCreation.Actors
     {
         private IActorRef hangtagCreator;
 
-        public HangtagOffice()
+        public HangtagOffice(IActorRef eventStore) : base(eventStore)
         {
             hangtagCreator =
                 Context.ActorOf(Props.Create<HangtagCreator>(), "creator");

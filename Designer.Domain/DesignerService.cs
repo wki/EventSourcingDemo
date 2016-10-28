@@ -15,7 +15,8 @@ namespace Designer.Domain
     {
         private readonly ActorSystem actorSystem;
 
-        #pragma warning disable 0414
+#pragma warning disable 0414
+        private readonly IActorRef eventStore;
         private readonly IActorRef personAggregateOffice;
         private readonly IActorRef personList;
 
@@ -32,16 +33,20 @@ namespace Designer.Domain
         {
             actorSystem = ActorSystem.Create("Designer");
 
-            personAggregateOffice = actorSystem.ActorOf(Props.Create<PersonOffice>(), "person");
-            personList = actorSystem.ActorOf(Props.Create<PersonList>(), "person-list");
+            // every actor must know the event store
+            eventStore = actorSystem.ActorOf(Props.Create<EventStore>(), "eventstore");
 
-            hangtagAggregateOffice = actorSystem.ActorOf(Props.Create<HangtagOffice>(), "hangtag");
-            hangtagDetailOffice = actorSystem.ActorOf(Props.Create<HangtagDetailOffice>(), "hangtag-detail");
-            hangtagList = actorSystem.ActorOf(Props.Create<HangtagList>(), "hangtag-list");
+            // build actors
+            personAggregateOffice = actorSystem.ActorOf(Props.Create<PersonOffice>(eventStore), "person");
+            personList = actorSystem.ActorOf(Props.Create<PersonList>(eventStore), "person-list");
 
-            renderObserverOffice = actorSystem.ActorOf(Props.Create<RenderObserver>(), "render-observer");
+            hangtagAggregateOffice = actorSystem.ActorOf(Props.Create<HangtagOffice>(eventStore), "hangtag");
+            hangtagDetailOffice = actorSystem.ActorOf(Props.Create<HangtagDetailOffice>(eventStore), "hangtag-detail");
+            hangtagList = actorSystem.ActorOf(Props.Create<HangtagList>(eventStore), "hangtag-list");
 
-            todoListOffice = actorSystem.ActorOf(Props.Create<TodoListOffice>(), "todos");
+            renderObserverOffice = actorSystem.ActorOf(Props.Create<RenderObserver>(eventStore), "render-observer");
+
+            todoListOffice = actorSystem.ActorOf(Props.Create<TodoListOffice>(eventStore), "todos");
         }
     }
 }

@@ -1,10 +1,11 @@
 ﻿using System;
+using Akka.Actor;
 using Designer.Domain.HangtagCreation.Messages;
 using Wki.EventSourcing.Actors;
 
 namespace Designer.Domain.HangtagCreation.Actors
 {
-    public class HangtagCreator : DurableActor<Hangtag>
+    public class HangtagCreator : DurableActor
     {
         // after persisting this id is updated
         private int lastPersistedId;
@@ -12,13 +13,13 @@ namespace Designer.Domain.HangtagCreation.Actors
         // id to be used for next registration to avoid race conditions
         private int nextUsableId;
 
-        public HangtagCreator()
+        public HangtagCreator(IActorRef eventStore) : base(eventStore)
         {
             lastPersistedId = 0;
             nextUsableId = 1;
 
-            Command<CreateHangtag>(h => CreateHangtag(h));
-            Command<CloneHangtag>(h => CloneHangtag(h));
+            Receive<CreateHangtag>(h => CreateHangtag(h));
+            Receive<CloneHangtag>(h => CloneHangtag(h));
 
             Recover<HangtagCreated>(h => HangtagCreated(h));
             Recover<HangtagCloned>(h => HangtagCloned(h));

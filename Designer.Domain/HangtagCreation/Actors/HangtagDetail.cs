@@ -1,4 +1,5 @@
 ﻿using System;
+using Akka.Actor;
 using Designer.Domain.HangtagCreation.Messages;
 using Designer.Domain.PersonManagement.Messages;
 using Wki.EventSourcing.Actors;
@@ -7,7 +8,7 @@ namespace Designer.Domain.HangtagCreation.Actors
 {
     public class HangtagDetail : DurableActor<int>
     {
-        public HangtagDetail(int id) : base(id)
+        public HangtagDetail(IActorRef eventStore, int id) : base(eventStore, id)
         {
             // person-list subscriben auf änderungen
             Context.System.EventStream.Subscribe(Self, typeof(PersonListUpdated));

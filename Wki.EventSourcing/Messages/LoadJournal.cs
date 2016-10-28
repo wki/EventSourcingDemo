@@ -7,5 +7,11 @@ namespace Wki.EventSourcing.Messages
     /// </summary>
     public class LoadJournal
     {
+        public int NrEvents { get; private set; }
+
+        public LoadJournal(int nrEvents)
+        {
+            NrEvents = nrEvents;
+        }
     }
 }

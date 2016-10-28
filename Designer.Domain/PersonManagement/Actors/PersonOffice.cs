@@ -9,7 +9,7 @@ namespace Designer.Domain.PersonManagement.Actors
     {
         private IActorRef personRegistrator;
 
-        public PersonOffice()
+        public PersonOffice(IActorRef eventStore) : base(eventStore)
         {
             personRegistrator = 
                 Context.ActorOf(Props.Create<PersonRegistrator>(), "registrator");

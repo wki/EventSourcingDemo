@@ -34,6 +34,11 @@ namespace Wki.EventSourcing.Actors
 
         public IStash Stash { get; set; }
 
+        // during restore count events for aquiring next junk before completion
+        private const int NrRestoreEvents = 100;
+        private const int BufferLowLimit = 10;
+        private int eventsToReceive;
+
         // responsible for writing persisted events to persistent storage
         private IActorRef journalWriter;
 
@@ -58,7 +63,8 @@ namespace Wki.EventSourcing.Actors
             var readerTypeName = config.GetString("reader");
             var readerType = Type.GetType(readerTypeName ?? "") ?? typeof(FileJournalReader);
             journalReader = Context.ActorOf(Props.Create(readerType, storageDir), "reader");
-            journalReader.Tell(new LoadJournal());
+            eventsToReceive = 0;
+            RequestEventsToLoad();
 
             var writerTypeName = config.GetString("writer");
             var writerType = Type.GetType(writerTypeName ?? "") ?? typeof(FileJournalWriter);
@@ -146,6 +152,16 @@ namespace Wki.EventSourcing.Actors
         private void EventLoaded(EventLoaded eventLoaded)
         {
             events.Add(eventLoaded.Event);
+            RequestEventsToLoad();
+        }
+
+        private void RequestEventsToLoad()
+        {
+            if (eventsToReceive < BufferLowLimit)
+            {
+                eventsToReceive += NrRestoreEvents;
+                journalReader.Tell(new LoadJournal(NrRestoreEvents));
+            }
         }
 
         // writeHournal persisted an event -- forward it to all actors interested in it

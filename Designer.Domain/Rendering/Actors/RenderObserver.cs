@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using Akka.Actor;
 using Designer.Domain.HangtagCreation.Messages;
 using Wki.EventSourcing.Actors;
 
 namespace Designer.Domain.Rendering.Actors
 {
-    public class RenderObserver : DurableActor<int?>
+    public class RenderObserver : DurableActor
     {
         // hangtag id => start time
         private Dictionary<int, DateTime> RenderingRequestedAt;
 
-        public RenderObserver()
+        public RenderObserver(IActorRef eventStore) : base(eventStore)
         {
             // Id is set to null by default. So we receive events for all actors
 
