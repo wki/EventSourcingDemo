@@ -4,6 +4,7 @@ using System.Linq;
 using Akka.Actor;
 using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Util;
+using static Wki.EventSourcing.Util.Constant;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -46,8 +47,6 @@ namespace Wki.EventSourcing.Actors
         public IStash Stash { get; set; }
 
         // during restore count events for aquiring next junk before completion
-        private const int NrRestoreEvents = 100;
-        private const int BufferLowLimit = 10;
         private int eventsToReceive;
 
         // idle time in seconds after which an actor is removed
@@ -97,7 +96,7 @@ namespace Wki.EventSourcing.Actors
             Become(Loading);
         }
 
-        #region states
+        #region Loading State
         private void Loading()
         {
             Context.System.Log.Info("Loading all events from event store");
@@ -110,6 +109,26 @@ namespace Wki.EventSourcing.Actors
             RequestEventsToLoad();
         }
 
+        // readJournal loaded an event -- save it in our list
+        private void EventLoaded(EventLoaded eventLoaded)
+        {
+            eventsToReceive--;
+
+            events.Add(eventLoaded.Event);
+            RequestEventsToLoad();
+        }
+
+        private void RequestEventsToLoad()
+        {
+            if (eventsToReceive <= BufferLowLimit)
+            {
+                eventsToReceive += NrRestoreEvents;
+                journalReader.Tell(new LoadJournal(NrRestoreEvents));
+            }
+        }
+        #endregion
+
+        #region Operating state
         private void Operating()
         {
             var loadDuration = SystemTime.Now - startedAt;
@@ -134,8 +153,6 @@ namespace Wki.EventSourcing.Actors
         
             // TODO: start timer to monitor lost actors
         }
-        #endregion
-
         // an actor wants to get restored
         private void StartRestore(StartRestore startRestore)
         {
@@ -196,29 +213,11 @@ namespace Wki.EventSourcing.Actors
                 .ForEach(actor =>
                 {
                     Context.System.Log.Debug(
-                        "Removing actor {0}, last Seen {1} seconds ago", 
+                        "Removing actor {0}, last Seen {1} seconds ago",
                         actor.Path, (SystemTime.Now - actor.LastSeen).TotalSeconds
                     );
                     actors.Remove(actor.Path);
                 });
-        }
-
-        // readJournal loaded an event -- save it in our list
-        private void EventLoaded(EventLoaded eventLoaded)
-        {
-            eventsToReceive--;
-
-            events.Add(eventLoaded.Event);
-            RequestEventsToLoad();
-        }
-
-        private void RequestEventsToLoad()
-        {
-            if (eventsToReceive <= BufferLowLimit)
-            {
-                eventsToReceive += NrRestoreEvents;
-                journalReader.Tell(new LoadJournal(NrRestoreEvents));
-            }
         }
 
         // writeHournal persisted an event -- forward it to all actors interested in it
@@ -236,5 +235,6 @@ namespace Wki.EventSourcing.Actors
                     actor.Actor.Tell(@event);
             }
         }
+        #endregion
     }
 }

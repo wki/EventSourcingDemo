@@ -55,6 +55,7 @@
     <Compile Include="EventStoreTest.cs" />
     <Compile Include="Actors\NullWriter.cs" />
     <Compile Include="Actors\NullReader.cs" />
+    <Compile Include="DurableActorTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wki.EventSourcing\Wki.EventSourcing.csproj">

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Wki.EventSourcing.Messages;
+using static Wki.EventSourcing.Util.Constant;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -45,8 +46,6 @@ namespace Wki.EventSourcing.Actors
         private readonly IActorRef eventStore;
 
         // during restore count events for aquiring next junk before completion
-        private const int NrRestoreEvents = 100;    // Size of a block of events to request
-        private const int BufferLowLimit = 10;      // if we are expecting less than this -- re-request!
         private int eventsToReceive;                // events still awaiting to receive
 
         protected DurableActor(IActorRef eventStore)
@@ -74,30 +73,9 @@ namespace Wki.EventSourcing.Actors
             StartRestoring();
         }
 
-        private void StartRestoring()
-        {
-            Context.System.Log.Debug("Actor {0}: StartRestore", Self.Path.Name);
-            IsRestoring = true;
-            BecomeStacked(Restoring);
-
-            eventStore.Tell(new StartRestore(GenerateInterestingEvents()));
-
-            eventsToReceive = 0;
-            RequestEventsToRestore();
-        }
-
         protected virtual InterestingEvents GenerateInterestingEvents()
         {
             return new InterestingEvents(events.Select(e => e.Type));
-        }
-
-        private void RequestEventsToRestore()
-        {
-            if (eventsToReceive < BufferLowLimit)
-            {
-                eventsToReceive += NrRestoreEvents;
-                eventStore.Tell(new RestoreEvents(NrRestoreEvents));
-            }
         }
 
         /// <summary>
@@ -143,6 +121,7 @@ namespace Wki.EventSourcing.Actors
                 Unhandled(message);
         }
 
+        #region restore state
         /// <summary>
         /// Behaviour during restore: Receive events but stash other messages
         /// </summary>
@@ -177,6 +156,28 @@ namespace Wki.EventSourcing.Actors
                 }
             }
         }
+
+        private void StartRestoring()
+        {
+            Context.System.Log.Debug("Actor {0}: StartRestore", Self.Path.Name);
+            IsRestoring = true;
+            BecomeStacked(Restoring);
+
+            eventStore.Tell(new StartRestore(GenerateInterestingEvents()));
+
+            eventsToReceive = 0;
+            RequestEventsToRestore();
+        }
+
+        private void RequestEventsToRestore()
+        {
+            if (eventsToReceive < BufferLowLimit)
+            {
+                eventsToReceive += NrRestoreEvents;
+                eventStore.Tell(new RestoreEvents(NrRestoreEvents));
+            }
+        }
+        #endregion
     }
 
     /// <summary>

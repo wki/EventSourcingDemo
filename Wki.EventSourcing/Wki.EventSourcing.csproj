@@ -66,6 +66,7 @@
     <Compile Include="Messages\GetSize.cs" />
     <Compile Include="Messages\GetActors.cs" />
     <Compile Include="Messages\RemoveLostActors.cs" />
+    <Compile Include="Util\Constant.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -1,15 +1,14 @@
 ﻿using System;
-using NUnit.Framework;
-using Akka.TestKit.NUnit;
 using System.IO;
-using Akka.Configuration;
+using System.Text.RegularExpressions;
+using NUnit.Framework;
+using Akka.TestKit;
+using Akka.TestKit.NUnit;
 using Akka.Actor;
 using Wki.EventSourcing.Actors;
-using System.Threading;
-using Akka.TestKit;
 using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Util;
-using System.Text.RegularExpressions;
+using static Wki.EventSourcing.Util.Constant;
 
 namespace Wki.EventSourcing.Tests
 {
@@ -63,7 +62,7 @@ namespace Wki.EventSourcing.Tests
         public void EventStore_AfterStart_LoadsJournal()
         {
             // Assert
-            reader.ExpectMsgFrom<LoadJournal>(eventStore, loadJournal => loadJournal.NrEvents == 100);
+            reader.ExpectMsgFrom<LoadJournal>(eventStore, loadJournal => loadJournal.NrEvents == NrRestoreEvents);
         }
         #endregion
 
@@ -72,10 +71,10 @@ namespace Wki.EventSourcing.Tests
         public void EventStore_AfterReceiving90Events_Requests100More()
         {
             // Assert
-            reader.ExpectMsgFrom<LoadJournal>(eventStore, load => load.NrEvents == 100);
+            reader.ExpectMsgFrom<LoadJournal>(eventStore, load => load.NrEvents == NrRestoreEvents);
             for (var i = 1; i <= 90; i++)
                 eventStore.Tell(new EventLoaded(new SomethingHappened()));
-            reader.ExpectMsgFrom<LoadJournal>(eventStore, load => load.NrEvents == 100);
+            reader.ExpectMsgFrom<LoadJournal>(eventStore, load => load.NrEvents == NrRestoreEvents);
         }
 
         [Test]
