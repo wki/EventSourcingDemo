@@ -46,7 +46,8 @@ namespace Wki.EventSourcing.Actors
         private readonly IActorRef eventStore;
 
         // during restore count events for aquiring next junk before completion
-        private int eventsToReceive;                // events still awaiting to receive
+        // we keep track of the nr of events we still await to receive
+        private int eventsToReceive;
 
         protected DurableActor(IActorRef eventStore)
         {
@@ -78,6 +79,7 @@ namespace Wki.EventSourcing.Actors
             return new InterestingEvents(events.Select(e => e.Type));
         }
 
+        #region Event and Command Handling
         /// <summary>
         /// Declare an event to handle
         /// </summary>
@@ -104,7 +106,9 @@ namespace Wki.EventSourcing.Actors
 
             eventStore.Tell(new PersistEvent(@event));
         }
+        #endregion
 
+        #region regular operation
         /// <summary>
         /// Regular Operation: receive Commands and Events
         /// </summary>
@@ -120,6 +124,7 @@ namespace Wki.EventSourcing.Actors
             else
                 Unhandled(message);
         }
+        #endregion
 
         #region restore state
         /// <summary>
