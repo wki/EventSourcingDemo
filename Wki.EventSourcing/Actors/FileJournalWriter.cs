@@ -19,14 +19,17 @@ namespace Wki.EventSourcing.Actors
 
         private void PersistEvent(PersistEvent persistEvent)
         {
+            Console.WriteLine($"Persist Event {persistEvent}");
             Context.System.Log.Debug("Persist Event {0}", persistEvent.GetType().Name);
 
             var @event = persistEvent.Event;
             var now = SystemTime.Now;
-            var file = Path.Combine(Dir(now), String.Format("{0:dd}.json", now));
+            var file = Path.Combine(Dir(now), $"{now:dd}.json");
+            Console.WriteLine($"File: {file}");
 
             File.AppendAllLines(file, new[] { EventSerializer.ToJson(@event) });
 
+            Console.WriteLine($"Sender: {Sender}");
             Sender.Tell(new EventPersisted(@event));
         }
     }

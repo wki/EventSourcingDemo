@@ -65,6 +65,7 @@
     <Compile Include="Messages\GetActors.cs" />
     <Compile Include="Messages\RemoveLostActors.cs" />
     <Compile Include="Util\Constant.cs" />
+    <Compile Include="JsonNet.PrivateSettersContractResolvers\PrivateSettersContractResolvers.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

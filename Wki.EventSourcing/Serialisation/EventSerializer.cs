@@ -2,7 +2,8 @@
 using Wki.EventSourcing.Messages;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Serialization;
+// using Newtonsoft.Json.Serialization;
+using JsonNet.PrivateSettersContractResolvers;
 
 namespace Wki.EventSourcing.Serialisation
 {
@@ -13,11 +14,17 @@ namespace Wki.EventSourcing.Serialisation
 
         static EventSerializer()
         {
+            // would work, but DefaultMembersSearchFlags attribute is obsolete
+            //var contractResolver = new CamelCasePropertyNamesContractResolver();
+            //contractResolver.DefaultMembersSearchFlags |= BindingFlags.NonPublic;
+
+            var contractResolver = new PrivateSetterContractResolver();
+
             JsonSettings = new JsonSerializerSettings
             {
                 DateFormatHandling = DateFormatHandling.IsoDateFormat,
                 Formatting = Formatting.None,
-                ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                ContractResolver = contractResolver, // new CamelCasePropertyNamesContractResolver(),
                 Converters = new[] { new StringEnumConverter() },
                 TypeNameHandling = TypeNameHandling.All
             };

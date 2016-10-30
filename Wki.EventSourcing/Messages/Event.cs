@@ -12,6 +12,7 @@ namespace Wki.EventSourcing.Messages
         /// The time the event occured.
         /// </summary>
         /// <value>The occured on.</value>
+        /// 
         public DateTime OccuredOn { get; private set; }
 
         public Event() : this(SystemTime.Now) {}

@@ -56,12 +56,17 @@
     <Compile Include="DurableActorTest.cs" />
     <Compile Include="FileJournalBaseTest.cs" />
     <Compile Include="TempDir.cs" />
+    <Compile Include="FileJournalWriterTest.cs" />
+    <Compile Include="Messages\SomethingHappened.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wki.EventSourcing\Wki.EventSourcing.csproj">
       <Project>{041C375E-55DC-4E76-9010-D6F9A0D0300D}</Project>
       <Name>Wki.EventSourcing</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Messages\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

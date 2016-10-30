@@ -2,12 +2,14 @@
 using System;
 using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Serialisation;
+using Wki.EventSourcing.Util;
 
 namespace Wki.EventSourcing.Tests
 {
     [TestFixture]
     public class EventSerializerTest
     {
+        // Event with a full constructor
         public class TestEvent : Event<int?>
         {
             public int MyNumber { get; private set; }
@@ -16,6 +18,17 @@ namespace Wki.EventSourcing.Tests
                 : base(occuredOn, id)
             {
                 MyNumber = myNumber;
+            }
+        }
+
+        // Event with only a default constructor
+        public class AnotherEvent : Event
+        {
+            public string MyText { get; private set; }
+
+            public AnotherEvent(string myText)
+            {
+                MyText = myText;
             }
         }
 
@@ -51,6 +64,27 @@ namespace Wki.EventSourcing.Tests
             Assert.AreEqual(day, restoredEvent.OccuredOn, "OccuredOn");
             Assert.AreEqual(88, restoredEvent.Id, "Id");
             Assert.AreEqual(42, restoredEvent.MyNumber, "MyNumber");
+        }
+
+        [Test]
+        public void EventSerializer_DeserializeEvent_UsesDefaultConstructorAndSetters()
+        {
+            // Arrange
+            var day = new DateTime(2014, 1, 3, /**/ 3, 4, 15);
+            SystemTime.Fake(() => day);
+            var @event = new AnotherEvent("foo");
+
+            // Act
+            var json = EventSerializer.ToJson(@event);
+            Console.WriteLine("JSON: '{0}'", json);
+
+            SystemTime.Fake(() => DateTime.Now);
+            var restoredEvent = (AnotherEvent)EventSerializer.FromJson(json);
+
+            // Assert
+            Assert.AreSame(@event.GetType(), restoredEvent.GetType(), "Type");
+            Assert.AreEqual(day, restoredEvent.OccuredOn, "OccuredOn");
+            Assert.AreEqual("foo", restoredEvent.MyText, "MyText");
         }
     }
 }

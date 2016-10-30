@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using Akka.TestKit;
@@ -10,20 +9,12 @@ using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Util;
 using static Wki.EventSourcing.Util.Constant;
 using static Wki.EventSourcing.Tests.TempDir;
+using Wki.EventSourcing.Tests.Messages;
 
 namespace Wki.EventSourcing.Tests
 {
     public class IgnoreWhatHappened : Event { }
 
-    public class SomethingHappened : Event 
-    {
-        public int Number { get; private set; }
-
-        public SomethingHappened(int number = 0)
-        {
-            Number = number;
-        }
-    }
 
     [TestFixture]
     public class EventStoreTest : TestKit
