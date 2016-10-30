@@ -20,6 +20,12 @@ namespace Wki.EventSourcing.Messages
         {
             OccuredOn = occuredOn;
         }
+
+        /// <summary>
+        /// Stringified Id (needed for serialisation into envelope)
+        /// </summary>
+        /// <returns>The identifier.</returns>
+        public virtual string GetId() => null;
     }
 
     /// <summary>
@@ -41,5 +47,7 @@ namespace Wki.EventSourcing.Messages
         {
             Id = id;
         }
+
+        public override string GetId() => Id.ToString();
     }
 }

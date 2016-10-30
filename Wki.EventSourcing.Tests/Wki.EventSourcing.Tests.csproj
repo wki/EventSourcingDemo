@@ -58,6 +58,7 @@
     <Compile Include="TempDir.cs" />
     <Compile Include="FileJournalWriterTest.cs" />
     <Compile Include="Messages\SomethingHappened.cs" />
+    <Compile Include="EventTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wki.EventSourcing\Wki.EventSourcing.csproj">
