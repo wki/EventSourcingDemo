@@ -25,7 +25,7 @@ namespace Wki.EventSourcing.Actors
             var now = SystemTime.Now;
             var file = Path.Combine(Dir(now), String.Format("{0:dd}.json", now));
 
-            File.AppendAllText(file, EventSerializer.ToJson(@event));
+            File.AppendAllLines(file, new[] { EventSerializer.ToJson(@event) });
 
             Sender.Tell(new EventPersisted(@event));
         }

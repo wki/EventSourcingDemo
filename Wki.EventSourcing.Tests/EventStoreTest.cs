@@ -9,6 +9,7 @@ using Wki.EventSourcing.Actors;
 using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Util;
 using static Wki.EventSourcing.Util.Constant;
+using static Wki.EventSourcing.Tests.TempDir;
 
 namespace Wki.EventSourcing.Tests
 {
@@ -231,24 +232,6 @@ namespace Wki.EventSourcing.Tests
             eventStore.Tell(new GetActors());
 
             ExpectMsg<string>(s => String.IsNullOrEmpty(s));
-        }
-
-        #endregion
-
-        #region helpers
-        private static string CreateTempDir()
-        {
-            var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            Directory.CreateDirectory(tempDir);
-
-            Console.WriteLine($"Created Temp Dir: {tempDir}");
-
-            return tempDir;
-        }
-
-        private static void RemoveTempDir(string dir)
-        {
-            Directory.Delete(dir, true);
         }
         #endregion
     }

@@ -23,7 +23,8 @@ namespace Wki.EventSourcing.Actors
 
         protected string Dir(DateTime day)
         {
-            var dir = Path.Combine(StorageDir, String.Format("{0:yyyy}", day), String.Format("{0}:MM}", day));
+            var dir = Path.Combine(StorageDir, $"{day:yyyy}", $"{day:MM}");
+
             if (!Directory.Exists(dir))
             {
                 Context.System.Log.Info("Creating storage Dir for month {0}", dir);

@@ -41,9 +41,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Actors\DurableActor.cs" />
-    <Compile Include="Actors\EventEnvelope.cs" />
     <Compile Include="Actors\EventStore.cs" />
-    <Compile Include="Actors\EventStoreExtension.cs" />
     <Compile Include="Actors\FileJournalBase.cs" />
     <Compile Include="Actors\FileJournalReader.cs" />
     <Compile Include="Actors\FileJournalWriter.cs" />
