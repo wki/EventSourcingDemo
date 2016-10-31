@@ -11,5 +11,8 @@
         /// The low limit of a buffer triggering another request
         /// </summary>
         public const int BufferLowLimit = 10;
+
+        // idle time in seconds after which an actor is removed
+        public const int MaxActorIdleSeconds = 300; // 5 min.
     }
 }

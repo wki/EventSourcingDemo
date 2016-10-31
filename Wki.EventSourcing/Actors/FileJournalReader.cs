@@ -31,13 +31,13 @@ namespace Wki.EventSourcing.Actors
             Context.System.Log.Debug("Load {0} Events", nrEvents);
 
             while (nrEvents-- > 0 && !(lastReached = !events.MoveNext()))
-                Context.Parent.Tell(new EventLoaded(events.Current));
+                Sender.Tell(new EventLoaded(events.Current));
 
             if (lastReached)
             {
                 Context.System.Log.Debug("Reached end after {0} Events, End Loading", loadJournal.NrEvents-nrEvents-1);
 
-                Context.Parent.Tell(new End());
+                Sender.Tell(new End());
             }
         }
 

@@ -49,9 +49,6 @@ namespace Wki.EventSourcing.Actors
         // during restore count events for aquiring next junk before completion
         private int eventsToReceive;
 
-        // idle time in seconds after which an actor is removed
-        private const int MaxActorIdleSeconds = 300; // 5 min.
-
         // responsible for writing persisted events to persistent storage
         private IActorRef journalWriter;
 
@@ -146,7 +143,7 @@ namespace Wki.EventSourcing.Actors
             // diagnostic messages for testing
             Receive<GetSize>(_ => Sender.Tell(events.Count));
             Receive<GetActors>(_ => Sender.Tell(String.Join("|", actors.Values.Select(a => a.ToString()))));
-            Receive<RemoveLostActors>(_ => RemoveLostActors());
+            Receive<CheckInactiveActors>(_ => CheckInactiveActors());
 
             // process everything lost so far
             Stash.UnstashAll();
@@ -197,7 +194,7 @@ namespace Wki.EventSourcing.Actors
         }
 
         // remove all actors not alive for a long time
-        private void RemoveLostActors()
+        private void CheckInactiveActors()
         {
             // TODO: maybe we should send a "ping" to an actor not responding
             //       for some time. If nothing happens then, we remove it.

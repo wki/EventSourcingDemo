@@ -46,7 +46,6 @@
     <Compile Include="Actors\FileJournalReader.cs" />
     <Compile Include="Actors\FileJournalWriter.cs" />
     <Compile Include="Actors\Handler.cs" />
-    <Compile Include="Actors\JournalActor.cs" />
     <Compile Include="Actors\OfficeActor.cs" />
     <Compile Include="Messages\DispatchableCommand.cs" />
     <Compile Include="Messages\End.cs" />
@@ -63,7 +62,7 @@
     <Compile Include="Util\SystemTime.cs" />
     <Compile Include="Messages\GetSize.cs" />
     <Compile Include="Messages\GetActors.cs" />
-    <Compile Include="Messages\RemoveLostActors.cs" />
+    <Compile Include="Messages\CheckInactiveActors.cs" />
     <Compile Include="Util\Constant.cs" />
     <Compile Include="JsonNet.PrivateSettersContractResolvers\PrivateSettersContractResolvers.cs" />
     <Compile Include="Serialisation\Envelope.cs" />

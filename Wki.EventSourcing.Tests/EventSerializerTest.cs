@@ -3,35 +3,13 @@ using System;
 using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Serialisation;
 using Wki.EventSourcing.Util;
+using Wki.EventSourcing.Tests.Messages;
 
 namespace Wki.EventSourcing.Tests
 {
     [TestFixture]
     public class EventSerializerTest
     {
-        // Event with a full constructor
-        public class TestEvent : Event<int?>
-        {
-            public int MyNumber { get; private set; }
-
-            public TestEvent(DateTime occuredOn, int? id, int myNumber)
-                : base(occuredOn, id)
-            {
-                MyNumber = myNumber;
-            }
-        }
-
-        // Event with only a default constructor
-        public class AnotherEvent : Event
-        {
-            public string MyText { get; private set; }
-
-            public AnotherEvent(string myText)
-            {
-                MyText = myText;
-            }
-        }
-
         [Test]
         public void EventSerializer_SerializingEvent_AddsTypeInformation()
         {

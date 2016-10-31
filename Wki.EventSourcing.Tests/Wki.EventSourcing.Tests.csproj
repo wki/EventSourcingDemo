@@ -59,6 +59,11 @@
     <Compile Include="FileJournalWriterTest.cs" />
     <Compile Include="Messages\SomethingHappened.cs" />
     <Compile Include="EventTest.cs" />
+    <Compile Include="Messages\TestEvent.cs" />
+    <Compile Include="Messages\AnotherEvent.cs" />
+    <Compile Include="FileJournalReaderTest.cs" />
+    <Compile Include="OfficeActorTest.cs" />
+    <Compile Include="Messages\SomeCommand.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wki.EventSourcing\Wki.EventSourcing.csproj">

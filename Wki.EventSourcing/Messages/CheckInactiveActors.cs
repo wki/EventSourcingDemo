@@ -3,5 +3,5 @@
     /// <summary>
     /// Diagnostic message to Eventstore to remove outdated actors
     /// </summary>
-    public class RemoveLostActors {}
+    public class CheckInactiveActors {}
 }

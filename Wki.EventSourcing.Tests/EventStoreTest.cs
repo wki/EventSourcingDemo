@@ -219,7 +219,7 @@ namespace Wki.EventSourcing.Tests
 
             SystemTime.Fake(() => now6);
 
-            eventStore.Tell(new RemoveLostActors());
+            eventStore.Tell(new CheckInactiveActors());
             eventStore.Tell(new GetActors());
 
             ExpectMsg<string>(s => String.IsNullOrEmpty(s));

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Util;
@@ -32,8 +33,6 @@ namespace Wki.EventSourcing.Actors
     ///</example>
     public abstract class OfficeActor<TActor, TIndex> : ReceiveActor
     {
-        private class CheckInactiveActors { }
-
         // we need to know the eventStore to forward it to our children
         private readonly IActorRef eventStore;
 
@@ -60,11 +59,13 @@ namespace Wki.EventSourcing.Actors
                        message: new CheckInactiveActors(),
                        sender: Self
                    );
-            Receive<CheckInactiveActors>(_ => RemoveInactiveActors());
 
-            // OBSOLETE -- use unhandled instead to give child class a chance for special behavior
-            // forward all commands
-            //Receive<DispatchableCommand>(c => ForwardToDestinationActor(c));
+            // diagnostic messages for testing
+            Receive<GetSize>(_ => Sender.Tell(LastContact.Count));
+            Receive<GetActors>(_ => Sender.Tell(String.Join("|", LastContact.Keys.Select(k => k))));
+            Receive<CheckInactiveActors>(_ => CheckInactiveActors());
+
+            // all commands will pass thru Unhandled()...
         }
 
         protected override void Unhandled(object message)
@@ -76,7 +77,7 @@ namespace Wki.EventSourcing.Actors
                 Context.System.Log.Warning("Received {0} -- ignoring", message);
         }
 
-        private void RemoveInactiveActors()
+        private void CheckInactiveActors()
         {
             foreach (var actorName in LastContact.Keys)
             {
