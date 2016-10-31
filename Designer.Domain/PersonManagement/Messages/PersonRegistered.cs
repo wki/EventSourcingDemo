@@ -5,8 +5,13 @@ namespace Designer.Domain.PersonManagement.Messages
 {
     public class PersonRegistered : Event<int>
     {
-        public PersonRegistered(int id) : base(id)
+        public string Fullname { get; private set; }
+        public string Email { get; private set; }
+
+        public PersonRegistered(int id, string fullname, string email) : base(id)
         {
+            Fullname = fullname;
+            Email = email;
         }
     }
 }

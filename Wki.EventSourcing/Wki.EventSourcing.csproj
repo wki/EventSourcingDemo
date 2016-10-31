@@ -66,6 +66,7 @@
     <Compile Include="Util\Constant.cs" />
     <Compile Include="JsonNet.PrivateSettersContractResolvers\PrivateSettersContractResolvers.cs" />
     <Compile Include="Serialisation\Envelope.cs" />
+    <Compile Include="Messages\Reply.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

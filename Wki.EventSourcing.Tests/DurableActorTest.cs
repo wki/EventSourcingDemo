@@ -14,6 +14,7 @@ namespace Wki.EventSourcing.Tests
         public SimpleDurableActor(IActorRef eventStore) : base(eventStore)
         {
             Receive<string>(s => Sender.Tell($"Reply: {s}"));
+            Receive<int>(i => { if (i < 0) throw new ArgumentException("lt zero"); });
         }
     }
 
@@ -60,5 +61,32 @@ namespace Wki.EventSourcing.Tests
             // Assert
             ExpectMsg<string>(s => s == "Reply: Hello");
         }
+
+        [Test]
+        public void DurableActor_AfterRestore_ReturnsOkWhenNoException()
+        {
+            // Arrange
+            durableActor.Tell(new End()); // end restore
+
+            // Act
+            durableActor.Tell(42);
+
+            // Assert
+            ExpectMsg<Reply>(r => r.IsOk);
+        }
+
+        [Test]
+        public void DurableActor_AfterRestore_ReturnsErrorWhenException()
+        {
+            // Arrange
+            durableActor.Tell(new End()); // end restore
+
+            // Act
+            durableActor.Tell(-42);
+
+            // Assert
+            ExpectMsg<Reply>(r => r.Message == "lt zero");
+        }
+
     }
 }
