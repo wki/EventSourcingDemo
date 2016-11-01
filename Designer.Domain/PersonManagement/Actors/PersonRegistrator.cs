@@ -5,9 +5,13 @@ using System.Linq;
 using Akka.Actor;
 using Designer.Domain.PersonManagement.Messages;
 using Wki.EventSourcing.Actors;
+using Wki.EventSourcing.Messages;
 
 namespace Designer.Domain.PersonManagement.Actors
 {
+    /// <summary>
+    /// Manage Person Registration with unique eMails and sequential IDs
+    /// </summary>
     public class PersonRegistrator : DurableActor
     {
         private class EmailComparer : IEqualityComparer<string>
@@ -42,10 +46,15 @@ namespace Designer.Domain.PersonManagement.Actors
         private void RegisterPerson(RegisterPerson registerPerson)
         {
             if (emailAddresses.Contains(registerPerson.Email))
-                throw new ArgumentException($"Email '{registerPerson.Email}' already used");
+            {
+                // throw new ArgumentException($"Email '{registerPerson.Email}' already used");
+                Sender.Tell(Reply.Error($"Email '{registerPerson.Email}' already used"));
+                return;
+            }
 
             emailAddresses.Add(registerPerson.Email);
             Persist(new PersonRegistered(nextUsableId++, registerPerson.Fullname, registerPerson.Email));
+            Sender.Tell(Reply.Ok());
         }
 
         private void PersonRegistered(PersonRegistered personRegistered)

@@ -72,6 +72,7 @@
     <Compile Include="Todos\Actors\TodoListOffice.cs" />
     <Compile Include="PersonManagement\Messages\ListEmailAddresses.cs" />
     <Compile Include="PersonManagement\Messages\ReturnIds.cs" />
+    <Compile Include="PersonManagement\Messages\ListPersons.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wki.EventSourcing\Wki.EventSourcing.csproj">

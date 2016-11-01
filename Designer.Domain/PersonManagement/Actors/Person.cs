@@ -5,6 +5,9 @@ using Wki.EventSourcing.Actors;
 
 namespace Designer.Domain.PersonManagement.Actors
 {
+    /// <summary>
+    /// Person aggregate
+    /// </summary>
     public class Person : DurableActor<int>
     {
         public Person(IActorRef eventStore, int id) : base(eventStore, id)

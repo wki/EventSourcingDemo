@@ -115,36 +115,40 @@ namespace Wki.EventSourcing.Actors
         /// <param name="message">Message.</param>
         protected override void OnReceive(object message)
         {
-            Handler handler;
-            if ((handler = events.Find(e => e.Type == message.GetType())) != null)
-            {
-                // event handling must not die.
-                handler.Action(message);
-            }
-            else if ((handler = commands.Find(c => c.Type == message.GetType())) != null)
-            {
-                // commands respond with exceptions for eg. invalid args
-                try
-                {
-                    handler.Action(message);
-                    Sender.Tell(Reply.Ok());
-                }
-                catch (Exception e)
-                {
-                    Sender.Tell(Reply.Error(e.Message));
-                }
-            }
-            else 
-                Unhandled(message);
-            
-            //var handler =
-            //    events.Find(e => e.Type == message.GetType())
-            //          ?? commands.Find(c => c.Type == message.GetType());
+            // black magic version answering with a reply after every "command"
+            // --> too magic, not universal enough
 
-            //if (handler != null)
+            //Handler handler;
+            //if ((handler = events.Find(e => e.Type == message.GetType())) != null)
+            //{
+            //    // event handling must not die.
             //    handler.Action(message);
-            //else
+            //}
+            //else if ((handler = commands.Find(c => c.Type == message.GetType())) != null)
+            //{
+            //    // commands respond with exceptions for eg. invalid args
+            //    try
+            //    {
+            //        handler.Action(message);
+            //        Sender.Tell(Reply.Ok());
+            //    }
+            //    catch (Exception e)
+            //    {
+            //        Sender.Tell(Reply.Error(e.Message));
+            //    }
+            //}
+            //else 
             //    Unhandled(message);
+
+            // regular version, making Receive<> as normal as possible
+            var handler =
+                events.Find(e => e.Type == message.GetType())
+                      ?? commands.Find(c => c.Type == message.GetType());
+
+            if (handler != null)
+                handler.Action(message);
+            else
+                Unhandled(message);
         }
         #endregion
 

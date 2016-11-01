@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Designer.Domain.PersonManagement.DTOs;
 using Designer.Domain.PersonManagement.Messages;
@@ -7,13 +8,18 @@ using Wki.EventSourcing.Actors;
 
 namespace Designer.Domain.PersonManagement.Actors
 {
+    /// <summary>
+    /// Hold a list of all persons known to the system with essential information
+    /// </summary>
     public class PersonList : DurableActor
     {
-        private List<PersonInfo> Persons;
+        private Dictionary<int, PersonInfo> Persons;
 
         public PersonList(IActorRef eventStore) : base(eventStore)
         {
-            Persons = new List<PersonInfo>();
+            Persons = new Dictionary<int, PersonInfo>();
+
+            Receive<ListPersons>(_ => Sender.Tell(Persons.Values.ToList()));
 
             Recover<PersonRegistered>(p => PersonRegistered(p));
             Recover<LanguageAdded>(l => LanguageAdded(l));
@@ -23,8 +29,10 @@ namespace Designer.Domain.PersonManagement.Actors
 
         private void PersonRegistered(PersonRegistered personRegistered)
         {
-            // TODO: fill
-            Persons.Add(new PersonInfo());
+            Persons.Add(
+                personRegistered.Id, 
+                new PersonInfo(personRegistered.Id, personRegistered.Fullname, personRegistered.Email)
+            );
 
             if (!IsRestoring)
                 Context.System.EventStream.Publish(new PersonListUpdated());

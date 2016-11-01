@@ -47,6 +47,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PersonRegistratorTest.cs" />
+    <Compile Include="PersonOfficeTest.cs" />
+    <Compile Include="PersonListTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

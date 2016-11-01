@@ -14,7 +14,16 @@ namespace Wki.EventSourcing.Tests
         public SimpleDurableActor(IActorRef eventStore) : base(eventStore)
         {
             Receive<string>(s => Sender.Tell($"Reply: {s}"));
-            Receive<int>(i => { if (i < 0) throw new ArgumentException("lt zero"); });
+            Receive<int>(i => 
+            {
+                //if (i < 0)
+                //    throw new ArgumentException("lt zero");
+
+                if (i < 0)
+                    Sender.Tell(Reply.Error("lt zero"));
+                else
+                    Sender.Tell(Reply.Ok());
+            });
         }
     }
 

@@ -6,8 +6,15 @@ namespace Designer.Domain.PersonManagement.DTOs
     /// </summary>
     public class PersonInfo
     {
-        public PersonInfo()
+        public int Id { get; internal set; }
+        public string Fullname { get; internal set; }
+        public string Email { get; internal set; }
+
+        public PersonInfo(int id, string fullname, string email)
         {
+            Id = id;
+            Fullname = fullname;
+            Email = email;
         }
     }
 }

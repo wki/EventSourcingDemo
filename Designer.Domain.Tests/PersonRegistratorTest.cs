@@ -23,10 +23,22 @@ namespace Designer.Domain.Tests
         }
 
         [Test]
-        public void PersonRegistrator_Initially_ReportedIds()
+        public void PersonRegistrator_Initially_DoesNotAnswer()
         {
             // Act
+            personRegistrator.Tell(new ReturnIds());
+
+            // Assert
+            ExpectNoMsg(TimeSpan.FromSeconds(0.5));
+        }
+
+        [Test]
+        public void PersonRegistrator_AfterRestore_ReportedIds()
+        {
+            // Arrange
             personRegistrator.Tell(new End());
+
+            // Act
             personRegistrator.Tell(new ReturnIds());
 
             // Assert
@@ -36,8 +48,10 @@ namespace Designer.Domain.Tests
         [Test]
         public void PersonRegistrator_AfterRegistration_IncreaseUsableId()
         {
-            // Act
+            // Arrange
             personRegistrator.Tell(new End());
+
+            // Act
             personRegistrator.Tell(new RegisterPerson("Full", "mail@domain.de"));
             personRegistrator.Tell(new ReturnIds());
 
@@ -50,8 +64,10 @@ namespace Designer.Domain.Tests
         [Test]
         public void PersonRegistrator_AfterMultipleRegistrations_IncreaseUsableId()
         {
-            // Act
+            // Arrange
             personRegistrator.Tell(new End());
+
+            // Act
             foreach (var mail in new[] { "1@x.de", "2@x.de", "3@x.de" })
                 personRegistrator.Tell(new RegisterPerson("Full", mail));
             personRegistrator.Tell(new ReturnIds());
@@ -65,8 +81,10 @@ namespace Designer.Domain.Tests
         [Test]
         public void PersonRegistrator_RegisterDuplicatedEmail_IncreaseUsableIdAndRaiseError()
         {
-            // Act
+            // Arrange
             personRegistrator.Tell(new End());
+
+            // Act
             personRegistrator.Tell(new RegisterPerson("Full", "mail@domain.de"));
             personRegistrator.Tell(new RegisterPerson("Full", "mail@domain.de"));
             personRegistrator.Tell(new ReturnIds());
@@ -80,8 +98,10 @@ namespace Designer.Domain.Tests
         [Test]
         public void PersonRegistrator_AfterRecover_IncreaseUsableIds()
         {
-            // Act
+            // Arrange
             personRegistrator.Tell(new End());
+
+            // Act
             personRegistrator.Tell(new PersonRegistered(23, "Full", "mail@domain.de"));
             personRegistrator.Tell(new ReturnIds());
 
