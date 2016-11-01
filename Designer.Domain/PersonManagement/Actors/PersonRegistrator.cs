@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Akka.Actor;
 using Designer.Domain.PersonManagement.Messages;
 using Wki.EventSourcing.Actors;
 
 namespace Designer.Domain.PersonManagement.Actors
 {
-    public class PersonRegistrator : DurableActor<int>
+    public class PersonRegistrator : DurableActor
     {
         private class EmailComparer : IEqualityComparer<string>
         {
@@ -15,7 +16,7 @@ namespace Designer.Domain.PersonManagement.Actors
             public int GetHashCode(string obj) => obj.ToLower().GetHashCode();
         }
 
-        // keep all emails unique
+        // in order to keep all emails unique we must know them all
         private HashSet<string> emailAddresses;
 
         // after persisting this id is updated
@@ -24,7 +25,7 @@ namespace Designer.Domain.PersonManagement.Actors
         // id to be used for next registration to avoid race conditions
         private int nextUsableId;
 
-        public PersonRegistrator(IActorRef eventStore, int id) : base(eventStore, id)
+        public PersonRegistrator(IActorRef eventStore) : base(eventStore)
         {
             emailAddresses = new HashSet<string>(new EmailComparer());
             lastPersistedId = 0;
@@ -32,6 +33,10 @@ namespace Designer.Domain.PersonManagement.Actors
 
             Receive<RegisterPerson>(r => RegisterPerson(r));
             Recover<PersonRegistered>(p => PersonRegistered(p));
+
+            // diagnostic messages for testing
+            Receive<ListEmailAddresses>(_ => Sender.Tell(String.Join("|", emailAddresses)));
+            Receive<ReturnIds>(_ => Sender.Tell($"{lastPersistedId}|{nextUsableId}"));
         }
 
         private void RegisterPerson(RegisterPerson registerPerson)
@@ -39,13 +44,13 @@ namespace Designer.Domain.PersonManagement.Actors
             if (emailAddresses.Contains(registerPerson.Email))
                 throw new ArgumentException($"Email '{registerPerson.Email}' already used");
 
+            emailAddresses.Add(registerPerson.Email);
             Persist(new PersonRegistered(nextUsableId++, registerPerson.Fullname, registerPerson.Email));
         }
 
         private void PersonRegistered(PersonRegistered personRegistered)
         {
             lastPersistedId = personRegistered.Id;
-            emailAddresses.Add(personRegistered.Email);
 
             if (nextUsableId < lastPersistedId + 1)
                 nextUsableId = lastPersistedId + 1;

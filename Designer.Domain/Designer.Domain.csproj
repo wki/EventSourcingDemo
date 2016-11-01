@@ -70,6 +70,8 @@
     <Compile Include="Rendering\Actors\RenderObserver.cs" />
     <Compile Include="Todos\Actors\TodoList.cs" />
     <Compile Include="Todos\Actors\TodoListOffice.cs" />
+    <Compile Include="PersonManagement\Messages\ListEmailAddresses.cs" />
+    <Compile Include="PersonManagement\Messages\ReturnIds.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wki.EventSourcing\Wki.EventSourcing.csproj">

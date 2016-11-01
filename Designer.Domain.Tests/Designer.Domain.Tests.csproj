@@ -29,12 +29,37 @@
     <Reference Include="nunit.framework">
       <HintPath>..\packages\NUnit.2.6.4\lib\nunit.framework.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>..\packages\System.Collections.Immutable.1.1.36\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+    </Reference>
+    <Reference Include="Akka">
+      <HintPath>..\packages\Akka.1.1.2\lib\net45\Akka.dll</HintPath>
+    </Reference>
+    <Reference Include="Akka.TestKit">
+      <HintPath>..\packages\Akka.TestKit.1.1.2\lib\net45\Akka.TestKit.dll</HintPath>
+    </Reference>
+    <Reference Include="Akka.TestKit.NUnit">
+      <HintPath>..\packages\Akka.TestKit.NUnit.1.1.2\lib\net45\Akka.TestKit.NUnit.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PersonRegistratorTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Designer.Domain\Designer.Domain.csproj">
+      <Project>{718E17E5-802C-4B18-AC57-AB2CE51BBA52}</Project>
+      <Name>Designer.Domain</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Wki.EventSourcing\Wki.EventSourcing.csproj">
+      <Project>{041C375E-55DC-4E76-9010-D6F9A0D0300D}</Project>
+      <Name>Wki.EventSourcing</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
