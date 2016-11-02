@@ -29,12 +29,18 @@ namespace Designer.Domain
         private readonly IActorRef todoListOffice;
         #pragma warning restore 0414
 
-        public DesignerService()
+        public DesignerService(string storageDir)
         {
             actorSystem = ActorSystem.Create("Designer");
 
+            //var storageDir = ConfigurationManager.AppSettings["storageDir"];
+            //if (String.IsNullOrWhiteSpace(storageDir))
+            //    throw new NullReferenceException("storageDir is missing or empty");
+            //if (!Directory.Exists(storageDir))
+            //    Directory.CreateDirectory(storageDir);
+
             // every actor must know the event store
-            eventStore = actorSystem.ActorOf(Props.Create<EventStore>(), "eventstore");
+            eventStore = actorSystem.ActorOf(Props.Create<EventStore>(storageDir), "eventstore");
 
             // build actors
             personAggregateOffice = actorSystem.ActorOf(Props.Create<PersonOffice>(eventStore), "person");

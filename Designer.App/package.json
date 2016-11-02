@@ -1,0 +1,30 @@
+{
+  "name": "designer",
+  "version": "1.0.0",
+  "description": "fable based web frontend to designer",
+  "main": "index.js",
+  "scripts": {
+    "firstbuild": "npm install && fable",
+    "prebuild": "npm install",
+    "build": "fable",
+    "watch": "fable -w",
+    "start": "node node_modules/webpack-dev-server/bin/webpack-dev-server.js"
+  },
+  "author": "wki",
+  "license": "MIT",
+  "devDependencies": {
+    "fable-elmish": "^0.4.4",
+    "fable-elmish-react": "^0.1.1",
+    "fable-import-fetch": "^0.2.4",
+    "fable-import-react": "^0.5.2",
+    "react-hot-loader": "^3.0.0-beta.6",
+    "source-map-loader": "^0.1.5",
+    "webpack": "^1.13.3",
+    "webpack-dev-server": "^1.16.2"
+  },
+  "dependencies": {
+    "core-js": "^2.4.1",
+    "fable-core": "^0.6.10",
+    "react": "^15.3.2"
+  }
+}

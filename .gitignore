@@ -4,6 +4,7 @@
 # build
 [Oo]bj/
 [Bb]in/
+out/
 packages/
 TestResults/
 
@@ -30,7 +31,7 @@ Thumbs.db
 
 # Mac bundle stuff
 *.dmg
-*.app
+# *.app
 
 # resharper
 *_Resharper.*
@@ -38,3 +39,6 @@ Thumbs.db
 
 # dotCover
 *.dotCover
+
+node_modules/
+
