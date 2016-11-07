@@ -1,5 +1,6 @@
 source https://www.nuget.org/api/v2
 framework >= net45
+nuget FAKE
 nuget Akka 1.1.2
 nuget Akka.TestKit 1.1.2
 nuget Akka.TestKit.NUnit 1.1.2
