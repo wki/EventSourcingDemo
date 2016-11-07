@@ -1,6 +1,11 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{042E7749-8B48-4920-A720-17C01D5007B3}"
+	ProjectSection(SolutionItems) = preProject
+		paket.dependencies = paket.dependencies
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wki.EventSourcing", "Wki.EventSourcing\Wki.EventSourcing.csproj", "{041C375E-55DC-4E76-9010-D6F9A0D0300D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wki.EventSourcing.Tests", "Wki.EventSourcing.Tests\Wki.EventSourcing.Tests.csproj", "{6C7B3BA9-73FE-4A08-BDC7-20991286B078}"
@@ -10,6 +15,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Designer.Domain.Tests", "Designer.Domain.Tests\Designer.Domain.Tests.csproj", "{ABA94890-4389-4FA8-A3DF-754130CFA1F0}"
 EndProject
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Designer.App", "Designer.App\Designer.App.fsproj", "{3FC31C7D-3CB0-4FA4-9AD8-79BA758BD185}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Designer.Web", "Designer.Web\Designer.Web.csproj", "{7A948D50-7AF9-47E7-8891-84B0FFD1A077}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,5 +44,9 @@ Global
 		{3FC31C7D-3CB0-4FA4-9AD8-79BA758BD185}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3FC31C7D-3CB0-4FA4-9AD8-79BA758BD185}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3FC31C7D-3CB0-4FA4-9AD8-79BA758BD185}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A948D50-7AF9-47E7-8891-84B0FFD1A077}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A948D50-7AF9-47E7-8891-84B0FFD1A077}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A948D50-7AF9-47E7-8891-84B0FFD1A077}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A948D50-7AF9-47E7-8891-84B0FFD1A077}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

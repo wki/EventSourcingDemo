@@ -9,6 +9,8 @@ module C = Container
 
 let runnable =
     Program.mkSimple C.init C.update C.view
+    |> Program.withConsoleTrace
+    |> Program.toHtml Program.run "elmish-app"
 
     // Program.mkProgram C.init C.update C.view
     // |> Program.withConsoleTrace

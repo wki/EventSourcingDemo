@@ -47,6 +47,7 @@
     <Compile Include="node_modules/fable-import-fetch/Fable.Helpers.Fetch.fs" />
     <Compile Include="node_modules/fable-elmish/elmish.fs" />
     <Compile Include="node_modules/fable-elmish-react/elmish-app.fs" />
+    <Compile Include="node_modules/fable-elmish-react/elmish-react.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Container.fs" />
     <Compile Include="Component1.fs" />

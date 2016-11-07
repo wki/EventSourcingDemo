@@ -1,6 +1,6 @@
 {
-    "module": "es2015",
-    "ecma": "es2015",
+    "module": "amd",
+    "ecma": "es5",
     "outDir": "out",
     "sourceMaps": true,
     "projFile": "Designer.App.fsproj",

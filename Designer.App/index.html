@@ -5,8 +5,20 @@
 </head>
 <body class="app-container">
 		<!-- [body] -->
-		<div id="elmish-app" class="elmish-app" />
-    <script src="./public/bundle.js"></script>
+		<div id="elmish-app" class="elmish-app">
+			loading...
+		</div>
+
+		<script src="js/require.js"></script>
+    <script>
+		requirejs.config({
+			baseUrl: 'out'
+		});
+    require(["./Component1"]);
+		require(["./Container"]);
+    // require(["./Script"]);
+		</script>
+    <!-- script src="out/Script.js"></script -->
 		<!-- [/body] -->
 </body>
 </html>

@@ -1,0 +1,6 @@
+Akka
+Akka.TestKit
+Akka.TestKit.NUnit
+Newtonsoft.Json
+NUnit
+System.Collections.Immutable

@@ -11,6 +11,7 @@ var cfg = {
   },
   module: {
     preLoaders: [
+    // loaders: [
       {
         test: /\.js$/,
         exclude: /node_modules/,

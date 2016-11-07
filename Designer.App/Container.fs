@@ -17,7 +17,8 @@ let update msg model : Model*Cmd<Msg> =
 
 // View
 module R = Fable.Helpers.React
+open Fable.Helpers.React.Props
 
 let view model (dispatch: Dispatch<Msg>) =
-    R.div [ ]
+    R.div [ ClassName "asdf" ] [ unbox "hello world" ]
     // [ "dsaf" ]

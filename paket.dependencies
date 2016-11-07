@@ -1,0 +1,26 @@
+source https://www.nuget.org/api/v2
+framework >= net45
+nuget Akka 1.1.2
+nuget Akka.TestKit 1.1.2
+nuget Akka.TestKit.NUnit 1.1.2
+nuget JsonNet.PrivateSettersContractResolvers.Source 0.1.0
+nuget Newtonsoft.Json 9.0.1
+nuget NUnit 2.6.4
+nuget System.Collections.Immutable 1.1.36
+nuget CommandLineParser
+nuget CommonServiceLocator
+nuget Microsoft.AspNet.WebApi.Client
+nuget Microsoft.AspNet.WebApi.Core
+nuget Microsoft.Owin
+nuget Microsoft.Owin.Diagnostics
+nuget Microsoft.AspNet.WebApi.Owin
+nuget Microsoft.Owin.FileSystems
+nuget Microsoft.Owin.Host.HttpListener
+nuget Microsoft.Owin.Hosting
+nuget Microsoft.Owin.SelfHost
+nuget Microsoft.Owin.StaticFiles
+# nuget Microsoft.AspNet.SignalR.JS
+# nuget Microsoft.AspNet.SignalR.SelfHost
+nuget Owin
+nuget Unity
+nuget Unity.WebAPI
