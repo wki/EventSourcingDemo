@@ -65,6 +65,7 @@
     <None Include="www\app\main.js" />
     <None Include="www\app\main.js.map" />
     <None Include="www\app\main.ts" />
+    <None Include="www\css\style.css" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Choose>
