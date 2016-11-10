@@ -31,6 +31,24 @@ Target "NpmInstall" (fun _ ->
         })
 )
 
+Target "Angular" (fun _ ->
+    Npm (fun p -> 
+        {
+            p with 
+                Command = Run "tsc"
+                WorkingDirectory = "./Designer.Web/www"
+        })
+)
+
+Target "Webserver" (fun _ ->
+    Npm (fun p -> 
+        {
+            p with 
+                Command = Run "lite"
+                WorkingDirectory = "./Designer.Web/www"
+        })
+)
+
 Target "Build" (fun _ ->
     // compile all projects below src/app/
     MSBuildDebug buildDir "Build" appReferences
@@ -43,14 +61,18 @@ Target "Build" (fun _ ->
 //     |> Zip buildDir (deployDir + "ApplicationName." + version + ".zip")
 // )
 
-Target "Null" DoNothing
+Target "Finish" DoNothing
 
 // Build order
 "Clean"
   ==> "NpmInstall"
+  ==> "Angular"
   ==> "Build"
   // ==> "Deploy"
-  ==> "Null" 
+  ==> "Finish" 
+
+"Build"
+  ==> "Webserver"
 
 // start build
 RunTargetOrDefault "Build"
