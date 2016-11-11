@@ -4,11 +4,7 @@ import { View } from './view/view';
 
 @Component({
     selector: 'my-app',
-    template: `<div class="jumbotron">
-    <div class="container">
-    <h1>My Next Angular App</h1>
-    </div>
-    </div>`,
+    templateUrl: 'templates/app.html',
     providers: [ViewUpdaterService]
 })
 export class AppComponent extends View implements OnInit, OnDestroy {

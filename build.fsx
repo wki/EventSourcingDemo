@@ -40,11 +40,11 @@ Target "Angular" (fun _ ->
         })
 )
 
-Target "Webserver" (fun _ ->
+Target "Start" (fun _ ->
     Npm (fun p -> 
         {
             p with 
-                Command = Run "lite"
+                Command = Run "start"
                 WorkingDirectory = "./Designer.Web/www"
         })
 )
@@ -70,9 +70,6 @@ Target "Finish" DoNothing
   ==> "Build"
   // ==> "Deploy"
   ==> "Finish" 
-
-"Build"
-  ==> "Webserver"
 
 // start build
 RunTargetOrDefault "Build"

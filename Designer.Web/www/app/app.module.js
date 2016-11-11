@@ -10,14 +10,36 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var core_1 = require('@angular/core');
 var platform_browser_1 = require('@angular/platform-browser');
+var forms_1 = require('@angular/forms');
+var http_1 = require('@angular/http');
+var router_1 = require('@angular/router');
 var app_component_1 = require('./app.component');
+var welcome_component_1 = require('./welcome.component');
+var register_component_1 = require('./register.component');
+var products_component_1 = require('./products.component');
 var AppModule = (function () {
     function AppModule() {
     }
     AppModule = __decorate([
         core_1.NgModule({
-            imports: [platform_browser_1.BrowserModule],
-            declarations: [app_component_1.AppComponent],
+            imports: [
+                platform_browser_1.BrowserModule,
+                forms_1.FormsModule,
+                http_1.HttpModule,
+                router_1.RouterModule.forRoot([
+                    { path: 'welcome', component: welcome_component_1.WelcomeComponent },
+                    { path: 'register', component: register_component_1.RegisterComponent },
+                    { path: 'products', component: products_component_1.ProductsComponent },
+                    // { path: 'bla/:id', component: BlaComponent },
+                    { path: '', redirectTo: 'welcome', pathMatch: 'full' },
+                ])
+            ],
+            declarations: [
+                app_component_1.AppComponent,
+                welcome_component_1.WelcomeComponent,
+                register_component_1.RegisterComponent,
+                products_component_1.ProductsComponent,
+            ],
             bootstrap: [app_component_1.AppComponent]
         }), 
         __metadata('design:paramtypes', [])

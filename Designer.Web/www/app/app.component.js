@@ -35,7 +35,7 @@ var AppComponent = (function (_super) {
     AppComponent = __decorate([
         core_1.Component({
             selector: 'my-app',
-            template: "<div class=\"jumbotron\">\n    <div class=\"container\">\n    <h1>My Next Angular App</h1>\n    </div>\n    </div>",
+            templateUrl: 'templates/app.html',
             providers: [viewupdater_service_1.ViewUpdaterService]
         }), 
         __metadata('design:paramtypes', [viewupdater_service_1.ViewUpdaterService])
