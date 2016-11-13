@@ -7,6 +7,7 @@ import { RouterModule } from '@angular/router';
 import { AppComponent }  from './app.component';
 import { WelcomeComponent } from './welcome.component';
 import { RegisterComponent } from './register.component';
+import { PersonListComponent } from './personlist.component';
 import { ProductsComponent } from './products.component';
 
 @NgModule({
@@ -17,6 +18,7 @@ import { ProductsComponent } from './products.component';
     RouterModule.forRoot([
       { path: 'welcome', component: WelcomeComponent },
       { path: 'register', component: RegisterComponent },
+      { path: 'personlist', component: PersonListComponent },
       { path: 'products', component: ProductsComponent },
       // { path: 'bla/:id', component: BlaComponent },
       { path: '', redirectTo: 'welcome', pathMatch: 'full' },
@@ -27,6 +29,7 @@ import { ProductsComponent } from './products.component';
     AppComponent,
     WelcomeComponent,
     RegisterComponent,
+    PersonListComponent,
     ProductsComponent,
   ],
   bootstrap:    [ AppComponent ]

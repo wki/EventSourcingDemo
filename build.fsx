@@ -31,7 +31,7 @@ Target "NpmInstall" (fun _ ->
         })
 )
 
-Target "Angular" (fun _ ->
+Target "BuildAngularApp" (fun _ ->
     Npm (fun p -> 
         {
             p with 
@@ -49,27 +49,30 @@ Target "Start" (fun _ ->
         })
 )
 
-Target "Build" (fun _ ->
+Target "BuildBackend" (fun _ ->
     // compile all projects below src/app/
     MSBuildDebug buildDir "Build" appReferences
     |> Log "AppBuild-Output: "
 )
 
-// Target "Deploy" (fun _ ->
-//     !! (buildDir + "/**/*.*")
-//     -- "*.zip"
-//     |> Zip buildDir (deployDir + "ApplicationName." + version + ".zip")
-// )
+Target "Build" DoNothing
 
-Target "Finish" DoNothing
-
-// Build order
+// Build order backend
 "Clean"
-  ==> "NpmInstall"
-  ==> "Angular"
+  ==> "BuildBackend"
+
+// build order frontend
+"NpmInstall"
+  ==> "BuildAngularApp"
+
+// build frontend and backend
+"BuildBackend"
+  ==> "BuildAngularApp"
   ==> "Build"
-  // ==> "Deploy"
-  ==> "Finish" 
+
+// start angular app standalone without backend
+"BuildAngularApp"
+  ==> "Start"
 
 // start build
 RunTargetOrDefault "Build"

@@ -8,6 +8,7 @@ using Microsoft.Owin.FileSystems;
 using Microsoft.Owin;
 using System.Threading.Tasks;
 using Designer.Domain;
+using Newtonsoft.Json.Serialization;
 // using Newtonsoft.Json;
 
 namespace Designer.Web
@@ -37,6 +38,10 @@ namespace Designer.Web
             app.Use<RedirectRootMiddleware>();
 
             app.UseWebApi(config);
+
+            var jsonFormatter = config.Formatters.JsonFormatter;
+            var settings = jsonFormatter.SerializerSettings;
+            settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
 
             // app.MapSignalR();
         }

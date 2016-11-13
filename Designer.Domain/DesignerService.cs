@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Akka.Actor;
 using Designer.Domain.HangtagCreation.Actors;
 using Designer.Domain.PersonManagement.Actors;
+using Designer.Domain.PersonManagement.DTOs;
+using Designer.Domain.PersonManagement.Messages;
 using Designer.Domain.Rendering.Actors;
 using Designer.Domain.Todos.Actors;
 using Wki.EventSourcing.Actors;
@@ -16,6 +20,7 @@ namespace Designer.Domain
         private readonly ActorSystem actorSystem;
 
 #pragma warning disable 0414
+        private readonly IActorRef journalReader, journalWriter;
         private readonly IActorRef eventStore;
         private readonly IActorRef personAggregateOffice;
         private readonly IActorRef personList;
@@ -39,8 +44,12 @@ namespace Designer.Domain
             //if (!Directory.Exists(storageDir))
             //    Directory.CreateDirectory(storageDir);
 
+            // readers and writers for the EventStore
+            journalReader = actorSystem.ActorOf(Props.Create<FileJournalReader>(storageDir), "journal-reader");
+            journalWriter = actorSystem.ActorOf(Props.Create<FileJournalWriter>(storageDir), "journal-writer");
+
             // every actor must know the event store
-            eventStore = actorSystem.ActorOf(Props.Create<EventStore>(storageDir), "eventstore");
+            eventStore = actorSystem.ActorOf(Props.Create<EventStore>(storageDir, journalReader, journalWriter), "eventstore");
 
             // build actors
             personAggregateOffice = actorSystem.ActorOf(Props.Create<PersonOffice>(eventStore), "person");
@@ -54,6 +63,19 @@ namespace Designer.Domain
 
             todoListOffice = actorSystem.ActorOf(Props.Create<TodoListOffice>(eventStore), "todos");
         }
+
+        #region Person Management Use Cases
+        public void RegisterPerson(string fullname, string email)
+        {
+            // evtl. Ask -- damit synchron.
+            personAggregateOffice.Tell(new RegisterPerson(fullname, email));
+        }
+
+        public Task<IEnumerable<PersonInfo>> ListPersons()
+        {
+            return personList.Ask<IEnumerable<PersonInfo>>(new ListPersons());
+        }
+        #endregion
     }
 }
 

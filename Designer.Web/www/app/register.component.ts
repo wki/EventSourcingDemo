@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Http } from '@angular/http';
+import { Headers, Http } from '@angular/http';
 
 enum RegisterState {
     Register,
@@ -14,26 +14,30 @@ enum RegisterState {
 export class RegisterComponent {
     state: RegisterState;
     email: string;
-    password: string;
+    fullname: string;
 
     message: string;
 
     constructor(private http: Http) {
         this.state = RegisterState.Register;
         this.email = undefined;
-        this.password = undefined;
+        this.fullname = undefined;
 
         this.message = '';
     }
 
     saveRegistration(): void {
-        console.log(`save registration email=${this.email}, password=${this.password}`);
+        console.log(`save registration email=${this.email}, fullname=${this.fullname}`);
         this.state = RegisterState.Saving;
+
+        var headers = new Headers();
+        headers.append("Content-Type", 'application/json');
 
         this.http
             .post(
-                'http://localhost:8000/api/registration/save',
-                JSON.stringify({email: this.email, password: this.password}))
+                'http://localhost:9000/api/person/register',
+                JSON.stringify({email: this.email, fullname: this.fullname}),
+                {headers: headers})
             .subscribe(
                 _ => this.savedRegistration(),
                 e => this.failedSaving(e)
@@ -70,7 +74,7 @@ export class RegisterComponent {
     registerDataInvalid(): boolean {
         if (!this.email || this.email.length < 5)
             return true;
-        if (!this.password || this.password.length < 6)
+        if (!this.fullname || this.fullname.length < 3)
             return true;
         return false;
     }

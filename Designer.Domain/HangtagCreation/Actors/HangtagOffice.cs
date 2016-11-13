@@ -12,7 +12,7 @@ namespace Designer.Domain.HangtagCreation.Actors
         public HangtagOffice(IActorRef eventStore) : base(eventStore)
         {
             hangtagCreator =
-                Context.ActorOf(Props.Create<HangtagCreator>(), "creator");
+                Context.ActorOf(Props.Create<HangtagCreator>(eventStore), "creator");
 
             Receive<CreateHangtag>(c => hangtagCreator.Forward(c));
             Receive<CloneHangtag>(c => hangtagCreator.Forward(c));

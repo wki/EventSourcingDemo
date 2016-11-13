@@ -22,15 +22,17 @@ var RegisterComponent = (function () {
         this.http = http;
         this.state = RegisterState.Register;
         this.email = undefined;
-        this.password = undefined;
+        this.fullname = undefined;
         this.message = '';
     }
     RegisterComponent.prototype.saveRegistration = function () {
         var _this = this;
-        console.log("save registration email=" + this.email + ", password=" + this.password);
+        console.log("save registration email=" + this.email + ", fullname=" + this.fullname);
         this.state = RegisterState.Saving;
+        var headers = new http_1.Headers();
+        headers.append("Content-Type", 'application/json');
         this.http
-            .post('http://localhost:8000/api/registration/save', JSON.stringify({ email: this.email, password: this.password }))
+            .post('http://localhost:9000/api/person/register', JSON.stringify({ email: this.email, fullname: this.fullname }), { headers: headers })
             .subscribe(function (_) { return _this.savedRegistration(); }, function (e) { return _this.failedSaving(e); });
     };
     RegisterComponent.prototype.savedRegistration = function () {
@@ -57,7 +59,7 @@ var RegisterComponent = (function () {
     RegisterComponent.prototype.registerDataInvalid = function () {
         if (!this.email || this.email.length < 5)
             return true;
-        if (!this.password || this.password.length < 6)
+        if (!this.fullname || this.fullname.length < 3)
             return true;
         return false;
     };

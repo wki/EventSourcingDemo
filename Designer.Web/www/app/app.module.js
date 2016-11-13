@@ -16,6 +16,7 @@ var router_1 = require('@angular/router');
 var app_component_1 = require('./app.component');
 var welcome_component_1 = require('./welcome.component');
 var register_component_1 = require('./register.component');
+var personlist_component_1 = require('./personlist.component');
 var products_component_1 = require('./products.component');
 var AppModule = (function () {
     function AppModule() {
@@ -29,6 +30,7 @@ var AppModule = (function () {
                 router_1.RouterModule.forRoot([
                     { path: 'welcome', component: welcome_component_1.WelcomeComponent },
                     { path: 'register', component: register_component_1.RegisterComponent },
+                    { path: 'personlist', component: personlist_component_1.PersonListComponent },
                     { path: 'products', component: products_component_1.ProductsComponent },
                     // { path: 'bla/:id', component: BlaComponent },
                     { path: '', redirectTo: 'welcome', pathMatch: 'full' },
@@ -38,6 +40,7 @@ var AppModule = (function () {
                 app_component_1.AppComponent,
                 welcome_component_1.WelcomeComponent,
                 register_component_1.RegisterComponent,
+                personlist_component_1.PersonListComponent,
                 products_component_1.ProductsComponent,
             ],
             bootstrap: [app_component_1.AppComponent]
