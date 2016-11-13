@@ -18,6 +18,7 @@ var welcome_component_1 = require('./welcome.component');
 var register_component_1 = require('./register.component');
 var personlist_component_1 = require('./personlist.component');
 var products_component_1 = require('./products.component');
+var status_component_1 = require('./status.component');
 var AppModule = (function () {
     function AppModule() {
     }
@@ -32,6 +33,7 @@ var AppModule = (function () {
                     { path: 'register', component: register_component_1.RegisterComponent },
                     { path: 'personlist', component: personlist_component_1.PersonListComponent },
                     { path: 'products', component: products_component_1.ProductsComponent },
+                    { path: 'status', component: status_component_1.StatusComponent },
                     // { path: 'bla/:id', component: BlaComponent },
                     { path: '', redirectTo: 'welcome', pathMatch: 'full' },
                 ])
@@ -42,6 +44,7 @@ var AppModule = (function () {
                 register_component_1.RegisterComponent,
                 personlist_component_1.PersonListComponent,
                 products_component_1.ProductsComponent,
+                status_component_1.StatusComponent,
             ],
             bootstrap: [app_component_1.AppComponent]
         }), 

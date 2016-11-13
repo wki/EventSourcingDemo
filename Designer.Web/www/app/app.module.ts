@@ -9,6 +9,7 @@ import { WelcomeComponent } from './welcome.component';
 import { RegisterComponent } from './register.component';
 import { PersonListComponent } from './personlist.component';
 import { ProductsComponent } from './products.component';
+import { StatusComponent } from './status.component';
 
 @NgModule({
   imports: [ 
@@ -20,6 +21,7 @@ import { ProductsComponent } from './products.component';
       { path: 'register', component: RegisterComponent },
       { path: 'personlist', component: PersonListComponent },
       { path: 'products', component: ProductsComponent },
+      { path: 'status', component: StatusComponent },
       // { path: 'bla/:id', component: BlaComponent },
       { path: '', redirectTo: 'welcome', pathMatch: 'full' },
       // { path: '**', component: PageNotFoundComponent },
@@ -31,6 +33,7 @@ import { ProductsComponent } from './products.component';
     RegisterComponent,
     PersonListComponent,
     ProductsComponent,
+    StatusComponent,
   ],
   bootstrap:    [ AppComponent ]
 })

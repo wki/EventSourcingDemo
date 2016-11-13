@@ -60,6 +60,8 @@
     </Compile>
     <Compile Include="Serialisation\Envelope.cs" />
     <Compile Include="Messages\Reply.cs" />
+    <Compile Include="Messages\GetStatusReport.cs" />
+    <Compile Include="Messages\StatusReport.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="paket.references" />

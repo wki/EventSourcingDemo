@@ -18,6 +18,7 @@ namespace Wki.EventSourcing.Actors
         {
             public string Path { get; set; }
             public IActorRef Actor { get; set; }
+            public bool Removable { get; set; }
             public bool Restoring { get; set; }
             public DateTime LastSeen { get; set; }
             public int NextMessageIndex { get; set; }
@@ -27,6 +28,7 @@ namespace Wki.EventSourcing.Actors
             {
                 Path = path;
                 Actor = actor;
+                Removable = false; // muss steuerbar werden!
                 Restoring = true;
                 LastSeen = SystemTime.Now;
                 NextMessageIndex = 0;
@@ -63,6 +65,8 @@ namespace Wki.EventSourcing.Actors
 
         // actor start time to measure durations
         private DateTime startedAt;
+        private TimeSpan loadDuration;
+        private bool restoreDone;
 
         public EventStore(string dir, IActorRef reader, IActorRef writer)
         {
@@ -86,6 +90,9 @@ namespace Wki.EventSourcing.Actors
             }
 
             startedAt = SystemTime.Now;
+            loadDuration = TimeSpan.FromSeconds(0);
+            eventsToReceive = 0;
+            restoreDone = false;
 
             actors = new Dictionary<string,ActorState>();
             events = new List<Event>();
@@ -100,9 +107,13 @@ namespace Wki.EventSourcing.Actors
 
             Receive<EventLoaded>(e => EventLoaded(e));
             Receive<End>(_ => Become(Operating));
+
+            // diagnostic messages for monitoring
+            Receive<GetStatusReport>(_ => ReplyStatusReport());
+
+            // could be a command - keep for later
             Receive<object>(_ => Stash.Stash());
 
-            eventsToReceive = 0;
             RequestEventsToLoad();
         }
 
@@ -128,7 +139,8 @@ namespace Wki.EventSourcing.Actors
         #region Operating state
         private void Operating()
         {
-            var loadDuration = SystemTime.Now - startedAt;
+            loadDuration = SystemTime.Now - startedAt;
+            restoreDone = true;
             Context.System.Log.Info("Events loaded in {0:F1}s . Starting regular operation", loadDuration.TotalMilliseconds / 1000);
 
             // messages from actors
@@ -145,11 +157,15 @@ namespace Wki.EventSourcing.Actors
             Receive<GetActors>(_ => Sender.Tell(String.Join("|", actors.Values.Select(a => a.ToString()))));
             Receive<CheckInactiveActors>(_ => CheckInactiveActors());
 
+            // diagnostic messages for monitoring
+            Receive<GetStatusReport>(_ => ReplyStatusReport());
+
             // process everything lost so far
             Stash.UnstashAll();
         
             // TODO: start timer to monitor lost actors
         }
+
         // an actor wants to get restored
         private void StartRestore(StartRestore startRestore)
         {
@@ -205,7 +221,7 @@ namespace Wki.EventSourcing.Actors
 
             actors
                 .Values
-                .Where(actor => actor.LastSeen < oldestAllowedTime)
+                .Where(actor => actor.Removable && actor.LastSeen < oldestAllowedTime)
                 .ToList()
                 .ForEach(actor =>
                 {
@@ -231,6 +247,34 @@ namespace Wki.EventSourcing.Actors
                 if (!actor.Restoring && actor.InterestedIn(@event))
                     actor.Actor.Tell(@event);
             }
+        }
+        #endregion
+
+        #region status report (common to both states)
+        // generate ans reply status report
+        private void ReplyStatusReport()
+        {
+            var actorStates =
+                actors.Values
+                      .Select(a => new StatusReport.ActorStatus 
+                            {
+                                Path = a.Path,
+                                Status = a.Restoring ? "Restoring" : "Operating",
+                                LastSeen = a.LastSeen,
+                                Events = a.InterestingEvents.Events.Select(e => e.Name).ToList(),
+                            })
+                      .ToList();
+
+            var statusReport = new StatusReport
+            {
+                StartedAt = startedAt,
+                LoadDurationMilliseconds = Convert.ToInt32(loadDuration.TotalMilliseconds),
+                Status = restoreDone ? "Operating" : "Loading",
+                EventStoreSize = events.Count,
+                Actors = actorStates,
+            };
+
+            Sender.Tell(statusReport);
         }
         #endregion
     }

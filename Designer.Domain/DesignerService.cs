@@ -9,6 +9,7 @@ using Designer.Domain.PersonManagement.Messages;
 using Designer.Domain.Rendering.Actors;
 using Designer.Domain.Todos.Actors;
 using Wki.EventSourcing.Actors;
+using Wki.EventSourcing.Messages;
 
 namespace Designer.Domain
 {
@@ -63,6 +64,13 @@ namespace Designer.Domain
 
             todoListOffice = actorSystem.ActorOf(Props.Create<TodoListOffice>(eventStore), "todos");
         }
+
+        #region Diagnostics
+        public Task<StatusReport> GetStatusReport()
+        {
+            return eventStore.Ask<StatusReport>(new GetStatusReport());
+        }
+        #endregion
 
         #region Person Management Use Cases
         public void RegisterPerson(string fullname, string email)
