@@ -1,0 +1,40 @@
+<div class="component">
+    <h1>Status Report</h1>
+    <div class="row">
+        <div class="col-sm-4">Started at</div>
+        <div class="col-sm-8">{{statusReport.startedAt | date: 'dd.MM.yyyy hh:mm:ss'}}</div>
+    </div>
+    <div class="row">
+        <div class="col-sm-4">Status</div>
+        <div class="col-sm-8">{{statusReport.status}}</div>
+    </div>
+    <div class="row">
+        <div class="col-sm-4">Load Time</div>
+        <div class="col-sm-8">{{statusReport.loadDurationMilliseconds}} ms</div>
+    </div>
+    <div class="row">
+        <div class="col-sm-4">Event Store Size</div>
+        <div class="col-sm-8">{{statusReport.eventStoreSize}}</div>
+    </div>
+    
+    <div class="row"><br/></div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Path</th>
+                <th>Status</th>
+                <th>LastSeen</th>
+                <th>Events</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let actor of statusReport.actors">
+                <td>{{actor.path.replace("akka://Designer/user/", "")}}</td>
+                <td>{{actor.status}}</td>
+                <td>{{actor.lastSeen | date: 'dd.MM.yyyy HH:mm:ss'}}</td>
+                <td>{{actor.events.join(", ")}}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
