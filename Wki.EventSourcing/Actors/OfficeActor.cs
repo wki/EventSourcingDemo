@@ -4,6 +4,7 @@ using System.Linq;
 using Akka.Actor;
 using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Util;
+using static Wki.EventSourcing.Util.Constant;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -36,25 +37,24 @@ namespace Wki.EventSourcing.Actors
         // we need to know the eventStore to forward it to our children
         private readonly IActorRef eventStore;
 
-        // Idle time and its default value
-        private const int DefaultIdleSeconds = 60;
-        protected TimeSpan IdleTime { get; set; }
-
         // remember last contact with an actor
         private Dictionary<string, DateTime> LastContact;
+
+        // maintain a complete state (for knowledge and statistics)
+        private OfficeActorState officeActorState;
 
         protected OfficeActor(IActorRef eventStore)
         {
             // initialize
             this.eventStore = eventStore;
-            IdleTime = TimeSpan.FromSeconds(DefaultIdleSeconds);
             LastContact = new Dictionary<string, DateTime>();
+            officeActorState = new OfficeActorState();
 
             // periodically check for inactive children
             Context.System.Scheduler
                    .ScheduleTellRepeatedly(
-                       initialDelay: IdleTime,
-                       interval: IdleTime,
+                       initialDelay: IdleActorPollTimeSpan,
+                       interval: IdleActorPollTimeSpan,
                        receiver: Self,
                        message: new CheckInactiveActors(),
                        sender: Self
@@ -65,6 +65,9 @@ namespace Wki.EventSourcing.Actors
             Receive<GetActors>(_ => Sender.Tell(String.Join("|", LastContact.Keys.Select(k => k))));
             Receive<CheckInactiveActors>(_ => CheckInactiveActors());
 
+            // diagnostic messages for monitoring
+            Receive<GetState>(_ => Sender.Tell(officeActorState));
+
             // all commands will pass thru Unhandled()...
         }
 
@@ -72,9 +75,17 @@ namespace Wki.EventSourcing.Actors
         {
             var command = message as DispatchableCommand<TIndex>;
             if (command != null)
+            {
+                officeActorState.NrCommandsForwarded++;
+
                 ForwardToDestinationActor(command);
+            }
             else
+            {
+                officeActorState.NrUnhandledMessages++;
+
                 Context.System.Log.Warning("Received {0} -- ignoring", message);
+            }
         }
 
         private void CheckInactiveActors()
@@ -85,11 +96,19 @@ namespace Wki.EventSourcing.Actors
                 if (child == Nobody.Instance)
                 {
                     Context.System.Log.Debug("Office {0}: removing dead Child {1}", Self.Path.Name, actorName);
+
+                    officeActorState.NrActorsRemoved++;
+                    officeActorState.LastActorRemovedAt = SystemTime.Now;
+
                     LastContact.Remove(actorName);
                 }
-                else if (LastContact[actorName] < SystemTime.Now - IdleTime)
+                else if (LastContact[actorName] < SystemTime.Now - MaxActorIdleTimeSpan)
                 {
                     Context.System.Log.Debug("Office {0}: removing inactive Child {1}", Self.Path.Name, actorName);
+
+                    officeActorState.NrActorsRemoved++;
+                    officeActorState.LastActorRemovedAt = SystemTime.Now;
+
                     Context.Stop(child);
                     LastContact.Remove(actorName);
                 }
@@ -114,6 +133,9 @@ namespace Wki.EventSourcing.Actors
                 return child;
 
             Context.System.Log.Debug("Office {0}: creating Child {1}", Self.Path.Name, name);
+
+            officeActorState.NrActorsRemoved++;
+            officeActorState.LastActorRemovedAt = SystemTime.Now;
 
             return Context.ActorOf(Props.Create(type, eventStore, id), name);
         }

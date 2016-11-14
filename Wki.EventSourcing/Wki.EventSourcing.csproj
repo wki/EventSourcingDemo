@@ -62,6 +62,10 @@
     <Compile Include="Messages\Reply.cs" />
     <Compile Include="Messages\GetStatusReport.cs" />
     <Compile Include="Messages\StatusReport.cs" />
+    <Compile Include="Messages\DurableActorState.cs" />
+    <Compile Include="Messages\EventStoreState.cs" />
+    <Compile Include="Messages\OfficeActorState.cs" />
+    <Compile Include="Messages\GetState.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="paket.references" />

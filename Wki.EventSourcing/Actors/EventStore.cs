@@ -18,7 +18,6 @@ namespace Wki.EventSourcing.Actors
         {
             public string Path { get; set; }
             public IActorRef Actor { get; set; }
-            public bool Removable { get; set; }
             public bool Restoring { get; set; }
             public DateTime LastSeen { get; set; }
             public int NextMessageIndex { get; set; }
@@ -28,7 +27,6 @@ namespace Wki.EventSourcing.Actors
             {
                 Path = path;
                 Actor = actor;
-                Removable = false; // muss steuerbar werden!
                 Restoring = true;
                 LastSeen = SystemTime.Now;
                 NextMessageIndex = 0;
@@ -63,10 +61,8 @@ namespace Wki.EventSourcing.Actors
         // complete event list in memory for fast access
         private List<Event> events;
 
-        // actor start time to measure durations
-        private DateTime startedAt;
-        private TimeSpan loadDuration;
-        private bool restoreDone;
+        // maintain a complete state (for knowledge and statistics)
+        private EventStoreState eventStoreState;
 
         public EventStore(string dir, IActorRef reader, IActorRef writer)
         {
@@ -89,10 +85,8 @@ namespace Wki.EventSourcing.Actors
                 journalWriter = writer ?? Context.ActorOf(Props.Create(writerType, storageDir), "writer");
             }
 
-            startedAt = SystemTime.Now;
-            loadDuration = TimeSpan.FromSeconds(0);
+            eventStoreState = new EventStoreState();
             eventsToReceive = 0;
-            restoreDone = false;
 
             actors = new Dictionary<string,ActorState>();
             events = new List<Event>();
@@ -105,14 +99,21 @@ namespace Wki.EventSourcing.Actors
         {
             Context.System.Log.Info("Loading all events from event store");
 
+            eventStoreState.ChangeStatus(EventStoreStatus.Loading);
+
             Receive<EventLoaded>(e => EventLoaded(e));
             Receive<End>(_ => Become(Operating));
 
             // diagnostic messages for monitoring
             Receive<GetStatusReport>(_ => ReplyStatusReport());
+            Receive<GetState>(_ => Sender.Tell(eventStoreState));
 
             // could be a command - keep for later
-            Receive<object>(_ => Stash.Stash());
+            Receive<object>(_ =>
+            {
+                eventStoreState.NrStashedCommands++;
+                Stash.Stash();
+            });
 
             RequestEventsToLoad();
         }
@@ -120,6 +121,7 @@ namespace Wki.EventSourcing.Actors
         // readJournal loaded an event -- save it in our list
         private void EventLoaded(EventLoaded eventLoaded)
         {
+            eventStoreState.NrEventsLoaded++;
             eventsToReceive--;
 
             events.Add(eventLoaded.Event);
@@ -139,15 +141,20 @@ namespace Wki.EventSourcing.Actors
         #region Operating state
         private void Operating()
         {
-            loadDuration = SystemTime.Now - startedAt;
-            restoreDone = true;
-            Context.System.Log.Info("Events loaded in {0:F1}s . Starting regular operation", loadDuration.TotalMilliseconds / 1000);
+            eventStoreState.ChangeStatus(EventStoreStatus.Operating);
+            eventStoreState.LoadDuration = SystemTime.Now - eventStoreState.StartedAt;
+
+            Context.System.Log.Info(
+                "{0} Events loaded in {1:F1}s. Starting regular operation", 
+                eventStoreState.NrEventsLoaded,
+                eventStoreState.LoadDuration.TotalMilliseconds / 1000
+            );
 
             // messages from actors
             Receive<StartRestore>(s => StartRestore(s));
             Receive<RestoreEvents>(r => RestoreEvents(r));
             Receive<StillAlive>(_ => StillAlive());
-            Receive<PersistEvent>(p => journalWriter.Tell(p));
+            Receive<PersistEvent>(e => PersistEvent(e));
 
             // message from journal writer
             Receive<EventPersisted>(p => EventPersisted(p));
@@ -159,6 +166,7 @@ namespace Wki.EventSourcing.Actors
 
             // diagnostic messages for monitoring
             Receive<GetStatusReport>(_ => ReplyStatusReport());
+            Receive<GetState>(_ => Sender.Tell(eventStoreState));
 
             // process everything lost so far
             Stash.UnstashAll();
@@ -169,8 +177,12 @@ namespace Wki.EventSourcing.Actors
         // an actor wants to get restored
         private void StartRestore(StartRestore startRestore)
         {
+            eventStoreState.NrActorsRestored++;
+
             // hint: might override existing entry.
             actors[Sender.Path.ToString()] = new ActorState(Sender.Path.ToString(), Sender, startRestore.InterestingEvents);
+
+            eventStoreState.NrSubscribers = actors.Count;
         }
 
         // an actor wants n more Events
@@ -205,23 +217,28 @@ namespace Wki.EventSourcing.Actors
         // an actor tells it is still alive
         private void StillAlive()
         {
+            eventStoreState.NrStillAliveReceived++;
+
             var actorState = actors[Sender.Path.ToString()];
             actorState.LastSeen = SystemTime.Now;
+        }
+
+        private void PersistEvent(object @event)
+        {
+            journalWriter.Tell(@event);
         }
 
         // remove all actors not alive for a long time
         private void CheckInactiveActors()
         {
-            // TODO: maybe we should send a "ping" to an actor not responding
-            //       for some time. If nothing happens then, we remove it.
-            var oldestAllowedTime = SystemTime.Now - TimeSpan.FromSeconds(MaxActorIdleSeconds);
+            var oldestAllowedTime = SystemTime.Now - MaxActorIdleTimeSpan;
 
             // Console.WriteLine($"Oldest time: {oldestAllowedTime}");
             // actors.Values.ToList().ForEach(a => Console.WriteLine($"{a.Path} - {a.LastSeen}"));
 
             actors
                 .Values
-                .Where(actor => actor.Removable && actor.LastSeen < oldestAllowedTime)
+                .Where(actor => actor.LastSeen < oldestAllowedTime)
                 .ToList()
                 .ForEach(actor =>
                 {
@@ -231,11 +248,15 @@ namespace Wki.EventSourcing.Actors
                     );
                     actors.Remove(actor.Path);
                 });
+
+            eventStoreState.NrSubscribers = actors.Count;
         }
 
         // writeHournal persisted an event -- forward it to all actors interested in it
         private void EventPersisted(EventPersisted eventPersistet)
         {
+            eventStoreState.NrEventsPersisted++;
+
             var @event = eventPersistet.Event;
 
             // add for all running and subsequential restore operations
@@ -267,10 +288,10 @@ namespace Wki.EventSourcing.Actors
 
             var statusReport = new StatusReport
             {
-                StartedAt = startedAt,
-                LoadDurationMilliseconds = Convert.ToInt32(loadDuration.TotalMilliseconds),
-                Status = restoreDone ? "Operating" : "Loading",
-                EventStoreSize = events.Count,
+                StartedAt = eventStoreState.StartedAt,
+                LoadDurationMilliseconds = Convert.ToInt32(eventStoreState.LoadDuration.TotalMilliseconds),
+                Status = eventStoreState.Status.ToString(),
+                EventStoreSize = eventStoreState.NrEventsTotal,
                 Actors = actorStates,
             };
 

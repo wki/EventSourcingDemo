@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Util;
 using static Wki.EventSourcing.Util.Constant;
 
 namespace Wki.EventSourcing.Actors
@@ -10,6 +11,11 @@ namespace Wki.EventSourcing.Actors
     /// <summary>
     /// An actor with persisted state without an Id
     /// </summary>
+    /// <description>
+    /// ...melden StillAlive an EventStore
+    /// ...melden DurableActorState an Parent
+    /// 
+    /// </description>
     /// <example>
     /// public class MyActor : DurableActor
     /// {
@@ -22,7 +28,6 @@ namespace Wki.EventSourcing.Actors
     ///         Receive<LetSomethingHappen>(...);
     ///     }
     /// }
-    /// 
     /// </example>
     public abstract class DurableActor : UntypedActor, IWithUnboundedStash
     {
@@ -32,11 +37,12 @@ namespace Wki.EventSourcing.Actors
         /// <value>The stash.</value>
         public IStash Stash { get; set; }
 
-        /// <summary>
-        /// Indicate the running restore process
-        /// </summary>
-        /// <value><c>true</c> if currently restoring; otherwise, <c>false</c>.</value>
-        public bool IsRestoring { get; set; }
+        // maintain a complete state (for knowledge and statistics)
+        private DurableActorState durableActorState;
+
+        // simpler access to current status
+        protected bool IsRestoring => durableActorState.IsRestoring();
+        protected bool IsOperating => durableActorState.IsOperating();
 
         // keep all events and commands we may respond to
         protected List<Handler> commands;
@@ -59,7 +65,7 @@ namespace Wki.EventSourcing.Actors
             commands = new List<Handler>();
             events = new List<Handler>();
 
-            IsRestoring = false;
+            durableActorState = new DurableActorState();
         }
 
         protected override void PreStart()
@@ -115,40 +121,56 @@ namespace Wki.EventSourcing.Actors
         /// <param name="message">Message.</param>
         protected override void OnReceive(object message)
         {
-            // black magic version answering with a reply after every "command"
-            // --> too magic, not universal enough
-
-            //Handler handler;
-            //if ((handler = events.Find(e => e.Type == message.GetType())) != null)
-            //{
-            //    // event handling must not die.
-            //    handler.Action(message);
-            //}
-            //else if ((handler = commands.Find(c => c.Type == message.GetType())) != null)
-            //{
-            //    // commands respond with exceptions for eg. invalid args
-            //    try
-            //    {
-            //        handler.Action(message);
-            //        Sender.Tell(Reply.Ok());
-            //    }
-            //    catch (Exception e)
-            //    {
-            //        Sender.Tell(Reply.Error(e.Message));
-            //    }
-            //}
-            //else 
-            //    Unhandled(message);
-
-            // regular version, making Receive<> as normal as possible
-            var handler =
-                events.Find(e => e.Type == message.GetType())
-                      ?? commands.Find(c => c.Type == message.GetType());
-
-            if (handler != null)
-                handler.Action(message);
+            if (message is ReceiveTimeout)
+            {
+                SendStillAliveWhenNeeded();
+            }
+            else if (message is GetState)
+            {
+                Sender.Tell(durableActorState);
+            }
             else
-                Unhandled(message);
+            {
+                var now = SystemTime.Now;
+
+                var eventHandler = events.Find(e => e.Type == message.GetType());
+                if (eventHandler != null)
+                {
+                    durableActorState.NrEventsTotal++;
+                    durableActorState.LastEventReceivedAt = now;
+
+                    eventHandler.Action(message);
+                }
+                else
+                {
+                    var commandHandler = commands.Find(c => c.Type == message.GetType());
+                    if (commandHandler != null)
+                    {
+                        durableActorState.NrCommandsTotal++;
+                        durableActorState.LastCommandReceivedAt = now;
+
+                        commandHandler.Action(message);
+                    }
+                    else
+                    {
+                        durableActorState.NrUnhandledMessages++;
+                        Unhandled(message);
+                    }
+                }
+                SendStillAliveWhenNeeded();
+            }
+        }
+
+        private void SendStillAliveWhenNeeded()
+        {
+            var now = SystemTime.Now;
+
+            if (durableActorState.LastEventReceivedAt < now - MinStillAlivePauseTimeSpan)
+            {
+                durableActorState.LastStillAliveSentAt = now;
+                Context.Parent.Tell(durableActorState);
+                eventStore.Tell(new StillAlive());
+            }
         }
         #endregion
 
@@ -163,7 +185,10 @@ namespace Wki.EventSourcing.Actors
             {
                 Context.System.Log.Debug("Actor {0}: CompletedRestore", Self.Path.Name);
 
-                IsRestoring = false;
+                durableActorState.ChangeStatus(DurableActorStatus.Operating);
+                durableActorState.RestoreDuration = SystemTime.Now - durableActorState.StartedAt;
+
+                SetReceiveTimeout(ActorInactiveTimeSpan);
                 UnbecomeStacked();
                 Stash.UnstashAll();
             }
@@ -177,11 +202,17 @@ namespace Wki.EventSourcing.Actors
 
                     Context.System.Log.Debug("Actor {0}: Restore Event: {1}", Self.Path.Name, message);
 
+                    durableActorState.NrEventsTotal++;
+                    durableActorState.NrRestoreEvents++;
+
                     eventHandler.Action(message);
                 }
                 else
                 {
                     Context.System.Log.Debug("Actor {0} during restore stash command: {1}", Self.Path.Name, message);
+
+                    durableActorState.NrCommandsTotal++;
+                    durableActorState.NrStashedCommands++;
 
                     Stash.Stash();
                 }
@@ -191,7 +222,7 @@ namespace Wki.EventSourcing.Actors
         private void StartRestoring()
         {
             Context.System.Log.Debug("Actor {0}: StartRestore", Self.Path.Name);
-            IsRestoring = true;
+            durableActorState.ChangeStatus(DurableActorStatus.Restoring);
             BecomeStacked(Restoring);
 
             eventStore.Tell(new StartRestore(GenerateInterestingEvents()));
