@@ -3,6 +3,7 @@
 
 open Fake
 open NpmHelper
+open ProcessHelper
 
 // Directories
 let buildDir  = "./build/"
@@ -57,14 +58,9 @@ Target "BuildBackend" (fun _ ->
 
 Target "Build" DoNothing
 
-// Does not work!
 Target "Run" (fun _ ->
-    let startInfo = new System.Diagnostics.ProcessStartInfo()
-    startInfo.WorkingDirectory <- buildDir
-    startInfo.FileName <- "Designer.Web.exe"
-
-    System.Diagnostics.Process.Start(startInfo)
-        |> ignore
+    let status = ExecProcessElevated "/usr/local/bin/mono" (buildDir </> "Designer.Web.exe") System.TimeSpan.MaxValue
+    printfn "Status: %d" status
 )
 
 // Build order backend
