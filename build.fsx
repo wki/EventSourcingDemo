@@ -57,6 +57,16 @@ Target "BuildBackend" (fun _ ->
 
 Target "Build" DoNothing
 
+// Does not work!
+Target "Run" (fun _ ->
+    let startInfo = new System.Diagnostics.ProcessStartInfo()
+    startInfo.WorkingDirectory <- buildDir
+    startInfo.FileName <- "Designer.Web.exe"
+
+    System.Diagnostics.Process.Start(startInfo)
+        |> ignore
+)
+
 // Build order backend
 "Clean"
   ==> "BuildBackend"
@@ -69,6 +79,7 @@ Target "Build" DoNothing
 "BuildBackend"
   ==> "BuildAngularApp"
   ==> "Build"
+  ==> "Run"
 
 // start angular app standalone without backend
 "BuildAngularApp"
