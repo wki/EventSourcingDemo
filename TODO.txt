@@ -1,0 +1,6 @@
+# TODOs
+
+ * OfficeActor: idle DurableActor wird nicht korrekt erkannt
+
+ * DurableActor: melden an "Parent" falsch.
+
