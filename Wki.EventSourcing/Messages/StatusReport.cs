@@ -14,11 +14,7 @@ namespace Wki.EventSourcing.Messages
 
         }
 
-        public DateTime StartedAt { get; internal set; }
-        public int LoadDurationMilliseconds { get; internal set; }
-        // "Loading" / "Operating"
-        public string Status { get; internal set; }
-        public int EventStoreSize { get; internal set; }
+        public EventStoreState EventStoreState { get; internal set; }
 
         public List<ActorStatus> Actors { get; internal set; }
     }

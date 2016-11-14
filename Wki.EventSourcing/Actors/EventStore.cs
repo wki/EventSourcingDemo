@@ -122,6 +122,7 @@ namespace Wki.EventSourcing.Actors
         private void EventLoaded(EventLoaded eventLoaded)
         {
             eventStoreState.NrEventsLoaded++;
+            eventStoreState.NrEventsTotal++;
             eventsToReceive--;
 
             events.Add(eventLoaded.Event);
@@ -256,6 +257,8 @@ namespace Wki.EventSourcing.Actors
         private void EventPersisted(EventPersisted eventPersistet)
         {
             eventStoreState.NrEventsPersisted++;
+            eventStoreState.NrEventsTotal++;
+            eventStoreState.LastEventPersistedAt = SystemTime.Now;
 
             var @event = eventPersistet.Event;
 
@@ -288,10 +291,7 @@ namespace Wki.EventSourcing.Actors
 
             var statusReport = new StatusReport
             {
-                StartedAt = eventStoreState.StartedAt,
-                LoadDurationMilliseconds = Convert.ToInt32(eventStoreState.LoadDuration.TotalMilliseconds),
-                Status = eventStoreState.Status.ToString(),
-                EventStoreSize = eventStoreState.NrEventsTotal,
+                EventStoreState = eventStoreState,
                 Actors = actorStates,
             };
 

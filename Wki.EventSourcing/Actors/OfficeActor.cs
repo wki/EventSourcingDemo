@@ -67,6 +67,7 @@ namespace Wki.EventSourcing.Actors
 
             // diagnostic messages for monitoring
             Receive<GetState>(_ => Sender.Tell(officeActorState));
+            Receive<DurableActorState>(d => UpdateChild(d));
 
             // all commands will pass thru Unhandled()...
         }
@@ -115,6 +116,12 @@ namespace Wki.EventSourcing.Actors
             }
         }
 
+        private void UpdateChild(DurableActorState durableActorState)
+        {
+            // TODO: speichern, verarbeiten.
+            Console.WriteLine($"{Self.Path.Name} received state from {Sender.Path.Name}");
+        }
+
         private void ForwardToDestinationActor(DispatchableCommand<TIndex> cmd)
         {
             var destination = CreateOrLoadChild(cmd.Id);
@@ -137,7 +144,7 @@ namespace Wki.EventSourcing.Actors
             officeActorState.NrActorsRemoved++;
             officeActorState.LastActorRemovedAt = SystemTime.Now;
 
-            return Context.ActorOf(Props.Create(type, eventStore, id), name);
+            return Context.ActorOf(Props.Create(type, eventStore, id, Self), name);
         }
     }
 }

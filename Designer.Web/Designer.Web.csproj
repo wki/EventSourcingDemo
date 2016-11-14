@@ -68,6 +68,7 @@
     <None Include="www\app\main.js.map" />
     <None Include="www\app\main.ts" />
     <None Include="www\css\style.css" />
+    <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Controllers\" />

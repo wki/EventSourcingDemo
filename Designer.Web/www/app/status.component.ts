@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Http, Response } from '@angular/http';
+import { Observable } from 'rxjs/Rx';
 
 class ActorStatus {
     constructor(
@@ -9,25 +10,51 @@ class ActorStatus {
         public events: string[] 
     ) {}
 }
+
+class EventStoreState {
+    constructor(
+        public status: string,
+        public statusChangedAt: Date,
+        public startedAt: Date,
+        public loadDuration: string,
+        public nrEventsLoaded: number,
+        public nrStashedCommands: number,
+        public nrActorsRestored: number,
+        public nrStillAliveReceived: number,
+        public nrSubscribers: number,
+        public lastEventPersistedAt: Date,
+        public nrEventsPersisted: number,
+        public nrEventsTotal: number,
+    ) {}
+}
+
 class StatusReport {
     constructor(
-        public startedAt: Date,
-        public loadDurationMilliseconds: number,
-        public status: string,
-        public eventStoreSize: number,
         public actors: ActorStatus[],
+        public eventStoreState: EventStoreState,
     ) {}
 }
 
 @Component({
     templateUrl: 'templates/status.html',
 })
-export class StatusComponent {
+export class StatusComponent implements OnInit, OnDestroy {
     statusReport: StatusReport;
+    timer: Observable<number>;
 
     constructor(private http: Http) {
-        this.statusReport = new StatusReport(null, 0, "Init", 0, []);
+        this.statusReport = new StatusReport([], null);
         this.loadStatusReport();
+    }
+
+    ngOnInit() {
+        let that = this;
+        this.timer = Observable.timer(2000,2000);
+        this.timer.subscribe(t => { console.log("tick"); that.loadStatusReport() } );
+    }
+
+    ngOnDestroy() {
+        // this.subscription.unsubscribe();
     }
 
     loadStatusReport(): void {

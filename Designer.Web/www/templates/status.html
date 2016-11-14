@@ -1,22 +1,42 @@
 <div class="component">
-    <h1>Status Report</h1>
-    <div class="row">
-        <div class="col-sm-4">Started at</div>
-        <div class="col-sm-8">{{statusReport.startedAt | date: 'dd.MM.yyyy hh:mm:ss'}}</div>
+    <h1 *ngIf="statusReport == null">Status Report (loading)</h1>
+
+    <div class="component" *ngIf="statusReport != null && statusReport.eventStoreState != null">
+        <h1>Status Report</h1>
+        <div class="row">
+            <div class="col-sm-2"><b>Status:</b></div>
+            <div class="col-sm-2">{{statusReport.eventStoreState.status}}</div>
+            <div class="col-sm-2"><b>Last changed:</b></div>
+            <div class="col-sm-2">{{statusReport.eventStoreState.statusChangedAt | date: 'dd.MM.yyyy HH:mm:ss'}}</div>
+            <div class="col-sm-2"><b>Startet at:</b></div>
+            <div class="col-sm-2">{{statusReport.eventStoreState.startedAt | date: 'dd.MM.yyyy HH:mm:ss'}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2"><b>LoadDuration:</b></div>
+            <div class="col-sm-2">{{statusReport.eventStoreState.loadDuration}}</div>
+            <div class="col-sm-2"><b>Nr Events Total</b></div>
+            <div class="col-sm-2">{{statusReport.eventStoreState.nrEventsTotal}}</div>
+            <div class="col-sm-2"><b>Nr Events Loaded:</b></div>
+            <div class="col-sm-2">{{statusReport.eventStoreState.nrEventsLoaded}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2"><b>Nr Commands Stashed:</b></div>
+            <div class="col-sm-2">{{statusReport.eventStoreState.nrStashedCommands}}</div>
+            <div class="col-sm-2"><b>Nr Actors Restored:</b></div>
+            <div class="col-sm-2">{{statusReport.eventStoreState.nrActorsRestored}}</div>
+            <div class="col-sm-2"><b>Nr Still Alive Received:</b></div>
+            <div class="col-sm-2">{{statusReport.eventStoreState.nrStillAliveReceived}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2"><b>Nr Subscribers:</b></div>
+            <div class="col-sm-2">{{statusReport.eventStoreState.nrSubscribers}}</div>
+            <div class="col-sm-2"><b>Nr Events Persisted:</b></div>
+            <div class="col-sm-2">{{statusReport.eventStoreState.nrEventsPersisted}}</div>
+            <div class="col-sm-2"><b>Last Persisted:</b></div>
+            <div class="col-sm-2">{{statusReport.eventStoreState.lastEventPersistedAt | date: 'dd.MM.yyyy HH:mm:ss'}}</div>
+        </div>
     </div>
-    <div class="row">
-        <div class="col-sm-4">Status</div>
-        <div class="col-sm-8">{{statusReport.status}}</div>
-    </div>
-    <div class="row">
-        <div class="col-sm-4">Load Time</div>
-        <div class="col-sm-8">{{statusReport.loadDurationMilliseconds}} ms</div>
-    </div>
-    <div class="row">
-        <div class="col-sm-4">Event Store Size</div>
-        <div class="col-sm-8">{{statusReport.eventStoreSize}}</div>
-    </div>
-    
+
     <div class="row"><br/></div>
 
     <table class="table table-bordered">

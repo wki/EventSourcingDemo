@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var core_1 = require('@angular/core');
 var http_1 = require('@angular/http');
+var Rx_1 = require('rxjs/Rx');
 var ActorStatus = (function () {
     function ActorStatus(path, status, lastSeen, events) {
         this.path = path;
@@ -19,22 +20,44 @@ var ActorStatus = (function () {
     }
     return ActorStatus;
 }());
-var StatusReport = (function () {
-    function StatusReport(startedAt, loadDurationMilliseconds, status, eventStoreSize, actors) {
-        this.startedAt = startedAt;
-        this.loadDurationMilliseconds = loadDurationMilliseconds;
+var EventStoreState = (function () {
+    function EventStoreState(status, statusChangedAt, startedAt, loadDuration, nrEventsLoaded, nrStashedCommands, nrActorsRestored, nrStillAliveReceived, nrSubscribers, lastEventPersistedAt, nrEventsPersisted, nrEventsTotal) {
         this.status = status;
-        this.eventStoreSize = eventStoreSize;
+        this.statusChangedAt = statusChangedAt;
+        this.startedAt = startedAt;
+        this.loadDuration = loadDuration;
+        this.nrEventsLoaded = nrEventsLoaded;
+        this.nrStashedCommands = nrStashedCommands;
+        this.nrActorsRestored = nrActorsRestored;
+        this.nrStillAliveReceived = nrStillAliveReceived;
+        this.nrSubscribers = nrSubscribers;
+        this.lastEventPersistedAt = lastEventPersistedAt;
+        this.nrEventsPersisted = nrEventsPersisted;
+        this.nrEventsTotal = nrEventsTotal;
+    }
+    return EventStoreState;
+}());
+var StatusReport = (function () {
+    function StatusReport(actors, eventStoreState) {
         this.actors = actors;
+        this.eventStoreState = eventStoreState;
     }
     return StatusReport;
 }());
 var StatusComponent = (function () {
     function StatusComponent(http) {
         this.http = http;
-        this.statusReport = new StatusReport(null, 0, "Init", 0, []);
+        this.statusReport = new StatusReport([], null);
         this.loadStatusReport();
     }
+    StatusComponent.prototype.ngOnInit = function () {
+        var that = this;
+        this.timer = Rx_1.Observable.timer(2000, 2000);
+        this.timer.subscribe(function (t) { console.log("tick"); that.loadStatusReport(); });
+    };
+    StatusComponent.prototype.ngOnDestroy = function () {
+        // this.subscription.unsubscribe();
+    };
     StatusComponent.prototype.loadStatusReport = function () {
         var _this = this;
         this.http.get("http://localhost:9000/api/status")
