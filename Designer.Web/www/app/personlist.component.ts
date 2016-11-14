@@ -1,9 +1,6 @@
 import { Component } from '@angular/core';
 import { Http, Response } from '@angular/http';
-
-class Person {
-    constructor(public id:number, public fullname:string, public email:string) { }
-}
+import { Person } from './dto/person';
 
 @Component({
     templateUrl: 'templates/personlist.html',

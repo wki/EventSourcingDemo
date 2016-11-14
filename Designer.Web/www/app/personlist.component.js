@@ -10,14 +10,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var core_1 = require('@angular/core');
 var http_1 = require('@angular/http');
-var Person = (function () {
-    function Person(id, fullname, email) {
-        this.id = id;
-        this.fullname = fullname;
-        this.email = email;
-    }
-    return Person;
-}());
 var PersonListComponent = (function () {
     function PersonListComponent(http) {
         this.http = http;

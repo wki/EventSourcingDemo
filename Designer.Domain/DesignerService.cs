@@ -83,6 +83,11 @@ namespace Designer.Domain
         {
             return personList.Ask<IEnumerable<PersonInfo>>(new ListPersons());
         }
+
+        public Task<PersonInfo> GetPersonState(int id)
+        {
+            return personAggregateOffice.Ask<PersonInfo>(new GetPersonInfo(id));
+        }
         #endregion
     }
 }

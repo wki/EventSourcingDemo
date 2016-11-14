@@ -91,7 +91,7 @@ namespace Wki.EventSourcing.Actors
 
         private void CheckInactiveActors()
         {
-            foreach (var actorName in LastContact.Keys)
+            foreach (var actorName in LastContact.Keys.ToList())
             {
                 var child = Context.Child(actorName);
                 if (child == Nobody.Instance)
@@ -144,7 +144,7 @@ namespace Wki.EventSourcing.Actors
             officeActorState.NrActorsRemoved++;
             officeActorState.LastActorRemovedAt = SystemTime.Now;
 
-            return Context.ActorOf(Props.Create(type, eventStore, id, Self), name);
+            return Context.ActorOf(Props.Create(type, eventStore, id), name);
         }
     }
 }

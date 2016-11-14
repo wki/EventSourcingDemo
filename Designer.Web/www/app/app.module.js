@@ -17,6 +17,7 @@ var app_component_1 = require('./app.component');
 var welcome_component_1 = require('./welcome.component');
 var register_component_1 = require('./register.component');
 var personlist_component_1 = require('./personlist.component');
+var persondetail_component_1 = require('./persondetail.component');
 var products_component_1 = require('./products.component');
 var status_component_1 = require('./status.component');
 var AppModule = (function () {
@@ -32,6 +33,7 @@ var AppModule = (function () {
                     { path: 'welcome', component: welcome_component_1.WelcomeComponent },
                     { path: 'register', component: register_component_1.RegisterComponent },
                     { path: 'personlist', component: personlist_component_1.PersonListComponent },
+                    { path: 'person/:id', component: persondetail_component_1.PersonDetailComponent },
                     { path: 'products', component: products_component_1.ProductsComponent },
                     { path: 'status', component: status_component_1.StatusComponent },
                     // { path: 'bla/:id', component: BlaComponent },
@@ -43,6 +45,7 @@ var AppModule = (function () {
                 welcome_component_1.WelcomeComponent,
                 register_component_1.RegisterComponent,
                 personlist_component_1.PersonListComponent,
+                persondetail_component_1.PersonDetailComponent,
                 products_component_1.ProductsComponent,
                 status_component_1.StatusComponent,
             ],

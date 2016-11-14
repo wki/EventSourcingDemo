@@ -64,6 +64,7 @@
     <Compile Include="PersonManagement\Messages\ListEmailAddresses.cs" />
     <Compile Include="PersonManagement\Messages\ReturnIds.cs" />
     <Compile Include="PersonManagement\Messages\ListPersons.cs" />
+    <Compile Include="PersonManagement\Messages\GetPersonInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Wki.EventSourcing\Wki.EventSourcing.csproj">

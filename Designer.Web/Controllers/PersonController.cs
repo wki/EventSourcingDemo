@@ -42,5 +42,11 @@ namespace Designer.Web
         {
             return designerService.ListPersons();
         }
+
+        [HttpGet, Route("{id}")]
+        public Task<PersonInfo> GetPersonState(int id)
+        {
+            return designerService.GetPersonState(id);
+        }
     }
 }

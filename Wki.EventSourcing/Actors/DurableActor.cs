@@ -50,24 +50,24 @@ namespace Wki.EventSourcing.Actors
 
         // we must know our event store. Typically the office will tell us
         private readonly IActorRef eventStore;
-        private readonly IActorRef office;
 
         // during restore count events for aquiring next junk before completion
         // we keep track of the nr of events we still await to receive
         private int eventsToReceive;
 
-        protected DurableActor(IActorRef eventStore, IActorRef office = null)
+        protected DurableActor(IActorRef eventStore)
         {
             if (eventStore == null)
                 throw new ArgumentNullException(nameof(eventStore));
 
             this.eventStore = eventStore;
-            this.office = office;
 
             commands = new List<Handler>();
             events = new List<Handler>();
 
             durableActorState = new DurableActorState();
+
+            Context.System.Log.Info("start Building Aggregate {0}", Self.Path.ToString());
         }
 
         protected override void PreStart()
@@ -170,8 +170,8 @@ namespace Wki.EventSourcing.Actors
             if (durableActorState.LastEventReceivedAt < now - MinStillAlivePauseTimeSpan)
             {
                 durableActorState.LastStillAliveSentAt = now;
-                if (office != null)
-                    office.Tell(durableActorState);
+                // TODO: wenn parent = "/System/user" dann nicht.
+                Context.Parent.Tell(durableActorState);
                 eventStore.Tell(new StillAlive());
             }
         }
@@ -252,7 +252,7 @@ namespace Wki.EventSourcing.Actors
     {
         public TIndex Id { get; private set; }
 
-        protected DurableActor(IActorRef eventStore, TIndex id, IActorRef office = null) : base(eventStore, office)
+        protected DurableActor(IActorRef eventStore, TIndex id) : base(eventStore)
         {
             Id = id;
         }

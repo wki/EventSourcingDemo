@@ -8,6 +8,7 @@ import { AppComponent }  from './app.component';
 import { WelcomeComponent } from './welcome.component';
 import { RegisterComponent } from './register.component';
 import { PersonListComponent } from './personlist.component';
+import { PersonDetailComponent } from './persondetail.component';
 import { ProductsComponent } from './products.component';
 import { StatusComponent } from './status.component';
 
@@ -20,6 +21,7 @@ import { StatusComponent } from './status.component';
       { path: 'welcome', component: WelcomeComponent },
       { path: 'register', component: RegisterComponent },
       { path: 'personlist', component: PersonListComponent },
+      { path: 'person/:id', component: PersonDetailComponent },
       { path: 'products', component: ProductsComponent },
       { path: 'status', component: StatusComponent },
       // { path: 'bla/:id', component: BlaComponent },
@@ -32,6 +34,7 @@ import { StatusComponent } from './status.component';
     WelcomeComponent,
     RegisterComponent,
     PersonListComponent,
+    PersonDetailComponent,
     ProductsComponent,
     StatusComponent,
   ],

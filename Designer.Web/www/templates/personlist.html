@@ -7,6 +7,7 @@
                 <th>Id</th>
                 <th>Full name</th>
                 <th>Email</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
@@ -14,6 +15,7 @@
                 <td>{{person.id}}</td>
                 <td>{{person.fullname}}</td>
                 <td>{{person.email}}</td>
+                <td><a [routerLink]="['/person', person.id]">edit</a>
             </tr>
         </tbody>
     </table>
