@@ -1,0 +1,48 @@
+<div class="component">
+    <h1 *ngIf="state == null">State (loading)</h1>
+
+    <div class="component" *ngIf="state != null">
+        <h1>State</h1>
+        <div class="row">
+            <div class="col-sm-2"><b>Started:</b></div>
+            <div class="col-sm-2">{{state.startedAt | date: 'dd.MM.yyyy HH:mm:ss'}}</div>
+            <div class="col-sm-2"><b>Loaded:</b></div>
+            <div class="col-sm-2">{{state.nrActorsLoaded}} / {{state.lastActorLoadedAt | date: 'dd.MM.yyyy HH:mm:ss'}}</div>
+            <div class="col-sm-2"><b>Removed:</b></div>
+            <div class="col-sm-2">{{state.nrActorsRemoved}} / {{state.lastActorRemovedAt | date: 'dd.MM.yyyy HH:mm:ss'}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2"><b>Checks:</b></div>
+            <div class="col-sm-2">{{state.nrActorChecks}} / {{state.lastActorCheckAt | date: 'dd.MM.yyyy HH:mm:ss'}}</div>
+            <div class="col-sm-2"><b>Missed/Unhandled</b></div>
+            <div class="col-sm-2">{{state.nrActorsMissed}} / {{state.nrUnhandledMessages}}</div>
+            <div class="col-sm-2"><b>Forwarded:</b></div>
+            <div class="col-sm-2">{{state.nrCommandsForwarded}} / {{state.lastCommandForwardedAt | date: 'dd.MM.yyyy HH:mm:ss'}}</div>
+        </div>
+    </div>
+
+    <div class="row"><br/></div>
+
+    <table class="table table-bordered" *ngIf="state != null">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Started</th>
+                <th>Status</th>
+                <th>Query Sent</th>
+                <th>Query Received</th>
+                <th>Commands</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let actor of state.actors">
+                <td>{{actor.name}}</td>
+                <td>{{actor.state.startedAt | date: 'dd.MM.yyyy HH:mm:ss'}}</td>
+                <td>{{actor.state.status}}</td>
+                <td>{{actor.state.lastStatusQuerySentAt | date: 'dd.MM.yyyy HH:mm:ss'}}</td>
+                <td>{{actor.state.lastStatusReceivedAt | date: 'dd.MM.yyyy HH:mm:ss'}}</td>
+                <td>{{actor.state.nrCommandsForwarded}} / {{actor.state.lastCommandForwardedAt | date: 'dd.MM.yyyy HH:mm:ss'}}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
