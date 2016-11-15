@@ -170,8 +170,6 @@ namespace Wki.EventSourcing.Actors
             if (durableActorState.LastEventReceivedAt < now - MinStillAlivePauseTimeSpan)
             {
                 durableActorState.LastStillAliveSentAt = now;
-                // TODO: wenn parent = "/System/user" dann nicht.
-                Context.Parent.Tell(durableActorState);
                 eventStore.Tell(new StillAlive());
             }
         }

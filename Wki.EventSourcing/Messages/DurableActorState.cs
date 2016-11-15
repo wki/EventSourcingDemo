@@ -49,12 +49,12 @@ namespace Wki.EventSourcing.Messages
             RestoreDuration = TimeSpan.FromSeconds(0);
             NrRestoreEvents = 0;
             NrStashedCommands = 0;
-            LastCommandReceivedAt = now;
-            LastEventReceivedAt = now;
+            LastCommandReceivedAt = DateTime.MinValue;
+            LastEventReceivedAt = DateTime.MinValue;
             NrEventsTotal = 0;
             NrCommandsTotal = 0;
             NrUnhandledMessages = 0;
-            LastStillAliveSentAt = now;
+            LastStillAliveSentAt = DateTime.MinValue;
         }
 
         internal void ChangeStatus(DurableActorStatus status)

@@ -37,9 +37,6 @@ namespace Wki.EventSourcing.Actors
         // we need to know the eventStore to forward it to our children
         private readonly IActorRef eventStore;
 
-        // remember last contact with an actor
-        private Dictionary<string, DateTime> LastContact;
-
         // maintain a complete state (for knowledge and statistics)
         private OfficeActorState officeActorState;
 
@@ -47,7 +44,6 @@ namespace Wki.EventSourcing.Actors
         {
             // initialize
             this.eventStore = eventStore;
-            LastContact = new Dictionary<string, DateTime>();
             officeActorState = new OfficeActorState();
 
             // periodically check for inactive children
@@ -61,8 +57,8 @@ namespace Wki.EventSourcing.Actors
                    );
 
             // diagnostic messages for testing
-            Receive<GetSize>(_ => Sender.Tell(LastContact.Count));
-            Receive<GetActors>(_ => Sender.Tell(String.Join("|", LastContact.Keys.Select(k => k))));
+            Receive<GetSize>(_ => Sender.Tell(officeActorState.ChildActorStates.Count));
+            Receive<GetActors>(_ => Sender.Tell(String.Join("|", officeActorState.ChildActorStates.Keys.Select(k => k))));
             Receive<CheckInactiveActors>(_ => CheckInactiveActors());
 
             // diagnostic messages for monitoring
@@ -78,6 +74,7 @@ namespace Wki.EventSourcing.Actors
             if (command != null)
             {
                 officeActorState.NrCommandsForwarded++;
+                officeActorState.LastCommandForwardedAt = SystemTime.Now;
 
                 ForwardToDestinationActor(command);
             }
@@ -91,43 +88,66 @@ namespace Wki.EventSourcing.Actors
 
         private void CheckInactiveActors()
         {
-            foreach (var actorName in LastContact.Keys.ToList())
+            officeActorState.NrActorChecks++;
+            officeActorState.LastActorCheckAt = SystemTime.Now;
+
+            foreach (var actorName in officeActorState.ChildActorStates.Keys.ToList())
             {
                 var child = Context.Child(actorName);
+                var childActorState = officeActorState.ChildActorStates[actorName];
                 if (child == Nobody.Instance)
                 {
-                    Context.System.Log.Debug("Office {0}: removing dead Child {1}", Self.Path.Name, actorName);
+                    // Aktor nicht mehr vorhanden. weg damit
+                    Context.System.Log.Info("Office {0}: removing dead Child {1}", Self.Path.Name, actorName);
 
-                    officeActorState.NrActorsRemoved++;
-                    officeActorState.LastActorRemovedAt = SystemTime.Now;
-
-                    LastContact.Remove(actorName);
+                    officeActorState.RemoveChildActor(actorName);
                 }
-                else if (LastContact[actorName] < SystemTime.Now - MaxActorIdleTimeSpan)
+                else if (childActorState.LastCommandForwardedAt < SystemTime.Now - MaxActorIdleTimeSpan)
                 {
-                    Context.System.Log.Debug("Office {0}: removing inactive Child {1}", Self.Path.Name, actorName);
-
-                    officeActorState.NrActorsRemoved++;
-                    officeActorState.LastActorRemovedAt = SystemTime.Now;
+                    // Aktor zu lange inaktiv. auch weg.
+                    Context.System.Log.Info("Office {0}: removing inactive Child {1}", Self.Path.Name, actorName);
 
                     Context.Stop(child);
-                    LastContact.Remove(actorName);
+                    officeActorState.RemoveChildActor(actorName);
+                }
+                else
+                {
+                    // Aktuellen Aktor-Status erfragen
+                    childActorState.LastStatusQuerySentAt = SystemTime.Now;
+                    child.Tell(new GetState());
                 }
             }
         }
 
         private void UpdateChild(DurableActorState durableActorState)
         {
-            // TODO: speichern, verarbeiten.
-            Console.WriteLine($"{Self.Path.Name} received state from {Sender.Path.Name}");
+            var actorName = Sender.Path.Name;
+
+            if (officeActorState.ChildActorStates.ContainsKey(actorName))
+            {
+                var childActorState = officeActorState.ChildActorStates[actorName];
+                childActorState.LastStatusReceivedAt = SystemTime.Now;
+                childActorState.Status = durableActorState.Status;
+            }
+            else
+                officeActorState.NrActorsMissed++;
         }
 
         private void ForwardToDestinationActor(DispatchableCommand<TIndex> cmd)
         {
             var destination = CreateOrLoadChild(cmd.Id);
-            LastContact[destination.Path.Name] = SystemTime.Now;
+            var actorName = destination.Path.Name;
 
-            destination.Forward(cmd);
+            if (officeActorState.ChildActorStates.ContainsKey(actorName))
+            {
+                var childActorState = officeActorState.ChildActorStates[actorName];
+                childActorState.LastCommandForwardedAt = SystemTime.Now;
+                childActorState.NrCommandsForwarded++;
+
+                destination.Forward(cmd);
+            }
+            else
+                officeActorState.NrActorsMissed++;
         }
 
         private IActorRef CreateOrLoadChild(TIndex id)
@@ -139,10 +159,10 @@ namespace Wki.EventSourcing.Actors
             if (child != Nobody.Instance)
                 return child;
 
-            Context.System.Log.Debug("Office {0}: creating Child {1}", Self.Path.Name, name);
+            Context.System.Log.Info("Office {0}: creating Child {1}", Self.Path.Name, name);
 
-            officeActorState.NrActorsRemoved++;
-            officeActorState.LastActorRemovedAt = SystemTime.Now;
+            officeActorState.NrActorsLoaded++;
+            officeActorState.LastActorLoadedAt = SystemTime.Now;
 
             return Context.ActorOf(Props.Create(type, eventStore, id), name);
         }
