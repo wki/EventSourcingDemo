@@ -151,10 +151,21 @@ namespace Wki.EventSourcing.Actors
                 eventStoreState.LoadDuration.TotalMilliseconds / 1000
             );
 
+            // periodically check for inactive children
+            Context.System.Scheduler
+                   .ScheduleTellRepeatedly(
+                       initialDelay: IdleActorPollTimeSpan,
+                       interval: IdleActorPollTimeSpan,
+                       receiver: Self,
+                       message: new CheckInactiveActors(),
+                       sender: Self
+                   );
+
             // messages from actors
             Receive<StartRestore>(s => StartRestore(s));
             Receive<RestoreEvents>(r => RestoreEvents(r));
             Receive<StillAlive>(_ => StillAlive());
+            Receive<NotAlive>(_ => NotAlive());
             Receive<PersistEvent>(e => PersistEvent(e));
 
             // message from journal writer
@@ -219,9 +230,20 @@ namespace Wki.EventSourcing.Actors
         private void StillAlive()
         {
             eventStoreState.NrStillAliveReceived++;
+            var path = Sender.Path.ToString();
 
-            var actorState = actors[Sender.Path.ToString()];
-            actorState.LastSeen = SystemTime.Now;
+            if (actors.ContainsKey(path))
+            {
+                var actorState = actors[path];
+                actorState.LastSeen = SystemTime.Now;
+            }
+        }
+
+        // an actor just died
+        private void NotAlive()
+        {
+            Context.System.Log.Info("Actor {0} just died, removing...", Sender.Path);
+            actors.Remove(Sender.Path.ToString());
         }
 
         private void PersistEvent(object @event)
@@ -234,7 +256,7 @@ namespace Wki.EventSourcing.Actors
         {
             var oldestAllowedTime = SystemTime.Now - MaxActorIdleTimeSpan;
 
-            // Console.WriteLine($"Oldest time: {oldestAllowedTime}");
+            Context.System.Log.Info("Event Store - Checking actors. Oldest time: {0:HH:mm}", oldestAllowedTime);
             // actors.Values.ToList().ForEach(a => Console.WriteLine($"{a.Path} - {a.LastSeen}"));
 
             actors
@@ -243,7 +265,7 @@ namespace Wki.EventSourcing.Actors
                 .ToList()
                 .ForEach(actor =>
                 {
-                    Context.System.Log.Debug(
+                    Context.System.Log.Info(
                         "Removing actor {0}, last Seen {1} seconds ago",
                         actor.Path, (SystemTime.Now - actor.LastSeen).TotalSeconds
                     );

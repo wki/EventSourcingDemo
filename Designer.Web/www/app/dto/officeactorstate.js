@@ -7,8 +7,7 @@ var ActorInfo = (function () {
     return ActorInfo;
 }());
 var OfficeActorState = (function () {
-    function OfficeActorState(startedAt, nrActorsLoaded, lastActorLoadedAt, nrActorsRemoved, lastActorRemovedAt, nrActorChecks, lastActorCheckAt, childActorStates, // Dictionary<string, OfficeActorChildState>;
-        nrActorsMissed, nrCommandsForwarded, nrUnhandledMessages, lastCommandForwardedAt) {
+    function OfficeActorState(startedAt, nrActorsLoaded, lastActorLoadedAt, nrActorsRemoved, lastActorRemovedAt, nrActorChecks, lastActorCheckAt, childActorStates, nrActorsMissed, nrCommandsForwarded, nrUnhandledMessages, lastCommandForwardedAt) {
         this.startedAt = startedAt;
         this.nrActorsLoaded = nrActorsLoaded;
         this.lastActorLoadedAt = lastActorLoadedAt;
@@ -16,6 +15,7 @@ var OfficeActorState = (function () {
         this.lastActorRemovedAt = lastActorRemovedAt;
         this.nrActorChecks = nrActorChecks;
         this.lastActorCheckAt = lastActorCheckAt;
+        this.childActorStates = childActorStates;
         this.nrActorsMissed = nrActorsMissed;
         this.nrCommandsForwarded = nrCommandsForwarded;
         this.nrUnhandledMessages = nrUnhandledMessages;

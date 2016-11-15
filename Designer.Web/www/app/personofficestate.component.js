@@ -26,9 +26,9 @@ var PersonOfficeStateComponent = (function () {
         this.subscription.unsubscribe();
     };
     PersonOfficeStateComponent.prototype.loadState = function () {
-        var that = this;
+        var _this = this;
         this.http.get("http://localhost:9000/api/status/person")
-            .subscribe(function (r) { return that.state = r.json(); });
+            .subscribe(function (r) { return _this.state = r.json(); });
     };
     PersonOfficeStateComponent = __decorate([
         core_1.Component({

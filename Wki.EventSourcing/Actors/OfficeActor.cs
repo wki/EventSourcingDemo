@@ -95,6 +95,14 @@ namespace Wki.EventSourcing.Actors
             {
                 var child = Context.Child(actorName);
                 var childActorState = officeActorState.ChildActorStates[actorName];
+
+                Context.System.Log.Info(
+                    "Office {0}: last cmd {1:HH:mm:ss}, oldest allowed {2:HH:mm:ss}",
+                    actorName,
+                    childActorState.LastCommandForwardedAt,
+                    SystemTime.Now - MaxActorIdleTimeSpan
+                );
+
                 if (child == Nobody.Instance)
                 {
                     // Aktor nicht mehr vorhanden. weg damit

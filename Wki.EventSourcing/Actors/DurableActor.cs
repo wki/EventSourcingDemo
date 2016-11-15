@@ -82,6 +82,13 @@ namespace Wki.EventSourcing.Actors
             StartRestoring();
         }
 
+        protected override void PostStop()
+        {
+            base.PostStop();
+            SetReceiveTimeout(null);
+            eventStore.Tell(new NotAlive());
+        }
+
         protected virtual InterestingEvents GenerateInterestingEvents()
         {
             return new InterestingEvents(events.Select(e => e.Type));

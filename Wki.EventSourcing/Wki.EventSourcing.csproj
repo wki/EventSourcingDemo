@@ -66,6 +66,7 @@
     <Compile Include="Messages\EventStoreState.cs" />
     <Compile Include="Messages\OfficeActorState.cs" />
     <Compile Include="Messages\GetState.cs" />
+    <Compile Include="Messages\NotAlive.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="paket.references" />

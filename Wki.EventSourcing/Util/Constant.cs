@@ -15,7 +15,7 @@ namespace Wki.EventSourcing.Util
         public const int BufferLowLimit = 10;
 
         // idle time in seconds after which an actor is removed
-        public static readonly TimeSpan MaxActorIdleTimeSpan = TimeSpan.FromMinutes(5);
+        public static readonly TimeSpan MaxActorIdleTimeSpan = TimeSpan.FromMinutes(2); // live: 5
 
         // periodic trigger of an actor for reporting "stillalive" 
         public static readonly TimeSpan ActorInactiveTimeSpan = TimeSpan.FromSeconds(30);
