@@ -21,5 +21,17 @@ namespace Designer.Web
         {
             return designerService.GetStatusReport();
         }
+
+        [HttpGet, Route("person")]
+        public Task<OfficeActorState> PersonOfficeState()
+        {
+            return designerService.GetPersonOfficeState();
+        }
+    
+        [HttpGet, Route("hangtag")]
+        public Task<OfficeActorState> HangtagOfficeState()
+        {
+            return designerService.GetHangtagOfficeState();
+        }
     }
 }

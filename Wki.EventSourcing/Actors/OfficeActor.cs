@@ -161,8 +161,7 @@ namespace Wki.EventSourcing.Actors
 
             Context.System.Log.Info("Office {0}: creating Child {1}", Self.Path.Name, name);
 
-            officeActorState.NrActorsLoaded++;
-            officeActorState.LastActorLoadedAt = SystemTime.Now;
+            officeActorState.AddChildActor(name);
 
             return Context.ActorOf(Props.Create(type, eventStore, id), name);
         }

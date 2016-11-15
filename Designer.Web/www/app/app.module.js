@@ -20,6 +20,7 @@ var personlist_component_1 = require('./personlist.component');
 var persondetail_component_1 = require('./persondetail.component');
 var products_component_1 = require('./products.component');
 var status_component_1 = require('./status.component');
+var personofficestate_component_1 = require('./personofficestate.component');
 var AppModule = (function () {
     function AppModule() {
     }
@@ -36,6 +37,7 @@ var AppModule = (function () {
                     { path: 'person/:id', component: persondetail_component_1.PersonDetailComponent },
                     { path: 'products', component: products_component_1.ProductsComponent },
                     { path: 'status', component: status_component_1.StatusComponent },
+                    { path: 'personstatus', component: personofficestate_component_1.PersonOfficeStateComponent },
                     // { path: 'bla/:id', component: BlaComponent },
                     { path: '', redirectTo: 'welcome', pathMatch: 'full' },
                 ])
@@ -48,6 +50,7 @@ var AppModule = (function () {
                 persondetail_component_1.PersonDetailComponent,
                 products_component_1.ProductsComponent,
                 status_component_1.StatusComponent,
+                personofficestate_component_1.PersonOfficeStateComponent,
             ],
             bootstrap: [app_component_1.AppComponent]
         }), 

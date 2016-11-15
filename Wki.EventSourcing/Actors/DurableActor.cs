@@ -67,7 +67,7 @@ namespace Wki.EventSourcing.Actors
 
             durableActorState = new DurableActorState();
 
-            Context.System.Log.Info("start Building Aggregate {0}", Self.Path.ToString());
+            Context.System.Log.Info("start Building {0}", Self.Path.ToString());
         }
 
         protected override void PreStart()
@@ -184,10 +184,15 @@ namespace Wki.EventSourcing.Actors
         {
             if (message is End)
             {
-                Context.System.Log.Debug("Actor {0}: CompletedRestore", Self.Path.Name);
-
                 durableActorState.ChangeStatus(DurableActorStatus.Operating);
                 durableActorState.RestoreDuration = SystemTime.Now - durableActorState.StartedAt;
+
+                Context.System.Log.Info(
+                    "Actor {0}: CompletedRestore {1} Events, {2:N1}ms", 
+                    Self.Path.Name,
+                    durableActorState.NrRestoreEvents,
+                    durableActorState.RestoreDuration.TotalMilliseconds / 1000.0
+                );
 
                 SetReceiveTimeout(ActorInactiveTimeSpan);
                 UnbecomeStacked();

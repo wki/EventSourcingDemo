@@ -88,6 +88,16 @@ namespace Designer.Domain
         {
             return personAggregateOffice.Ask<PersonInfo>(new GetPersonInfo(id));
         }
+
+        public Task<OfficeActorState> GetPersonOfficeState()
+        {
+            return personAggregateOffice.Ask<OfficeActorState>(new GetState());
+        }
+
+        public Task<OfficeActorState> GetHangtagOfficeState()
+        {
+            return hangtagAggregateOffice.Ask<OfficeActorState>(new GetState());
+        }
         #endregion
     }
 }

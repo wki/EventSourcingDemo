@@ -11,6 +11,7 @@ import { PersonListComponent } from './personlist.component';
 import { PersonDetailComponent } from './persondetail.component';
 import { ProductsComponent } from './products.component';
 import { StatusComponent } from './status.component';
+import { PersonOfficeStateComponent } from './personofficestate.component';
 
 @NgModule({
   imports: [ 
@@ -24,6 +25,7 @@ import { StatusComponent } from './status.component';
       { path: 'person/:id', component: PersonDetailComponent },
       { path: 'products', component: ProductsComponent },
       { path: 'status', component: StatusComponent },
+      { path: 'personstatus', component: PersonOfficeStateComponent },
       // { path: 'bla/:id', component: BlaComponent },
       { path: '', redirectTo: 'welcome', pathMatch: 'full' },
       // { path: '**', component: PageNotFoundComponent },
@@ -37,6 +39,7 @@ import { StatusComponent } from './status.component';
     PersonDetailComponent,
     ProductsComponent,
     StatusComponent,
+    PersonOfficeStateComponent,
   ],
   bootstrap:    [ AppComponent ]
 })
