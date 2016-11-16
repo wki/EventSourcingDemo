@@ -14,16 +14,20 @@ namespace Wki.EventSourcing.Actors
     /// </description>
     public class FileJournalBase : ReceiveActor
     {
-        protected string StorageDir;
+        protected string storageDir;
 
         public FileJournalBase(string storageDir)
         {
-            StorageDir = storageDir;
+            this.storageDir = storageDir;
         }
 
+        /// <summary>
+        /// Calculate (and create if missing) a directory for a specified day 
+        /// </summary>
+        /// <param name="day">Day.</param>
         protected string Dir(DateTime day)
         {
-            var dir = Path.Combine(StorageDir, $"{day:yyyy}", $"{day:MM}");
+            var dir = Path.Combine(storageDir, $"{day:yyyy}", $"{day:MM}");
 
             if (!Directory.Exists(dir))
             {

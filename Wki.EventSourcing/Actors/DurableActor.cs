@@ -13,7 +13,6 @@ namespace Wki.EventSourcing.Actors
     /// </summary>
     /// <description>
     /// ...melden StillAlive an EventStore
-    /// ...melden DurableActorState an Parent
     /// 
     /// </description>
     /// <example>
@@ -195,10 +194,10 @@ namespace Wki.EventSourcing.Actors
                 durableActorState.RestoreDuration = SystemTime.Now - durableActorState.StartedAt;
 
                 Context.System.Log.Info(
-                    "Actor {0}: CompletedRestore {1} Events, {2:N1}ms", 
+                    "Actor {0}: CompletedRestore {1} Events, {2:N3}s", 
                     Self.Path.Name,
                     durableActorState.NrRestoreEvents,
-                    durableActorState.RestoreDuration.TotalMilliseconds / 1000.0
+                    durableActorState.RestoreDuration.TotalSeconds
                 );
 
                 SetReceiveTimeout(ActorInactiveTimeSpan);

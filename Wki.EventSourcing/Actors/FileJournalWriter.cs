@@ -10,6 +10,10 @@ namespace Wki.EventSourcing.Actors
     /// <summary>
     /// Write new persisted events to the journal
     /// </summary>
+    /// <description>
+    /// every event is persisted individually to the persistence medium
+    /// and the successful persisting answered back.
+    /// </description>
     public class FileJournalWriter : FileJournalBase
     {
         public FileJournalWriter(string storageDir) : base(storageDir)
@@ -17,6 +21,7 @@ namespace Wki.EventSourcing.Actors
             Receive<PersistEvent>(p => PersistEvent(p));
         }
 
+        // persist and reply an event
         private void PersistEvent(PersistEvent persistEvent)
         {
             Console.WriteLine($"Persist Event {persistEvent}");

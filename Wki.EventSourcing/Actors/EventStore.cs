@@ -64,7 +64,7 @@ namespace Wki.EventSourcing.Actors
         // maintain a complete state (for knowledge and statistics)
         private EventStoreState eventStoreState;
 
-        public EventStore(string dir, IActorRef reader, IActorRef writer)
+        public EventStore(string dir, IActorRef reader = null, IActorRef writer = null)
         {
             var config = Context.System.Settings.Config.GetConfig("eventstore");
 
@@ -95,6 +95,7 @@ namespace Wki.EventSourcing.Actors
         }
 
         #region Loading State
+        // junk-wise request events from journal reader
         private void Loading()
         {
             Context.System.Log.Info("Loading all events from event store");
@@ -146,19 +147,19 @@ namespace Wki.EventSourcing.Actors
             eventStoreState.LoadDuration = SystemTime.Now - eventStoreState.StartedAt;
 
             Context.System.Log.Info(
-                "{0} Events loaded in {1:F1}s. Starting regular operation", 
+                "{0} Events loaded in {1:N3}s. Starting regular operation", 
                 eventStoreState.NrEventsLoaded,
-                eventStoreState.LoadDuration.TotalMilliseconds / 1000
+                eventStoreState.LoadDuration.TotalSeconds
             );
 
             // periodically check for inactive children
             Context.System.Scheduler
                    .ScheduleTellRepeatedly(
                        initialDelay: IdleActorPollTimeSpan,
-                       interval: IdleActorPollTimeSpan,
-                       receiver: Self,
-                       message: new CheckInactiveActors(),
-                       sender: Self
+                       interval:     IdleActorPollTimeSpan,
+                       receiver:     Self,
+                       message:      new RemoveInactiveActors(),
+                       sender:       Self
                    );
 
             // messages from actors
@@ -174,7 +175,7 @@ namespace Wki.EventSourcing.Actors
             // diagnostic messages for testing
             Receive<GetSize>(_ => Sender.Tell(events.Count));
             Receive<GetActors>(_ => Sender.Tell(String.Join("|", actors.Values.Select(a => a.ToString()))));
-            Receive<CheckInactiveActors>(_ => CheckInactiveActors());
+            Receive<RemoveInactiveActors>(_ => RemoveInactiveActors());
 
             // diagnostic messages for monitoring
             Receive<GetStatusReport>(_ => ReplyStatusReport());
@@ -182,8 +183,6 @@ namespace Wki.EventSourcing.Actors
 
             // process everything lost so far
             Stash.UnstashAll();
-        
-            // TODO: start timer to monitor lost actors
         }
 
         // an actor wants to get restored
@@ -191,8 +190,8 @@ namespace Wki.EventSourcing.Actors
         {
             eventStoreState.NrActorsRestored++;
 
-            // hint: might override existing entry.
-            actors[Sender.Path.ToString()] = new ActorState(Sender.Path.ToString(), Sender, startRestore.InterestingEvents);
+            var path = Sender.Path.ToString();
+            actors[path] = new ActorState(path, Sender, startRestore.InterestingEvents);
 
             eventStoreState.NrSubscribers = actors.Count;
         }
@@ -200,7 +199,15 @@ namespace Wki.EventSourcing.Actors
         // an actor wants n more Events
         private void RestoreEvents(RestoreEvents restoreEvents)
         {
-            var actorState = actors[Sender.Path.ToString()];
+            var path = Sender.Path.ToString();
+
+            if (!actors.ContainsKey(path))
+            {
+                // should not happen but silently ignore this unlikely happening request
+                return;
+            }
+
+            var actorState = actors[path];
             actorState.LastSeen = SystemTime.Now;
 
             var nrEvents = restoreEvents.NrEvents;
@@ -229,8 +236,8 @@ namespace Wki.EventSourcing.Actors
         // an actor tells it is still alive
         private void StillAlive()
         {
-            eventStoreState.NrStillAliveReceived++;
             var path = Sender.Path.ToString();
+            eventStoreState.NrStillAliveReceived++;
 
             if (actors.ContainsKey(path))
             {
@@ -239,11 +246,13 @@ namespace Wki.EventSourcing.Actors
             }
         }
 
-        // an actor just died
+        // an actor tells us that he just died
         private void NotAlive()
         {
-            Context.System.Log.Info("Actor {0} just died, removing...", Sender.Path);
-            actors.Remove(Sender.Path.ToString());
+            var path = Sender.Path.ToString();
+            actors.Remove(path);
+
+            Context.System.Log.Info("Actor {0} just died, removed", path);
         }
 
         private void PersistEvent(object @event)
@@ -251,8 +260,7 @@ namespace Wki.EventSourcing.Actors
             journalWriter.Tell(@event);
         }
 
-        // remove all actors not alive for a long time
-        private void CheckInactiveActors()
+        private void RemoveInactiveActors()
         {
             var oldestAllowedTime = SystemTime.Now - MaxActorIdleTimeSpan;
 

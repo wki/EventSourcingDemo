@@ -53,7 +53,7 @@
     <Compile Include="Util\SystemTime.cs" />
     <Compile Include="Messages\GetSize.cs" />
     <Compile Include="Messages\GetActors.cs" />
-    <Compile Include="Messages\CheckInactiveActors.cs" />
+    <Compile Include="Messages\RemoveInactiveActors.cs" />
     <Compile Include="Util\Constant.cs" />
     <Compile Include="JsonNet.PrivateSettersContractResolvers\PrivateSettersContractResolvers.cs">
       <Paket>True</Paket>

@@ -45,10 +45,10 @@ Typ                 | Cmd | Evt | Actor                               | Konstruk
 **Nachrichten**
 
 Typ         | Basisklasse
-------------|---
-**Command** | DispatchableCommand / DispatchableCommand&lt;TIndex&gt;
-**Query**   | DispatchableCommand / DispatchableCommand&lt;TIndex&gt;
-**Event**   | Event
+------------|-----------------------------------
+**Command** | DispatchableCommand&lt;TIndex&gt;
+**Query**   | DispatchableCommand&lt;TIndex&gt;
+**Event**   | Event / Event&lt;TIndex&gt;
 **Document**| -
 
 
@@ -59,7 +59,7 @@ Typ         | Basisklasse
    fordert einen Aktor (EventStore, OfficeActor, DurableActor) auf, seinen
    internen Zustand in Form eines immutable XxxState Objektes zu melden.
 
-2. DispatchableCommand, DispatchableCommand&lt;TIndex&gt;
+2. DispatchableCommand&lt;TIndex&gt;
 
    Basisklasse für Kommandos. Abhängig vom Aktor-Typ evtl. generisch (dann
    mit Index).
@@ -79,3 +79,65 @@ Typ         | Basisklasse
 
    muss existieren, wird diversen Aktoren als Konstruktor-Argument mit gegeben
 
+
+## diverse Protokolle
+| Abk.| Bedeutung     |
+|-----|---------------|
+| ES  | EventStore    |
+| DA  | DurableActor  |
+| OA  | OfficeActor   |
+| JR  | JournalReader |
+| JW  | JournalWriter |
+
+
+ * Zwischen EventStore und JournalReader zum Befüllen EventStore
+
+   - solange bis alle Events geladen: Bearbeitung von Blöcken zu n Ereignissen
+     - ES -> JR: LoadJournal(n)
+     - JR -> ES: n x EventLoaded(event)
+   - wenn fertig:
+     - JR -> ES: End
+
+
+ * Zwischen EventStore und DurableActor zum Restaurieren DurableActor
+
+   - Vorbereitung
+     - DA -> ES: StartRestore(interestingEvents)
+   - solange bis alle Events geladen: Restaurieren von Blöcken zu n Ereignissen
+     - DA -> ES: ResotreEvents(n) 
+     - ES -> DA: n x Event
+   - wenn fertig
+     - ES -> DA: End
+
+
+ * Weiterleitung von DispatchableCommand abgeleiteten Nachrichten im OfficeActor
+
+   - Eintreffen einer Nachricht
+     - X -> OA: command
+   - Sicherstellen, dass Durable Actor angelegt ist
+     - OA -> DA: command (via Forward)
+
+
+ * Abfrage Status (DurableActor, OfficeActor, EventStore)
+
+   - Status Abfrage
+     - X -> Actor: GetState
+     - Actor -> X: DurableActorState | OfficeActorState | EventStoreState
+
+
+ * Vorgang des Persistierens
+
+   - Persistierung
+     - DA -> ES: PersistEvent(event)
+     - ES -> JW: PersistEvent(event)
+     - JW -> ES: EventPersisted(event)
+   - Benachrichtigung aller Subscriber (incl. Absender)
+     - ES -> (Subscribers): event
+
+
+ * Benachrichtigung an EventStore zur Pflege der Subscriber-Liste
+
+   - solange am Leben, regelmäßig
+     - DA -> ES: StillAlive
+   - unmittelbar vor Lebensende
+     - DA -> ES: NotAlive

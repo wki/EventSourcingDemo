@@ -1,5 +1,22 @@
 # TODOs
 
- * OfficeActor: idle DurableActor wird nicht korrekt erkannt
- + DurableActor: melden an "Parent" falsch. Abholen ist besser
- + mehr Statistik
+ * bessere Status URLs:
+   - GET /api/status/eventstore
+   - GET /api/status/personoffice
+   - GET /api/status/hangtagoffice
+
+ * einheitlichere Detail URL:
+   - GET /api/person/:id/detail
+
+ * Erste Gehversuche Hangtags Controller
+   - POST /api/hangtag/create
+   - POST /api/hangtag/clone
+   - GET /api/hangtag/list
+   - GET /api/hangtag/:id/detail
+   - POST /api/hangtag/:id/enter_content
+   - POST /api/hangtag/:id/add_rendering
+   - POST /api/hangtag/:id/accept_approval
+   - POST /api/hangtag/:id/reject_approval
+
+TODO: Hangtag Use-Cases noch überdenken, vollständig machen
+

@@ -52,14 +52,14 @@ namespace Wki.EventSourcing.Actors
                        initialDelay: IdleActorPollTimeSpan,
                        interval: IdleActorPollTimeSpan,
                        receiver: Self,
-                       message: new CheckInactiveActors(),
+                       message: new RemoveInactiveActors(),
                        sender: Self
                    );
 
             // diagnostic messages for testing
             Receive<GetSize>(_ => Sender.Tell(officeActorState.ChildActorStates.Count));
             Receive<GetActors>(_ => Sender.Tell(String.Join("|", officeActorState.ChildActorStates.Keys.Select(k => k))));
-            Receive<CheckInactiveActors>(_ => CheckInactiveActors());
+            Receive<RemoveInactiveActors>(_ => RemoveInactiveActors());
 
             // diagnostic messages for monitoring
             Receive<GetState>(_ => Sender.Tell(officeActorState));
@@ -68,6 +68,7 @@ namespace Wki.EventSourcing.Actors
             // all commands will pass thru Unhandled()...
         }
 
+        // handle all commands sent to the actor by forwarding
         protected override void Unhandled(object message)
         {
             var command = message as DispatchableCommand<TIndex>;
@@ -86,7 +87,7 @@ namespace Wki.EventSourcing.Actors
             }
         }
 
-        private void CheckInactiveActors()
+        private void RemoveInactiveActors()
         {
             officeActorState.NrActorChecks++;
             officeActorState.LastActorCheckAt = SystemTime.Now;
@@ -127,6 +128,7 @@ namespace Wki.EventSourcing.Actors
             }
         }
 
+        // a durable actor has answered to GetState
         private void UpdateChild(DurableActorState durableActorState)
         {
             var actorName = Sender.Path.Name;
@@ -143,7 +145,7 @@ namespace Wki.EventSourcing.Actors
 
         private void ForwardToDestinationActor(DispatchableCommand<TIndex> cmd)
         {
-            var destination = CreateOrLoadChild(cmd.Id);
+            var destination = LookupOrCreateChild(cmd.Id);
             var actorName = destination.Path.Name;
 
             if (officeActorState.ChildActorStates.ContainsKey(actorName))
@@ -158,7 +160,7 @@ namespace Wki.EventSourcing.Actors
                 officeActorState.NrActorsMissed++;
         }
 
-        private IActorRef CreateOrLoadChild(TIndex id)
+        private IActorRef LookupOrCreateChild(TIndex id)
         {
             var type = typeof(TActor);
             var name = id.ToString();
