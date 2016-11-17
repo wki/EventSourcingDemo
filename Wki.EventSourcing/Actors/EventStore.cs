@@ -257,6 +257,9 @@ namespace Wki.EventSourcing.Actors
 
         private void PersistEvent(object @event)
         {
+            // TODO: hier evtl. weitere Angaben weiter reichen
+            // z.B. Sender
+            // TODO: oder überlegen, Envelopes weiter zu geben
             journalWriter.Tell(@event);
         }
 

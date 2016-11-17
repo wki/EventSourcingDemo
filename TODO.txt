@@ -18,5 +18,75 @@
    - POST /api/hangtag/:id/accept_approval
    - POST /api/hangtag/:id/reject_approval
 
-TODO: Hangtag Use-Cases noch überdenken, vollständig machen
+ * EventStore
+   - an JournalWriter: Evelope-Objekte weiter geben
+   - von JournalReader: Envelope-Objekte erhalten
+   - EventSerializer: Umgang mit Types verbessern (nicht mehr im JSON)
+   - EventSerializer: Assemblies übergebbar machen   
 
+ * JournalReader/JournalWriter
+   - PostgreSQL/sqlite Implementierung
+   - als Proof-Of-Concept
+   
+
+---
+
+Workflow Aufbau
+
+ * mehrere Formulare zusammen gesetzt
+ * Combi-Daten als 1..n Teile einer Struktur (geordnet)
+ * pro Teil der Struktur -> 1 Command erzeugen
+ * Commands der Reihe nach abarbeiten (erster NACK stoppt)
+ 
+
+Hangtag Commands derzeit
+
+ * enter_technical_information
+ * change_material
+ * enter_suppliers
+ * enter_content
+ * review_content
+ * enter_render_options
+ * enter_translation -- mehrere Varianten je nach Recht
+ * approve
+ * add_accounting_info
+ * add_comment
+ * move_to_step -- darin steckt viel Logik
+
+
+Umsetzung exemplarisch
+
+ * enter_technical_information
+ * change_material
+ * enter_content
+ * approve (enthält move_to_step)
+ * add_accounting_info
+ * move_to_step
+
+
+Workflow Steps vereinfacht:
+
+ * 220-Technical_Info == enter_technical, change_material, move_to_step
+ * 223-Content = enter_content, move_to_step
+ * 240-Manual = add_accounting_info, move_to_step
+ * 250-Render 
+ * 260-Quality = add_accounting_info, move_to_step
+ * 270-Approval = approve 
+ * 293-Drop = move_to_step
+ * 299-Finish = move_to_step
+
+
+---
+
+
+zusätzliche Metadaten bei Event Storage
+
+ * EventSource (Erzeuger des Events)
+   == Sender
+ * Correlation-Id: durchgängiger Pfad bei allen Messages eines "strangs"
+   == Id des DurableActors, z.B. "person-4711", "hangtag-13"
+ * Message-Id: numerische Id
+ * Causation-Id: Grund für diese Nachricht
+   == Message-Id der Nachricht, auf die ich geantwortet habe
+
+https://groups.google.com/forum/#!searchin/dddcqrs/Correlation$20and$20Causation%7Csort:relevance/dddcqrs/qGYC6qZEqOI/LhQup9v7EwAJ
