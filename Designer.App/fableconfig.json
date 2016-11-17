@@ -1,10 +1,23 @@
 {
     "module": "amd",
-    "ecma": "es5",
-    "outDir": "out",
     "sourceMaps": true,
-    "projFile": "Designer.App.fsproj",
-    "babelPlugins": [],
-    "scripts": {
+    "projFile": "./Designer.App.fsproj",
+    "outDir": "out",
+    "babelPlugins": ["transform-runtime"],
+    "targets": {
+        "debug": {
+            "watch": true,
+            "symbols": [
+                "DEV_SERVER"
+            ],
+            "scripts": {
+            }
+        },
+        "production": {
+            "sourceMaps": false,
+            "scripts": {
+                "postbuild": "node node_modules/webpack/bin/webpack -p"
+            }
+        }
     }
 }

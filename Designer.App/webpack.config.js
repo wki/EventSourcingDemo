@@ -3,7 +3,7 @@ var webpack = require("webpack");
 
 var cfg = {
   devtool: "source-map",
-  entry: "./out/Script.js",
+  entry: "./out/app.js",
   output: {
     path: path.join(__dirname, "public"),
     publicPath: "/public",
@@ -11,7 +11,6 @@ var cfg = {
   },
   module: {
     preLoaders: [
-    // loaders: [
       {
         test: /\.js$/,
         exclude: /node_modules/,

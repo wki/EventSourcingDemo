@@ -45,3 +45,4 @@ node_modules/
 .fake/
 build/
 npm-debug.log
+Designer.App/public/
