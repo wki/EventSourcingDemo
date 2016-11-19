@@ -4,6 +4,7 @@ nuget FAKE
 nuget Akka 1.1.2
 nuget Akka.TestKit 1.1.2
 nuget Akka.TestKit.NUnit 1.1.2
+nuget FSharp.Core
 nuget JsonNet.PrivateSettersContractResolvers.Source 0.1.0
 nuget Newtonsoft.Json 9.0.1
 nuget NUnit 2.6.4
