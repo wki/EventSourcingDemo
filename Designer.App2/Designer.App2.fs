@@ -103,3 +103,4 @@ module Menu =
     |> withStartNodeSelector "#hello"
     |> withSubscriber (fun e -> window.console.log("Something happened: ", e))
     |> start
+    |> ignore

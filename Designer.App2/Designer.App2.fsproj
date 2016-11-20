@@ -48,8 +48,10 @@
     <Compile Include="node_modules/fable-arch/Fable.Arch.Html.fs" />
     <Compile Include="node_modules/fable-arch/Fable.Arch.App.fs" />
     <Compile Include="node_modules/fable-arch/Fable.Arch.Virtualdom.fs" />
+    <Compile Include="Util.fs" />
     <Compile Include="Topnav.fs" />
     <Compile Include="WelcomePage.fs" />
+    <Compile Include="UserListPage.fs" />
     <Compile Include="Designer.App2.fs" />
     <!-- None Include="Script.fsx" / -->
   </ItemGroup>
