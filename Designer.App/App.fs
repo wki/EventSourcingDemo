@@ -1,6 +1,6 @@
 namespace Designer.App
 module Menu =
-    open Fable.Core
+    // open Fable.Core
     open Fable.Import
     open Elmish
     open Fable.Import.Browser
