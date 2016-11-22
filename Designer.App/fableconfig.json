@@ -3,20 +3,14 @@
     "sourceMaps": true,
     "projFile": "./Designer.App.fsproj",
     "outDir": "out",
-    "babelPlugins": ["transform-runtime"],
+    "scripts": {
+        "prebuild": "npm install",
+        "postbuild": "node node_modules/webpack/bin/webpack"
+    },
     "targets": {
-        "debug": {
-            "watch": true,
-            "symbols": [
-                "DEV_SERVER"
-            ],
+        "watch": {
             "scripts": {
-            }
-        },
-        "production": {
-            "sourceMaps": false,
-            "scripts": {
-                "postbuild": "node node_modules/webpack/bin/webpack -p"
+                "postbuild": "node node_modules/webpack/bin/webpack --watch"
             }
         }
     }

@@ -9,12 +9,14 @@ module Menu =
     
     open Topnav
     open WelcomePage
+    // open UserListPage
+    // open UserDetailPage
 
     // Model
     type Page = // Idee: jeder Fall kapselt die Model-Daten der jeweiligen Seite
         | WelcomePage of WelcomePage.Model
-        | UserListPage
-        | UserDetailPage of int
+        | UserListPage // of UserListPage.Model
+        | UserDetailPage of int // of UserDetailPage.Model
     
     type Model = {
         Nav: Topnav.Model
@@ -22,6 +24,7 @@ module Menu =
         Page: Page
     }
     
+    // use Messages.AppMsg instead!
     type Actions =
         | ChangeInput of string
         | Nav of Topnav.Actions
@@ -38,7 +41,7 @@ module Menu =
 
     let update model msg =
         match msg with
-        | ChangeInput str -> {model with Input=str}
+        | ChangeInput str -> {model with Input=str}, []
         | Nav navMsg ->
             match navMsg with
             | ShowWelcomePage
@@ -48,7 +51,7 @@ module Menu =
             | ShowUserDetail id 
                 -> { model with Input = sprintf "user detail %d" id; Page = UserDetailPage id }
             | _ -> { model with Input = sprintf "%A" nav }
-            |> forwardToNav navMsg
+            |> forwardToNav navMsg, []
     
     // View
     let showPage model =
@@ -99,7 +102,11 @@ module Menu =
 
     open Fable.Import.Browser
 
-    createSimpleApp (init()) view update Virtualdom.createRender
+    // SimpleApp: update returns Model
+    // createSimpleApp (init()) view update Virtualdom.createRender
+
+    // App: update returns Model * Action list 
+    createApp (init()) view update Virtualdom.createRender
     |> withStartNodeSelector "#hello"
     |> withSubscriber (fun e -> window.console.log("Something happened: ", e))
     |> start

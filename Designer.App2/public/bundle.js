@@ -134,7 +134,7 @@
 	    }
 	
 	    function update(model, msg) {
-	        return msg.Case === "Nav" ? function (model_1) {
+	        return msg.Case === "Nav" ? [function (model_1) {
 	            return forwardToNav(msg.Fields[0], model_1);
 	        }(msg.Fields[0].Case === "ShowWelcomePage" ? function () {
 	            var Input = "welcome";
@@ -162,7 +162,7 @@
 	            });
 	
 	            return new Model(model.Nav, Input, model.Page);
-	        }()) : new Model(model.Nav, msg.Fields[0], model.Page);
+	        }()), new _fableCore.List()] : [new Model(model.Nav, msg.Fields[0], model.Page), new _fableCore.List()];
 	    }
 	
 	    function showPage(model) {
@@ -215,13 +215,13 @@
 	
 	    _FableArch2.AppApi.start(_FableArch2.AppApi.withSubscriber(function (e) {
 	        window.console.log("Something happened: ", e);
-	    }, _FableArch2.AppApi.withStartNodeSelector("#hello", _FableArch2.AppApi.createSimpleApp(init(), function (model) {
+	    }, _FableArch2.AppApi.withStartNodeSelector("#hello", _FableArch2.AppApi.createApp(init(), function (model) {
 	        return view(model);
 	    }, function (model) {
 	        return function (msg) {
 	            return update(model, msg);
 	        };
-	    })(function (selector) {
+	    }, function (selector) {
 	        return function (handler) {
 	            return function (view_1) {
 	                return (0, _FableArch3.createRender)(selector, handler, view_1);

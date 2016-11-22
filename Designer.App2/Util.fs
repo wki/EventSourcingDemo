@@ -8,9 +8,35 @@ module Util =
     open Fable.Import
     open Fable.Import.Browser
 
-    let (|NonEmpty|_|) (s: string) =
-        match s.Trim() with "" -> None | s -> Some s
+    // open Fable.Import.Fetch
+    // open Fable.Helpers.Fetch
 
+    // version based in Fetch
+    // // getting data and parsing from JSON
+    // async { 
+    //     try 
+    //         let! records = fetchAs<MyRecord[]>("http://www.server.com/data.json" , [])
+    //         // ...
+    //     with
+    //     | error -> ...
+    // } 
+    // 
+    // // posting data to a server
+    // async { 
+    //     let! response = postRecord(
+    //                       "http://www.server.com/data.json", 
+    //                       myRecord,
+    //                       [ RequestProperties.Headers [ 
+    //                           HttpRequestHeaders.Accept "application/xml" ]
+    //                       ])
+    // 
+    //     if response.ok then
+    //         match response.Headers.ContentType with
+    //         | None -> // ...
+    //         | Some contentType -> // ...
+    // }
+
+    // native verseion based on Brpwser.Import
     type HttpMethod<'T> =
         | Get of url: string
         | Post of url: string * data: 'T
