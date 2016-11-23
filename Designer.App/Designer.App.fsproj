@@ -52,8 +52,10 @@
     <Compile Include="node_modules/fable-elmish-react/elmish-app.fs" />
     <Compile Include="node_modules/fable-elmish-react/elmish-react.fs" />
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Messages.fs" />
     <Compile Include="Navigation.fs" />
+    <Compile Include="Partials/TopNav.fs" />
+    <Compile Include="Pages/Welcome.fs" />
+    <Compile Include="Pages/PersonList.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <Import Project="$(FSharpTargetsPath)" />

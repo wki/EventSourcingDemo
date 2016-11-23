@@ -5,31 +5,30 @@ module Menu =
     open Elmish
     open Fable.Import.Browser
     open Elmish.Browser.Navigation
-    open Elmish.UrlParser
     
     // JsInterop.importAll "whatwg-fetch"
     
-    open Messages
-    module topNav = Navigation
+    open Designer.App.Navigation
+    open Designer.App.Partials // allows to write eg "TopNav.Model"
+    open Designer.App.Pages // allows to write eg "Welcome.view" 
     
-    type Model =
-      { nav : topNav.Model
-        page : Page
-        query : string
-        cache : Map<string,string list> }
-    
-    /// The URL is turned into a Result.
-    let pageParser : Parser<Page->_,_> =
-      oneOf
-        [ format Home (s "home")
-          format Blog (s "blog" </> i32)
-          format Search (s "search" </> str) ]
-    
-    let hashParser (location:Location) =
-      UrlParser.parse id pageParser (location.hash.Substring 1)
+    type Model = { 
+        nav: TopNav.Model   // Daten der Haupt Navigation
+        page: Page          // notwendig für toHash Konvertierung
+
+        // Daten individueller Seiten. der einfachheit halber parallel zueinander
+        welcome: Welcome.Model
+        personList: PersonList.Model
+
+        // beide überflüssig
+        query: string
+        cache: Map<string,string list> 
+    }
     
     type Msg =
-      | Nav of topNav.Msg
+      | Nav of TopNav.Msg
+      | Welcome of Welcome.Msg
+      | PersonList of PersonList.Msg
       // | Query of string
       // | Enter
       // | FetchFailure of string*exn
@@ -44,16 +43,26 @@ module Menu =
           Browser.console.error("Error parsing url:", e)  
           ( model, Navigation.modifyUrl (toHash model.page) )
     
+      | Ok (Page.PersonList as page) ->
+          console.log("parsed PersonList. initializing...")
+          { model with 
+                page = Page.PersonList
+                personList = PersonList.init()
+          }, []
+
       | Ok page ->
+          console.log("parsed. page:", page)
           { model with page = page; query = "" }, []
     
     let init result =
-      urlUpdate result { nav = topNav.init(); page = Home; query = ""; cache = Map.empty }
-    
-    let traceUrlUpdate (result:Result<Page,string>) m = 
-        console.log("UrlUpdate:", result)
-        urlUpdate result m
-    
+      urlUpdate result { 
+        nav = TopNav.init()
+        page = Page.Welcome
+        welcome = Welcome.init()
+        personList = PersonList.init()
+        query = ""
+        cache = Map.empty 
+      }
     
     (* A relatively normal update function. The only notable thing here is that we
     are commanding a new URL to be added to the browser history. This changes the
@@ -63,8 +72,14 @@ module Menu =
     let update msg model =
       match msg with
       | Nav cmd ->
-          { model with nav = topNav.update cmd model.nav }, []
-    
+          { model with nav = TopNav.update cmd model.nav }, []
+      
+      | Welcome cmd -> // model, []
+          { model with welcome = Welcome.update cmd model.welcome }, []
+
+      | PersonList cmd -> // model, []
+          { model with personList = PersonList.update cmd model.personList }, []
+
     //   | Query query ->
     //       { model with query = query }, []
     
@@ -85,16 +100,29 @@ module Menu =
     
     let view model (dispatch: Dispatch<Msg>) =
       div []
-        [ topNav.view model.nav (Nav >> dispatch)
+        [ TopNav.view model.nav (Nav >> dispatch)
 
           div [ ClassName "container" ]
-              [ unbox "TODO: switch page"]
+              [
+                (
+                  match model.page with
+                  | Page.Welcome      -> Welcome.view    model.welcome    (Welcome >> dispatch)
+                  | Page.PersonList   -> PersonList.view model.personList (PersonList >> dispatch)
+                  | Page.Search query -> div [][ unbox "search TODO"]
+                )
+              ]
         ]
     
 
     // App
     open Elmish.React
     
+    // generate debug output for url Updates
+    let traceUrlUpdate (result:Result<Page,string>) m = 
+        console.log("UrlUpdate:", result)
+        urlUpdate result m
+    
+    // generate debug output of last message
     let trace message model =
         console.log (sprintf "Message: %A" message)
         ()
