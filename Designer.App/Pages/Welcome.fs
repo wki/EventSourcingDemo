@@ -15,7 +15,8 @@ module Welcome =
     let init() = ()
 
     // Update
-    let update msg model = model
+    let update msg model =
+        model, []
 
     // View
     open Fable.Helpers.React

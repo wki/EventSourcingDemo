@@ -74,11 +74,13 @@ module Menu =
       | Nav cmd ->
           { model with nav = TopNav.update cmd model.nav }, []
       
-      | Welcome cmd -> // model, []
-          { model with welcome = Welcome.update cmd model.welcome }, []
+      | Welcome cmd ->
+          let w,cmds = Welcome.update cmd model.welcome
+          { model with welcome = w }, cmds
 
-      | PersonList cmd -> // model, []
-          { model with personList = PersonList.update cmd model.personList }, []
+      | PersonList cmd ->
+          let p,cmds = PersonList.update cmd model.personList
+          { model with personList = p }, cmds
 
     //   | Query query ->
     //       { model with query = query }, []
