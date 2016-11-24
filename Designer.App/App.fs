@@ -34,6 +34,12 @@ module Menu =
       // | FetchFailure of string*exn
       // | FetchSuccess of string*(string list)
     
+    let get query =
+        async {
+            let! r = Fable.Helpers.Fetch.fetchAs("http://localhost:9000/api/bla/" + query, [])
+            return r
+        }
+
     (* If the URL is valid, we just update our model or issue a command. 
     If it is not a valid URL, we modify the URL to whatever makes sense.
     *)
@@ -49,6 +55,16 @@ module Menu =
                 page = Page.PersonList
                 personList = PersonList.init()
           }, []
+
+      | Ok (Page.Welcome as page) ->
+          console.log("parsed Welcome. initializing...")
+          // Laden der Daten: in etwa so
+          // Cmd.ofAsync get query (fun r -> FetchSuccess (query,r)) (fun ex -> FetchFailure (query,ex))
+
+          { model with
+                page = Page.Welcome
+                welcome = Welcome.init()
+          }, Cmd.ofAsync get "foo" (fun _ -> Msg.Welcome(Welcome.Loaded)) (fun ex -> Msg.Welcome(Welcome.Failed))
 
       | Ok page ->
           console.log("parsed. page:", page)
@@ -69,7 +85,10 @@ module Menu =
     address bar and lets us use the browser&rsquo;s back button to go back to
     previous pages.
     *)
-    let update msg model =
+
+    let update (msg:Msg) model =
+      console.log("App: update, msg = ", msg)
+
       match msg with
       | Nav cmd ->
           { model with nav = TopNav.update cmd model.nav }, []

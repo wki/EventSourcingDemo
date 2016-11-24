@@ -5,17 +5,23 @@ namespace Designer.App.Pages
 module Welcome =
     open Fable.Core
     open Fable.Import
+    open Fable.Import.Browser
     open Elmish
 
     // Model
     type Model = unit
     type Msg =
-    | Show
+    | Load
+    | Loaded
+    | Failed
 
-    let init() = ()
+    let init() =
+        console.log("Welcome: init.")
+        ()
 
     // Update
-    let update msg model =
+    let update (msg:Msg) model =
+        console.log("Welcome: update, msg = ", msg)
         model, []
 
     // View
