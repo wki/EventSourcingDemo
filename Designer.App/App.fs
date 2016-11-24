@@ -8,6 +8,7 @@ module Menu =
     
     // JsInterop.importAll "whatwg-fetch"
     
+    open Designer.App.HttpLoader
     open Designer.App.Navigation
     open Designer.App.Partials // allows to write eg "TopNav.Model"
     open Designer.App.Pages // allows to write eg "Welcome.view" 
@@ -34,11 +35,6 @@ module Menu =
       // | FetchFailure of string*exn
       // | FetchSuccess of string*(string list)
     
-    let get query =
-        async {
-            let! r = Fable.Helpers.Fetch.fetchAs("http://localhost:9000/api/bla/" + query, [])
-            return r
-        }
 
     (* If the URL is valid, we just update our model or issue a command. 
     If it is not a valid URL, we modify the URL to whatever makes sense.
@@ -64,7 +60,12 @@ module Menu =
           { model with
                 page = Page.Welcome
                 welcome = Welcome.init()
-          }, Cmd.ofAsync get "foo" (fun _ -> Msg.Welcome(Welcome.Loaded)) (fun ex -> Msg.Welcome(Welcome.Failed))
+          },
+          // geht aber bringt internes Wissen hier her 
+          // Cmd.ofAsync get "adsf" (fun r -> Msg.Welcome(Welcome.Loaded)) (fun ex -> Msg.Welcome(Welcome.Failed))
+
+          // viel besser. schickt eine Nachricht in die Komponente
+          Cmd.ofMsg (Msg.Welcome(Welcome.Load))
 
       | Ok page ->
           console.log("parsed. page:", page)
@@ -86,7 +87,7 @@ module Menu =
     previous pages.
     *)
 
-    let update (msg:Msg) model =
+    let update (msg:Msg) model : Model * Cmd<Msg> =
       console.log("App: update, msg = ", msg)
 
       match msg with
@@ -95,7 +96,7 @@ module Menu =
       
       | Welcome cmd ->
           let w,cmds = Welcome.update cmd model.welcome
-          { model with welcome = w }, cmds
+          { model with welcome = w }, cmds |> Cmd.map (fun m -> Msg.Welcome(m)) 
 
       | PersonList cmd ->
           let p,cmds = PersonList.update cmd model.personList

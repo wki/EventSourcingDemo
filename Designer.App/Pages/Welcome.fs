@@ -7,7 +7,8 @@ module Welcome =
     open Fable.Import
     open Fable.Import.Browser
     open Elmish
-
+    open Designer.App.HttpLoader
+    
     // Model
     type Model = unit
     type Msg =
@@ -22,7 +23,10 @@ module Welcome =
     // Update
     let update (msg:Msg) model =
         console.log("Welcome: update, msg = ", msg)
-        model, []
+        match msg with
+        | Load   -> model, Cmd.ofAsync get "foo" (fun _ -> Msg.Loaded) (fun ex -> Msg.Failed)
+        | Loaded -> model, []
+        | Failed -> model, []
 
     // View
     open Fable.Helpers.React
