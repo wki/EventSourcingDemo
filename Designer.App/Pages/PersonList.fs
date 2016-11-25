@@ -5,18 +5,43 @@ namespace Designer.App.Pages
 module PersonList =
     open Fable.Core
     open Fable.Import
+    open Fable.Import.Browser
     open Elmish
+    open Designer.App.HttpLoader
 
     // Model
-    type Model = unit
+    type Person = {
+        firstName: string
+        lastName: string
+    }
+    type Model = {
+        state: string
+        persons: Person list
+    }
     type Msg =
-    | Show
+    | Load
+    | Loaded
+    | Failed
 
-    let init() = ()
+    let init() =
+        { 
+            state = "initializing"
+            persons = [] 
+        }, Cmd.ofMsg Load
 
     // Update
-    let update msg model =
-        model, []
+    let update (msg:Msg) model =
+        console.log("Welcome: update, msg = ", msg)
+        match msg with
+        | Load   -> 
+            { model with state = "loading" },
+            Cmd.ofAsync get "foo" (fun _ -> Msg.Loaded) (fun ex -> Msg.Failed)
+        | Loaded -> 
+            { model with state = "loaded" }, 
+            []
+        | Failed -> 
+            { model with state = "failed" }, 
+            []
 
     // View
     open Fable.Helpers.React
@@ -27,6 +52,6 @@ module PersonList =
             [ h1 []
                  [ unbox "Person" ]
               p []
-                [ unbox "This is person list" ]
+                [ unbox (sprintf "State: %s" model.state) ]
             ]
     

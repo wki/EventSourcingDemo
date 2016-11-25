@@ -16,9 +16,7 @@ module Welcome =
     | Loaded
     | Failed
 
-    let init() =
-        console.log("Welcome: init.")
-        ()
+    let init() = (), Cmd.ofMsg Load
 
     // Update
     let update (msg:Msg) model =

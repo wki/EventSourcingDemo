@@ -14,16 +14,14 @@ module TopNav =
     | ShowPopup
     | HidePopup
 
-    let init() = {
-      popupVisible = false
-    }
+    let init() = { popupVisible = false }, []
     
     // Update
     
     let update msg model =
       match msg with
-      | ShowPopup -> { model with popupVisible = true }
-      | HidePopup -> { model with popupVisible = false }
+      | ShowPopup -> { model with popupVisible = true }, []
+      | HidePopup -> { model with popupVisible = false }, []
     
     // View
     open Fable.Helpers.React

@@ -47,25 +47,19 @@ module Menu =
     
       | Ok (Page.PersonList as page) ->
           console.log("parsed PersonList. initializing...")
+          let p,cmds = PersonList.init()
           { model with 
                 page = Page.PersonList
-                personList = PersonList.init()
-          }, []
+                personList = p
+          }, cmds |> Cmd.map Msg.PersonList
 
       | Ok (Page.Welcome as page) ->
           console.log("parsed Welcome. initializing...")
-          // Laden der Daten: in etwa so
-          // Cmd.ofAsync get query (fun r -> FetchSuccess (query,r)) (fun ex -> FetchFailure (query,ex))
-
+          let w, cmds = Welcome.init()
           { model with
                 page = Page.Welcome
-                welcome = Welcome.init()
-          },
-          // geht aber bringt internes Wissen hier her 
-          // Cmd.ofAsync get "adsf" (fun r -> Msg.Welcome(Welcome.Loaded)) (fun ex -> Msg.Welcome(Welcome.Failed))
-
-          // viel besser. schickt eine Nachricht in die Komponente
-          Cmd.ofMsg (Msg.Welcome(Welcome.Load))
+                welcome = w
+          }, cmds |> Cmd.map Msg.Welcome
 
       | Ok page ->
           console.log("parsed. page:", page)
@@ -73,49 +67,39 @@ module Menu =
     
     let init result =
       urlUpdate result { 
-        nav = TopNav.init()
+        nav = TopNav.init() |> fst
         page = Page.Welcome
-        welcome = Welcome.init()
-        personList = PersonList.init()
+        welcome = Welcome.init() |> fst
+        personList = PersonList.init() |> fst
         query = ""
         cache = Map.empty 
       }
     
-    (* A relatively normal update function. The only notable thing here is that we
-    are commanding a new URL to be added to the browser history. This changes the
-    address bar and lets us use the browser&rsquo;s back button to go back to
-    previous pages.
-    *)
-
     let update (msg:Msg) model : Model * Cmd<Msg> =
+      // take the result of component's update and
+      // construct updated model and returned command as a tuple
+      let toModelCmd updateModel msgType result =
+          let x,cmds = result
+          updateModel x, cmds |> Cmd.map msgType
+
       console.log("App: update, msg = ", msg)
 
       match msg with
       | Nav cmd ->
-          { model with nav = TopNav.update cmd model.nav }, []
+          model.nav
+          |> TopNav.update cmd
+          |> toModelCmd (fun n -> { model with nav = n }) Msg.Nav 
       
       | Welcome cmd ->
-          let w,cmds = Welcome.update cmd model.welcome
-          { model with welcome = w }, cmds |> Cmd.map (fun m -> Msg.Welcome(m)) 
+          model.welcome
+          |> Welcome.update cmd
+          |> toModelCmd (fun w -> { model with welcome = w }) Msg.Welcome
 
       | PersonList cmd ->
-          let p,cmds = PersonList.update cmd model.personList
-          { model with personList = p }, cmds
+          model.personList
+          |> PersonList.update cmd
+          |> toModelCmd (fun p -> { model with personList=p }) Msg.PersonList
 
-    //   | Query query ->
-    //       { model with query = query }, []
-    
-    //   | Enter ->
-    //       let newPage = Search model.query
-    //       { model with page = newPage }, Navigation.newUrl (toHash newPage)
-    
-    //   | FetchFailure (query,_) ->
-    //       { model with cache = Map.add query [] model.cache }, []
-    
-    //   | FetchSuccess (query,locations) -> 
-    //       { model with cache = Map.add query locations model.cache }, []
-    
-    
     // VIEW
     open Fable.Helpers.React
     open Fable.Helpers.React.Props
