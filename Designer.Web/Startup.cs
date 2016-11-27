@@ -31,7 +31,7 @@ namespace Designer.Web
 
             app.UseStaticFiles(new StaticFileOptions
                 {
-                    FileSystem = new PhysicalFileSystem("/Users/wolfgang/proj/EventSourcingDemo/Designer.Web/www" /* "./www" */),
+                    FileSystem = new PhysicalFileSystem("/Users/wolfgang/proj/EventSourcingDemo/Designer.App"),
                 }
             );
 

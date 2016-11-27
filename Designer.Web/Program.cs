@@ -11,7 +11,7 @@ namespace Designer.Web
 
         public static void Main(string[] args)
         {
-            using (WebApp.Start<Startup>(url: String.Format("http://localhost:{0}/", Port)))
+            using (WebApp.Start<Startup>($"http://localhost:{Port}/"))
             {
                 Thread.Sleep(TimeSpan.FromSeconds(5));
 

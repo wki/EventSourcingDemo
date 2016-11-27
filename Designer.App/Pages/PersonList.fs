@@ -15,7 +15,7 @@ module PersonList =
 
     type Person = {
         id: int
-        fullName: string
+        fullname: string
         email: string
     }
     type Model = {
@@ -60,19 +60,34 @@ module PersonList =
     open Fable.Helpers.React
     open Fable.Helpers.React.Props
 
+    let renderPerson person =
+        tr []
+           [
+               td [] [ unbox person.id ]
+               td [] [ unbox person.fullname ]
+               td [] [ unbox person.email ]
+               td [] [ unbox "TODO: edit" ]
+           ]
+
     let view model (dispatch:Dispatch<Msg>) =
-        div [ ClassName "container"]
+        div [ ClassName "component"]
             [ h1 []
-                 [ unbox "Person" ]
+                 [ unbox "Person List" ]
               p []
                 [ unbox (sprintf "State: %s" model.state) ]
-              div []
-                  [
-                      sprintf "%A" model.persons |> unbox
-                    //   model.persons
-                    //   |> List.map (fun p -> p.id)
-                    //   |> List.fold (func acc (n,x) -> acc + "," + x) ""
-                    //   |> unbox
-                  ]
+              table [ ClassName "table table-bordered" ]
+                    [
+                      thead []
+                            [
+                               tr []
+                                  [
+                                      th [] [unbox "Id"]
+                                      th [] [unbox "Fullname"]
+                                      th [] [unbox "E-mail" ]
+                                      th [] [unbox "action" ]
+                                  ]
+                            ]
+                      tbody [] (List.map renderPerson model.persons)
+                    ]
             ]
     
