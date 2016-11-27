@@ -6,25 +6,22 @@ module Menu =
     open Fable.Import.Browser
     open Elmish.Browser.Navigation
     
-    // JsInterop.importAll "whatwg-fetch"
-    
     open Designer.App.HttpLoader
     open Designer.App.Navigation
     open Designer.App.Partials // allows to write eg "TopNav.Model"
-    open Designer.App.Pages // allows to write eg "Welcome.view" 
+    open Designer.App.Pages    // allows to write eg "Welcome.view" 
     
+    // Model
+    [<RequireQualifiedAccess>]
+    type Data =
+      | Empty
+      | Welcome of Welcome.Model
+      | PersonList of PersonList.Model
+      | PersonDetail of PersonDetail.Model
+
     type Model = { 
-        nav: TopNav.Model   // Daten der Haupt Navigation
-        page: Page          // notwendig für toHash Konvertierung
-
-        // Daten individueller Seiten. der einfachheit halber parallel zueinander
-        welcome: Welcome.Model
-        personList: PersonList.Model
-        personDetail: PersonDetail.Model
-
-        // beide überflüssig
-        query: string
-        cache: Map<string,string list> 
+        nav: TopNav.Model   // main navigation's data
+        data: Data          // displayed page and its data
     }
 
     // [<RequireQualifiedAccess>]
@@ -33,11 +30,6 @@ module Menu =
       | Welcome of Welcome.Msg
       | PersonList of PersonList.Msg
       | PersonDetail of PersonDetail.Msg
-      // | Query of string
-      // | Enter
-      // | FetchFailure of string*exn
-      // | FetchSuccess of string*(string list)
-    
 
     (* If the URL is valid, we just update our model or issue a command. 
     If it is not a valid URL, we modify the URL to whatever makes sense.
@@ -46,53 +38,45 @@ module Menu =
       match result with
       | Error e ->
           Browser.console.error("Error parsing url:", e)  
-          ( model, Navigation.modifyUrl (toHash model.page) )
+          ( model, Navigation.modifyUrl (toHash Page.Welcome) )
     
       | Ok (Page.Welcome as page) ->
           // console.log("parsed Welcome. initializing...")
           let w, cmds = Welcome.init()
-          { model with
-                page = page
-                welcome = w
-          }, cmds |> Cmd.map Msg.Welcome
+          { model with data = Data.Welcome w }, cmds |> Cmd.map Msg.Welcome
       
       | Ok (Page.PersonList as page) ->
           // console.log("parsed PersonList. initializing...")
           let p,cmds = PersonList.init()
-          { model with 
-                page = page
-                personList = p
-          }, cmds |> Cmd.map Msg.PersonList
+          { model with data = Data.PersonList p }, cmds |> Cmd.map Msg.PersonList
 
       | Ok (Page.PersonDetail(personId) as page) ->
           // console.log("parsed PersonDetail. initializing...")
           let d, cmds = PersonDetail.init(personId)
-          { model with
-                page = page
-                personDetail = d
-          }, cmds |> Cmd.map Msg.PersonDetail
+          { model with data = Data.PersonDetail d }, cmds |> Cmd.map Msg.PersonDetail
 
       | Ok page ->
           // console.log("parsed. page:", page)
-          { model with page = page; query = "" }, []
-    
+          model, []
+
+    // Init
     let init result =
       urlUpdate result { 
         nav = TopNav.init() |> fst
-        page = Page.Welcome
-        welcome = Welcome.init() |> fst
-        personList = PersonList.init() |> fst
-        personDetail = PersonDetail.init(0) |> fst
-        query = ""
-        cache = Map.empty 
+        data = Data.Empty
       }
     
+    // Update
     let update msg model : Model * Cmd<Msg> =
       // take the result of component's update and
       // construct updated model and returned command as a tuple
       let toModelCmd updateModel msgType result =
           let x,cmds = result
           updateModel x, cmds |> Cmd.map msgType
+
+      // update model's data with the result and return model, command tuple
+      let toModelDataCmd dataType msgType result =
+          toModelCmd (fun x -> { model with data = dataType x }) msgType result
 
       match msg with
       | Nav cmd ->
@@ -101,21 +85,30 @@ module Menu =
           |> toModelCmd (fun n -> { model with nav = n }) Msg.Nav 
       
       | Welcome cmd ->
-          model.welcome
-          |> Welcome.update cmd
-          |> toModelCmd (fun w -> { model with welcome = w }) Msg.Welcome
+          match model.data with
+          | Data.Welcome w ->
+              w
+              |> Welcome.update cmd
+              |> toModelDataCmd Data.Welcome Msg.Welcome
+          | _ -> model, Cmd.none
 
       | PersonList cmd ->
-          model.personList
-          |> PersonList.update cmd
-          |> toModelCmd (fun p -> { model with personList=p }) Msg.PersonList
+          match model.data with
+          | Data.PersonList p ->
+              p
+              |> PersonList.update cmd
+              |> toModelDataCmd Data.PersonList Msg.PersonList
+          | _ -> model, Cmd.none
 
       | PersonDetail cmd ->
-          model.personDetail
-          |> PersonDetail.update cmd
-          |> toModelCmd (fun d -> { model with personDetail=d }) Msg.PersonDetail
+          match model.data with
+          | Data.PersonDetail d ->
+              d
+              |> PersonDetail.update cmd
+              |> toModelDataCmd Data.PersonDetail Msg.PersonDetail
+          | _ -> model, Cmd.none
 
-    // VIEW
+    // View
     open Fable.Helpers.React
     open Fable.Helpers.React.Props
     
@@ -126,11 +119,11 @@ module Menu =
           div [ ClassName "container" ]
               [
                 (
-                  match model.page with
-                  | Page.Welcome         -> Welcome.view      model.welcome      (Welcome >> dispatch)
-                  | Page.PersonList      -> PersonList.view   model.personList   (PersonList >> dispatch)
-                  | Page.PersonDetail id -> PersonDetail.view model.personDetail (PersonDetail >> dispatch)
-                  | Page.Search query    -> div [][ unbox "search TODO"]
+                  match model.data with
+                  | Data.Welcome w      -> Welcome.view      w (Welcome >> dispatch)
+                  | Data.PersonList p   -> PersonList.view   p (PersonList >> dispatch)
+                  | Data.PersonDetail d -> PersonDetail.view d (PersonDetail >> dispatch)
+                  | _ -> div [][unbox "TODO"]
                 )
               ]
         ]
