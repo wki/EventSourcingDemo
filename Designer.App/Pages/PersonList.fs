@@ -10,6 +10,7 @@ module PersonList =
     open Fable.Helpers.Fetch
     open Elmish
     open Designer.App.HttpLoader
+    open Designer.App.Navigation
 
     // Model
 
@@ -25,7 +26,7 @@ module PersonList =
     type Msg =
     | Load
     | Loaded of Person list
-    | Failed
+    | Failed of string
 
     let init() =
         { 
@@ -43,17 +44,16 @@ module PersonList =
             return personList
         } 
 
-    let update (msg:Msg) model =
-        console.log("Welcome: update, msg = ", msg)
+    let update msg model =
         match msg with
         | Load   -> 
             { model with state = "loading" },
-            Cmd.ofAsync loadPersonList "person/list" (fun p -> Msg.Loaded p) (fun ex -> Msg.Failed)
+            Cmd.ofAsync loadPersonList "person/list" Msg.Loaded (fun ex -> Msg.Failed ex.Message)
         | Loaded p -> 
             { model with state = "loaded"; persons = p }, 
             []
-        | Failed -> 
-            { model with state = "failed" }, 
+        | Failed msg -> 
+            { model with state = sprintf "failed: %s" msg }, 
             []
 
     // View
@@ -66,16 +66,22 @@ module PersonList =
                td [] [ unbox person.id ]
                td [] [ unbox person.fullname ]
                td [] [ unbox person.email ]
-               td [] [ unbox "TODO: edit" ]
+               td [] 
+                  [ 
+                   a [ 
+                        ClassName "btn btn-default btn-xs" 
+                        Href (toHash (Page.PersonDetail person.id)) 
+                      ] 
+                      [ unbox "details..."] ]
            ]
 
-    let view model (dispatch:Dispatch<Msg>) =
+    let view model (dispatch: Dispatch<Msg>) =
         div [ ClassName "component"]
             [ h1 []
                  [ unbox "Person List" ]
               p []
                 [ unbox (sprintf "State: %s" model.state) ]
-              table [ ClassName "table table-bordered" ]
+              table [ ClassName "table table-bordered table-striped" ]
                     [
                       thead []
                             [

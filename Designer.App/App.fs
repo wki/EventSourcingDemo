@@ -20,16 +20,19 @@ module Menu =
         // Daten individueller Seiten. der einfachheit halber parallel zueinander
         welcome: Welcome.Model
         personList: PersonList.Model
+        personDetail: PersonDetail.Model
 
         // beide überflüssig
         query: string
         cache: Map<string,string list> 
     }
-    
+
+    // [<RequireQualifiedAccess>]
     type Msg =
       | Nav of TopNav.Msg
       | Welcome of Welcome.Msg
       | PersonList of PersonList.Msg
+      | PersonDetail of PersonDetail.Msg
       // | Query of string
       // | Enter
       // | FetchFailure of string*exn
@@ -45,24 +48,32 @@ module Menu =
           Browser.console.error("Error parsing url:", e)  
           ( model, Navigation.modifyUrl (toHash model.page) )
     
+      | Ok (Page.Welcome as page) ->
+          // console.log("parsed Welcome. initializing...")
+          let w, cmds = Welcome.init()
+          { model with
+                page = page
+                welcome = w
+          }, cmds |> Cmd.map Msg.Welcome
+      
       | Ok (Page.PersonList as page) ->
-          console.log("parsed PersonList. initializing...")
+          // console.log("parsed PersonList. initializing...")
           let p,cmds = PersonList.init()
           { model with 
-                page = Page.PersonList
+                page = page
                 personList = p
           }, cmds |> Cmd.map Msg.PersonList
 
-      | Ok (Page.Welcome as page) ->
-          console.log("parsed Welcome. initializing...")
-          let w, cmds = Welcome.init()
+      | Ok (Page.PersonDetail(personId) as page) ->
+          // console.log("parsed PersonDetail. initializing...")
+          let d, cmds = PersonDetail.init(personId)
           { model with
-                page = Page.Welcome
-                welcome = w
-          }, cmds |> Cmd.map Msg.Welcome
+                page = page
+                personDetail = d
+          }, cmds |> Cmd.map Msg.PersonDetail
 
       | Ok page ->
-          console.log("parsed. page:", page)
+          // console.log("parsed. page:", page)
           { model with page = page; query = "" }, []
     
     let init result =
@@ -71,18 +82,17 @@ module Menu =
         page = Page.Welcome
         welcome = Welcome.init() |> fst
         personList = PersonList.init() |> fst
+        personDetail = PersonDetail.init(0) |> fst
         query = ""
         cache = Map.empty 
       }
     
-    let update (msg:Msg) model : Model * Cmd<Msg> =
+    let update msg model : Model * Cmd<Msg> =
       // take the result of component's update and
       // construct updated model and returned command as a tuple
       let toModelCmd updateModel msgType result =
           let x,cmds = result
           updateModel x, cmds |> Cmd.map msgType
-
-      console.log("App: update, msg = ", msg)
 
       match msg with
       | Nav cmd ->
@@ -100,6 +110,11 @@ module Menu =
           |> PersonList.update cmd
           |> toModelCmd (fun p -> { model with personList=p }) Msg.PersonList
 
+      | PersonDetail cmd ->
+          model.personDetail
+          |> PersonDetail.update cmd
+          |> toModelCmd (fun d -> { model with personDetail=d }) Msg.PersonDetail
+
     // VIEW
     open Fable.Helpers.React
     open Fable.Helpers.React.Props
@@ -112,9 +127,10 @@ module Menu =
               [
                 (
                   match model.page with
-                  | Page.Welcome      -> Welcome.view    model.welcome    (Welcome >> dispatch)
-                  | Page.PersonList   -> PersonList.view model.personList (PersonList >> dispatch)
-                  | Page.Search query -> div [][ unbox "search TODO"]
+                  | Page.Welcome         -> Welcome.view      model.welcome      (Welcome >> dispatch)
+                  | Page.PersonList      -> PersonList.view   model.personList   (PersonList >> dispatch)
+                  | Page.PersonDetail id -> PersonDetail.view model.personDetail (PersonDetail >> dispatch)
+                  | Page.Search query    -> div [][ unbox "search TODO"]
                 )
               ]
         ]

@@ -57,6 +57,7 @@
     <Compile Include="Partials/TopNav.fs" />
     <Compile Include="Pages/Welcome.fs" />
     <Compile Include="Pages/PersonList.fs" />
+    <Compile Include="Pages/PersonDetail.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <Import Project="$(FSharpTargetsPath)" />
