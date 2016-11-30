@@ -134,9 +134,10 @@ module Menu =
               [
                 (
                   match model.data with
-                  | Data.Welcome w      -> Welcome.view      w (Welcome >> dispatch)
-                  | Data.PersonList p   -> PersonList.view   p (PersonList >> dispatch)
-                  | Data.PersonDetail d -> PersonDetail.view d (PersonDetail >> dispatch)
+                  | Data.Welcome w        -> Welcome.view        w (Welcome >> dispatch)
+                  | Data.PersonRegister r -> PersonRegister.view r (PersonRegister >> dispatch)
+                  | Data.PersonList p     -> PersonList.view     p (PersonList >> dispatch)
+                  | Data.PersonDetail d   -> PersonDetail.view   d (PersonDetail >> dispatch)
                   | _ -> div [][unbox "TODO"]
                 )
               ]
