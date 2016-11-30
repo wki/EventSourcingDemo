@@ -16,6 +16,7 @@ module Menu =
     type Data =
       | Empty
       | Welcome of Welcome.Model
+      | PersonRegister of PersonRegister.Model
       | PersonList of PersonList.Model
       | PersonDetail of PersonDetail.Model
 
@@ -28,6 +29,7 @@ module Menu =
     type Msg =
       | Nav of TopNav.Msg
       | Welcome of Welcome.Msg
+      | PersonRegister of PersonRegister.Msg
       | PersonList of PersonList.Msg
       | PersonDetail of PersonDetail.Msg
 
@@ -45,6 +47,10 @@ module Menu =
           let w, cmds = Welcome.init()
           { model with data = Data.Welcome w }, cmds |> Cmd.map Msg.Welcome
       
+      | Ok (Page.PersonRegister as page) ->
+          let r = PersonRegister.init()
+          { model with data = Data.PersonRegister r }, Cmd.none |> Cmd.map Msg.PersonRegister
+
       | Ok (Page.PersonList as page) ->
           // console.log("parsed PersonList. initializing...")
           let p,cmds = PersonList.init()
@@ -92,6 +98,14 @@ module Menu =
               |> toModelDataCmd Data.Welcome Msg.Welcome
           | _ -> model, Cmd.none
 
+      | PersonRegister cmd ->
+          match model.data with
+          | Data.PersonRegister r ->
+              r
+              |> PersonRegister.update cmd
+              |> toModelDataCmd Data.PersonRegister Msg.PersonRegister
+          | _ -> model, Cmd.none
+    
       | PersonList cmd ->
           match model.data with
           | Data.PersonList p ->

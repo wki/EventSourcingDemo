@@ -8,6 +8,7 @@ module Navigation =
     [<RequireQualifiedAccess>]
     type Page = 
       | Welcome 
+      | PersonRegister
       | PersonList
       | PersonDetail of int
       | Search of string
@@ -16,6 +17,7 @@ module Navigation =
     let toHash = 
         function
         | Page.Welcome -> "#welcome"
+        | Page.PersonRegister -> "#register"
         | Page.PersonList -> "#persons"
         | Page.PersonDetail id -> sprintf "#person/%d" id
         | Page.Search query -> "#search/" + query
@@ -23,6 +25,7 @@ module Navigation =
     let pageParser : Parser<Page->_,_> =
       oneOf
         [ format Page.Welcome (s "welcome")
+          format Page.PersonRegister (s "register")
           format Page.PersonList (s "persons")
           format Page.PersonDetail (s "person" </> i32)
           format Page.Search (s "search" </> str) ]

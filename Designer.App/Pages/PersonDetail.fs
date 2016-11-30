@@ -19,7 +19,7 @@ module PersonDetail =
         email: string
     }
     type Model = {
-        state: string
+        state: string // for debugging
         id: int
         person: Person option
     }
@@ -43,7 +43,7 @@ module PersonDetail =
             //         ("http://localhost:9000/api/" + url,
             //         [])
             let! result = 
-                fetchAsync ("http://localhost:9000/api/" + url, [])
+                fetchAsync("http://localhost:9000/api/" + url, [])
             let! json = result.text() |> Async.AwaitPromise
 
             // HACK: mixin $type attribute...
