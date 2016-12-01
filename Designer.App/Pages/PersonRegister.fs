@@ -1,6 +1,7 @@
 namespace Designer.App.Pages
 
 module PersonRegister =
+    open System.Text.RegularExpressions
     open Fable.Core
     open Fable.Import
     open Fable.Import.Fetch
@@ -15,6 +16,10 @@ module PersonRegister =
     type Model = {
         state: string // for debugging
         registerInfo: RegisterInfo
+        emailUpdated: bool
+        emailValid: bool
+        fullnameUpdated: bool
+        fullnameValid: bool
         sent: bool
     }
 
@@ -29,23 +34,45 @@ module PersonRegister =
         {
             state = "show"
             registerInfo = { fullname=""; email="" }
+            emailUpdated = false
+            emailValid = false
+            fullnameUpdated = false
+            fullnameValid = false
             sent = false
         }
 
     // Update
     let postRegistration registerInfo =
         async {
-            let! result = postRecord("http://localhost:9000/api/register", registerInfo, [])
+            let! result = 
+                postRecord(
+                    "http://localhost:9000/api/person/register", 
+                    registerInfo, 
+                    [ RequestProperties.Headers [ HttpRequestHeaders.ContentType "text/json" ] ]
+                )
             ()
         }
+
+    let isEmailValid email = Regex.IsMatch(email, """^\S+@\S+[.]\S+$""")
+    let isFullnameValid fullname = Regex.IsMatch(fullname, """^\S.*\S$""")
 
     let update msg model =
         match msg with
         | UpdateEmail email ->
-            { model with state = "input"; registerInfo = { model.registerInfo with email = email} },
+            { model with 
+                 state = "input"
+                 registerInfo = { model.registerInfo with email = email}
+                 emailUpdated = true
+                 emailValid = isEmailValid email
+            },
             Cmd.none
         | UpdateFullname fullname ->
-            { model with state = "input"; registerInfo = { model.registerInfo with fullname = fullname} },
+            { model with 
+                 state = "input"
+                 registerInfo = { model.registerInfo with fullname = fullname}
+                 fullnameUpdated = true 
+                 fullnameValid = isFullnameValid fullname
+            },
             Cmd.none
         | Post registerInfo ->
             { model with state = "post"; sent = true },
@@ -60,46 +87,68 @@ module PersonRegister =
     open Fable.Helpers.React.Props
     open Fable.Core.JsInterop
 
-    let showForm (dispatch: Dispatch<Msg>) =
+    let showForm model (dispatch: Dispatch<Msg>) =
+        let (emailStatus, emailIcon) = 
+            match model.emailUpdated, model.emailValid with
+            | true, true -> "has-success", "glyphicon-ok"
+            | true, false -> "has-error", "glyphicon-remove"
+            | false, _ ->  "", ""
+
+        let (fullnameStatus, fullnameIcon) = 
+            match model.fullnameUpdated, model.fullnameValid with
+            | true, true -> "has-success", "glyphicon-ok"
+            | true, false -> "has-error", "glyphicon-remove"
+            | false, _ ->  "", ""
+
+        let formValid = model.emailValid && model.fullnameValid
+
         form [ ClassName "form-horizontal" ]
              [
-                div [ ClassName "form-group" ]
-                    [
-                        label [ ClassName "col-sm-3 control-label"; HtmlFor "registerInputEmail" ]
-                              [ unbox "Email" ]
+
+                div [ ClassName (sprintf "form-group has-feedback %s" emailStatus) ]
+                    [ label [ ClassName "col-sm-3 control-label"; HtmlFor "registerInputEmail" ]
+                            [ unbox "Email" ]
                     
-                        input [ 
-                                ClassName "col-sm-6 form-control"
-                                Id "registerInputEmail"
-                                Type "email"
-                                Name "email"
-                                OnChange ((fun (ev:React.FormEvent) -> ev.target?value) >> unbox >> UpdateEmail >> dispatch)
-                              ]
-                              []
+                      div [ ClassName "col-sm-6" ]
+                          [ input [ 
+                                    ClassName "form-control"
+                                    Id "registerInputEmail"
+                                    Type "email"
+                                    Name "email"
+                                    Placeholder "E-Mail" 
+                                    OnChange ((fun (ev:React.FormEvent) -> ev.target?value) >> unbox >> UpdateEmail >> dispatch)
+                                  ]
+                                  []
+                            span [ ClassName (sprintf "glyphicon %s form-control-feedback" emailIcon) ] []
+                          ]
+                    ]
+                div [ ClassName (sprintf "form-group has-feedback %s" fullnameStatus) ]
+                    [ label [ ClassName "col-sm-3 control-label"; HtmlFor "registerInputFullname" ]
+                            [ unbox "Full name" ]
+                    
+                      div [ ClassName "col-sm-6" ]
+                          [ input [ 
+                                    ClassName "form-control"
+                                    Id "registerInputFullname"
+                                    Type "text" 
+                                    Name "fullname"
+                                    Placeholder "Full name" 
+                                    OnChange ((fun (ev:React.FormEvent) -> ev.target?value) >> unbox >> UpdateFullname >> dispatch)
+                                  ]
+                                  []
+                            span [ ClassName (sprintf "glyphicon %s form-control-feedback" fullnameIcon) ] []
+                          ]
                     ]
                 div [ ClassName "form-group" ]
-                    [
-                        label [ ClassName "col-sm-3 control-label"; HtmlFor "registerInputFullname" ]
-                              [ unbox "Email" ]
-                    
-                        input [ 
-                                ClassName "col-sm-6 form-control"
-                                Id "registerInputFullname"
-                                Type "text" 
-                                Name "fullname"
-                              ]
-                              []
-                    ]
-                div [ ClassName "form-group" ]
-                    [
-                        div [ ClassName "col-sm-offset-3 col-sm-6" ]
-                            [
-                                button [
-                                        Type "button"
-                                        ClassName "btn btn-default"
-                                       ]
-                                       []
-                            ]
+                    [ div [ ClassName "col-sm-offset-3 col-sm-6" ]
+                          [ button [
+                                    Type "button"
+                                    ClassName "btn btn-default"
+                                    Disabled (not formValid)
+                                    OnClick (fun _ -> Msg.Post model.registerInfo |> dispatch) 
+                                   ]
+                                   [ unbox "Register" ]
+                         ]
                     ]
              ]
 
@@ -108,9 +157,9 @@ module PersonRegister =
             [
                 h1 [] [ unbox "Register" ]
 
-                div [] [ unbox sprintf "State: %s" model.state ]
+                div [] [ unbox (sprintf "State: %s" model.state) ]
 
                 (match model.sent with
-                 | false -> showForm dispatch
+                 | false -> showForm model dispatch
                  | true -> div [] [ unbox "Registration done" ])
             ]
