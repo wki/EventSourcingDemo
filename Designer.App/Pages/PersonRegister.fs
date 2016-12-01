@@ -102,54 +102,43 @@ module PersonRegister =
 
         let formValid = model.emailValid && model.fullnameValid
 
+        let textField description identity fieldType message status icon =
+            div [ ClassName (sprintf "form-group has-feedback %s" status) ]
+                [ label [ ClassName "col-sm-3 control-label"; HtmlFor identity ]
+                        [ unbox description ]
+                
+                  div [ ClassName "col-sm-6" ]
+                      [ input [ 
+                                ClassName "form-control"
+                                Id identity
+                                Type fieldType
+                                Placeholder description 
+                                OnChange ((fun (ev:React.FormEvent) -> ev.target?value) >> unbox >> message >> dispatch)
+                              ]
+                              []
+                        span [ ClassName (sprintf "glyphicon %s form-control-feedback" icon) ] []
+                      ]
+                ]
+
+        let submitButton description message formValid =
+            div [ ClassName "form-group" ]
+                [ div [ ClassName "col-sm-offset-3 col-sm-6" ]
+                      [ button [
+                                Type "button"
+                                ClassName "btn btn-default"
+                                Disabled (not formValid)
+                                OnClick (fun _ -> message model.registerInfo |> dispatch) 
+                               ]
+                               [ unbox description ]
+                     ]
+                ]
+
         form [ ClassName "form-horizontal" ]
              [
+                textField "E-Mail"   "registerInputEmail" "email" Msg.UpdateEmail    emailStatus    emailIcon
+                textField "Fullname" "registerFullname"   "text"  Msg.UpdateFullname fullnameStatus fullnameIcon
 
-                div [ ClassName (sprintf "form-group has-feedback %s" emailStatus) ]
-                    [ label [ ClassName "col-sm-3 control-label"; HtmlFor "registerInputEmail" ]
-                            [ unbox "Email" ]
-                    
-                      div [ ClassName "col-sm-6" ]
-                          [ input [ 
-                                    ClassName "form-control"
-                                    Id "registerInputEmail"
-                                    Type "email"
-                                    Name "email"
-                                    Placeholder "E-Mail" 
-                                    OnChange ((fun (ev:React.FormEvent) -> ev.target?value) >> unbox >> UpdateEmail >> dispatch)
-                                  ]
-                                  []
-                            span [ ClassName (sprintf "glyphicon %s form-control-feedback" emailIcon) ] []
-                          ]
-                    ]
-                div [ ClassName (sprintf "form-group has-feedback %s" fullnameStatus) ]
-                    [ label [ ClassName "col-sm-3 control-label"; HtmlFor "registerInputFullname" ]
-                            [ unbox "Full name" ]
-                    
-                      div [ ClassName "col-sm-6" ]
-                          [ input [ 
-                                    ClassName "form-control"
-                                    Id "registerInputFullname"
-                                    Type "text" 
-                                    Name "fullname"
-                                    Placeholder "Full name" 
-                                    OnChange ((fun (ev:React.FormEvent) -> ev.target?value) >> unbox >> UpdateFullname >> dispatch)
-                                  ]
-                                  []
-                            span [ ClassName (sprintf "glyphicon %s form-control-feedback" fullnameIcon) ] []
-                          ]
-                    ]
-                div [ ClassName "form-group" ]
-                    [ div [ ClassName "col-sm-offset-3 col-sm-6" ]
-                          [ button [
-                                    Type "button"
-                                    ClassName "btn btn-default"
-                                    Disabled (not formValid)
-                                    OnClick (fun _ -> Msg.Post model.registerInfo |> dispatch) 
-                                   ]
-                                   [ unbox "Register" ]
-                         ]
-                    ]
+                submitButton "Register" Msg.Post formValid
              ]
 
     let view model (dispatch: Dispatch<Msg>) =
