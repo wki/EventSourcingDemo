@@ -29,7 +29,7 @@ module TopNav =
 
     // mus ausgelagert werden!    
     let viewLink page description =
-      li []
+      li [ ] // TODO: OnClick (dispatch HidePopup)
          [ a [ Href (toHash page) ] [ unbox description] ]
 
     let view model (dispatch:Dispatch<Msg>) =
@@ -41,20 +41,22 @@ module TopNav =
               [ div [ ClassName "collapse navbar-collapse" ]
                   [ ul [ ClassName "nav navbar-nav" ]
                       [ viewLink Page.Welcome "Home"
+                        viewLink Page.PersonRegister "Register"
                         viewLink Page.PersonList "Persons"
                         li [ ClassName "dropdown" ]
                            [ a [ ClassName "dropdown-toggle"
                                  OnClick toggleDropdown 
                                ]
-                               [ unbox "Dropdown"
+                               [ unbox "Hangtag"
                                  span [ ClassName "caret" ] []
                                ]
                              ul [ ClassName "dropdown-menu"
                                   Style [ Display (if model.popupVisible then "block" else "none") ] 
                                 ]
-                                [ viewLink Page.Welcome "Home 3"
-                                  viewLink Page.Welcome "Home 4"
-                                  viewLink Page.Welcome "Home 5"
+                                [ viewLink Page.HangtagCreate "create..."
+                                  viewLink Page.HangtagClone "clone..."
+                                  viewLink Page.HangtagSearch "search..."
+                                  viewLink Page.Welcome "ToDo"
                                 ]
                            ]
                       ]

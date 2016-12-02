@@ -1,5 +1,4 @@
 namespace Designer.App.Pages
-
 module PersonRegister =
     open System.Text.RegularExpressions
     open Fable.Core
@@ -86,59 +85,22 @@ module PersonRegister =
     open Fable.Helpers.React
     open Fable.Helpers.React.Props
     open Fable.Core.JsInterop
+    open Designer.App.FormField
 
     let showForm model (dispatch: Dispatch<Msg>) =
-        let (emailStatus, emailIcon) = 
-            match model.emailUpdated, model.emailValid with
-            | true, true -> "has-success", "glyphicon-ok"
-            | true, false -> "has-error", "glyphicon-remove"
-            | false, _ ->  "", ""
-
-        let (fullnameStatus, fullnameIcon) = 
-            match model.fullnameUpdated, model.fullnameValid with
-            | true, true -> "has-success", "glyphicon-ok"
-            | true, false -> "has-error", "glyphicon-remove"
-            | false, _ ->  "", ""
-
         let formValid = model.emailValid && model.fullnameValid
 
-        let textField description identity fieldType message status icon =
-            div [ ClassName (sprintf "form-group has-feedback %s" status) ]
-                [ label [ ClassName "col-sm-3 control-label"; HtmlFor identity ]
-                        [ unbox description ]
-                
-                  div [ ClassName "col-sm-6" ]
-                      [ input [ 
-                                ClassName "form-control"
-                                Id identity
-                                Type fieldType
-                                Placeholder description 
-                                OnChange ((fun (ev:React.FormEvent) -> ev.target?value) >> unbox >> message >> dispatch)
-                              ]
-                              []
-                        span [ ClassName (sprintf "glyphicon %s form-control-feedback" icon) ] []
-                      ]
-                ]
-
-        let submitButton description message formValid =
-            div [ ClassName "form-group" ]
-                [ div [ ClassName "col-sm-offset-3 col-sm-6" ]
-                      [ button [
-                                Type "button"
-                                ClassName "btn btn-default"
-                                Disabled (not formValid)
-                                OnClick (fun _ -> message model.registerInfo |> dispatch) 
-                               ]
-                               [ unbox description ]
-                     ]
-                ]
+        // message handlers for input fields
+        let updateEmail = Msg.UpdateEmail >> dispatch
+        let updateFullname = Msg.UpdateFullname >> dispatch
+        let submitForm() = model.registerInfo |> (Msg.Post >> dispatch)
 
         form [ ClassName "form-horizontal" ]
              [
-                textField "E-Mail"   "registerInputEmail" "email" Msg.UpdateEmail    emailStatus    emailIcon
-                textField "Fullname" "registerFullname"   "text"  Msg.UpdateFullname fullnameStatus fullnameIcon
+                textField "E-Mail"   "registerInputEmail" "email" updateEmail    model.emailUpdated    model.emailValid
+                textField "Fullname" "registerFullname"   "text"  updateFullname model.fullnameUpdated model.fullnameValid
 
-                submitButton "Register" Msg.Post formValid
+                submitButton "Register" submitForm formValid
              ]
 
     let view model (dispatch: Dispatch<Msg>) =

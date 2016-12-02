@@ -19,6 +19,9 @@ module Menu =
       | PersonRegister of PersonRegister.Model
       | PersonList of PersonList.Model
       | PersonDetail of PersonDetail.Model
+      | HangtagCreate of HangtagCreate.Model
+      | HangtagClone of HangtagClone.Model
+      | HangtagSearch of HangtagSearch.Model
 
     type Model = { 
         nav: TopNav.Model   // main navigation's data
@@ -32,6 +35,9 @@ module Menu =
       | PersonRegister of PersonRegister.Msg
       | PersonList of PersonList.Msg
       | PersonDetail of PersonDetail.Msg
+      | HangtagCreate of HangtagCreate.Msg
+      | HangtagClone of HangtagClone.Msg
+      | HangtagSearch of HangtagSearch.Msg
 
     (* If the URL is valid, we just update our model or issue a command. 
     If it is not a valid URL, we modify the URL to whatever makes sense.
@@ -60,6 +66,18 @@ module Menu =
           // console.log("parsed PersonDetail. initializing...")
           let d, cmds = PersonDetail.init(personId)
           { model with data = Data.PersonDetail d }, cmds |> Cmd.map Msg.PersonDetail
+    
+      | Ok (Page.HangtagCreate as page) ->
+          let c, cmds = HangtagCreate.init()
+          { model with data = Data.HangtagCreate c }, cmds |> Cmd.map Msg.HangtagCreate
+
+      | Ok (Page.HangtagClone as page) ->
+          let c, cmds = HangtagClone.init()
+          { model with data = Data.HangtagClone c }, cmds |> Cmd.map Msg.HangtagClone
+
+      | Ok (Page.HangtagSearch as page) ->
+          let s, cmds = HangtagSearch.init()
+          { model with data = Data.HangtagSearch s }, cmds |> Cmd.map Msg.HangtagSearch
 
       | Ok page ->
           // console.log("parsed. page:", page)
@@ -122,6 +140,30 @@ module Menu =
               |> toModelDataCmd Data.PersonDetail Msg.PersonDetail
           | _ -> model, Cmd.none
 
+      | HangtagCreate cmd ->
+         match model.data with
+         | Data.HangtagCreate c ->
+             c
+             |> HangtagCreate.update cmd
+             |> toModelDataCmd Data.HangtagCreate Msg.HangtagCreate
+         | _ -> model, Cmd.none
+
+      | HangtagClone cmd ->
+         match model.data with
+         | Data.HangtagClone c ->
+             c
+             |> HangtagClone.update cmd
+             |> toModelDataCmd Data.HangtagClone Msg.HangtagClone
+         | _ -> model, Cmd.none
+
+      | HangtagSearch cmd ->
+         match model.data with
+         | Data.HangtagSearch s ->
+             s
+             |> HangtagSearch.update cmd
+             |> toModelDataCmd Data.HangtagSearch Msg.HangtagSearch
+         | _ -> model, Cmd.none
+
     // View
     open Fable.Helpers.React
     open Fable.Helpers.React.Props
@@ -138,6 +180,9 @@ module Menu =
                   | Data.PersonRegister r -> PersonRegister.view r (PersonRegister >> dispatch)
                   | Data.PersonList p     -> PersonList.view     p (PersonList >> dispatch)
                   | Data.PersonDetail d   -> PersonDetail.view   d (PersonDetail >> dispatch)
+                  | Data.HangtagCreate c  -> HangtagCreate.view  c (HangtagCreate >> dispatch)
+                  | Data.HangtagClone c   -> HangtagClone.view   c (HangtagClone >> dispatch)
+                  | Data.HangtagSearch s  -> HangtagSearch.view  s (HangtagSearch >> dispatch)
                   | _ -> div [][unbox "TODO"]
                 )
               ]
