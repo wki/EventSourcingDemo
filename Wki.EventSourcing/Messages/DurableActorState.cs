@@ -20,6 +20,8 @@ namespace Wki.EventSourcing.Messages
         // status
         public DurableActorStatus Status { get; internal set; }
         public DateTime StatusChangedAt { get; internal set; }
+        public bool IsRestoring { get { return Status == DurableActorStatus.Restoring; } }
+        public bool IsOperating { get { return Status == DurableActorStatus.Operating; } }
 
         // start information
         public DateTime StartedAt { get; internal set; }
@@ -62,14 +64,5 @@ namespace Wki.EventSourcing.Messages
             Status = status;
             StatusChangedAt = SystemTime.Now;
         }
-
-        public bool IsRestoring() =>
-            Status == DurableActorStatus.Restoring;
-
-        public bool IsOperating() =>
-            Status == DurableActorStatus.Operating;
-    
-        //public bool IsIdle() =>
-        //    Status == DurableActorStatus.Idle;
     }
 }
