@@ -28,6 +28,59 @@
    - PostgreSQL/sqlite Implementierung
    - als Proof-Of-Concept
    
+---
+
+Beispiel Umsetzung
+
+1) Registrier Prozess
+
+ * PersonOffice : Office
+   - nimmt alle Kommandos entgegen
+   - RegisterPerson -> PersonRegistrator
+   - ConfirmEmail -> PersonActivator
+   - ActivatePerson -> PersonActivator
+   - sonstige Kommandos -> Person (ignoriert wenn noch nicht aktiviert)
+
+ * PersonRegistrator : DurableActor (?)
+   - zählt Id hoch
+   - legt neue (unbestägigte, unaktivierte) Person mit letzter Id an
+
+ * PersonActivator : DurableActor (Process Manager)
+   - bekommt alle neu angelegten Personen
+   - sendet regelmäßig Mails aus (bis zu 3)
+   - erhält Email-Bestätigung und Freischaltung
+
+ * Person : DurableActor&lt;&gt; (Aggregate root)
+   - speichert alle Daten
+   - erlaubt hinzufügen/entfernen von Sprachen
+   - TODO: was passiert wenn Kommando kommt aber noch nicht aktiviert?
+
+ * PersonList : DurableActor (View)
+   - Liste aller aktiven Personen mit deren wichtigsten Merkmalen
+
+
+2) Hangtags Prozess
+
+ * HangtagOffice : Office
+   - nimmt alle Kommandos entgegen
+   - CreateHangtag -> HangtagCreator
+
+ * HangtagCreator : DurableActor (?)
+   - zählt Id hoch
+   - legt neuen Hangtag mit letzter Id an
+
+ * Hangtag : DurableActor&lt;&gt; (Aggregate root)
+   - enthält Detail-Angaben für jeden Hangtag
+
+ * HangtagSupervisor : DurableActor (Process Manager)
+   - beobachtet alle Aktivitäten
+   - fordert Rendering (evtl. wiederholt) an
+   - meldet Zustände (evtl. wiederholt) per Mail
+   - TODO: evtl. Trennung in mehrere Aktoren.
+
+ * HangtagList : DurableActor (View)
+   - Liste aller aktiven Hangtags mit deren wichtigsten Merkmalen
+
 
 ---
 

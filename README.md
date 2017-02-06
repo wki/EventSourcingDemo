@@ -1,6 +1,47 @@
 # EventSourcing Demo
 
-## Aktoren
+## Aktor-Typen
+
+1. Office
+
+   Ein Office ist der "Ansprechpartner" für Aktionen, die einen bestimmten
+   Typ von Aktor betreffen. Typischerweise leitet er eine eintreffende Nachricht
+   an einen Aktor eines bestimmten Typs weiter. Der Ziel-Aktor kann vom Typ oder
+   dem Inhalt der Nachricht (z.B. PersistenceId) abhängen.
+
+2. Process Manager
+
+   Ein Process Manager liest seit Systemstart bestimmte Nachrichten mit und bekommt
+   so ein "Bild" vom Zusatand bestimmter Teile des Systems. Abhängig vom Zustand
+   in Verbindung mit evtl. Zeit kann der Process Manager bestimmte Vorgänge
+   (evtl. wiederholt) anstoßen.
+
+   Typisches Problem:
+     - während Rekonstruktion darf nix passieren
+     - nach Rekonstruktion müssen wir warten bis wir reagieren
+     - im Live Zustand können wir sofort reagieren
+   
+   Ausreichend?
+     - mit diesem Ansatz muss 1 Process Manager alle laufenden Dinge beobachten
+     - evtl. wäre ein Office-ähnliches Dispatching sinnvoll
+     - doch: wie restaurieren ohne Probleme? wie vermeiden von zig Kind-Aktoren?
+
+3. Aggregate Root
+
+   Pro Aggregate Root existiert ein Aktor, der durch ein Office angelegt und seine
+   Kommandos vom Office erhält. Ist ein Aggregate root für bestimmte Dauer inaktiv,
+   so wird es aus dem Speicher entfernt.
+
+4. View
+
+   Wahlweise hinter einem Office oder direkt kann ein View durch Empfangen bestimmter
+   Nachrichten (mit oder ohne Rücksichtnahme auf eine PersistenceId) den Zustand
+   für ein oder mehr Aggregate Root wiedergeben. Sitzt ein View hinter einem Office,
+   wird eine Instanz für eine PersistenceId bei der ersten Anfrage erstellt und
+   bleibt dann bis zu einer bestimmten Inaktivität im Speicher und wird aktualisiert.
+
+
+## Aktor-Basisklassen
 
 1. DurableActor, DurableActor&lt;TIndex&gt;
 
@@ -141,3 +182,7 @@ Typ         | Basisklasse
      - DA -> ES: StillAlive
    - unmittelbar vor Lebensende
      - DA -> ES: NotAlive
+
+TODO: wie erhält der Supervisor eine Nachricht vom Ableben?
+
+TODO: kann es Racing Conditions geben wenn ein Kind beim Office stirbt?
