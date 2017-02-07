@@ -2,19 +2,34 @@
 
 ## Aktor-Typen
 
+0. EventStore
+
+   Zweck:
+     - Ereignisse Persistieren und wieder laden
+     - Observer bedienen, Rekonstruktion ausführen
+
+   Verhalten:
+     - Schreib- / Lese-Operationen an JournalWriter + JournalReader weiterleiten
+     - Rekonstruktion ausführen
+
+
 1. Office
 
-   Ein Office ist der "Ansprechpartner" für Aktionen, die einen bestimmten
-   Typ von Aktor betreffen. Typischerweise leitet er eine eintreffende Nachricht
-   an einen Aktor eines bestimmten Typs weiter. Der Ziel-Aktor kann vom Typ oder
-   dem Inhalt der Nachricht (z.B. PersistenceId) abhängen.
+   Zweck:
+     - Absender von Command-Nachrichten sprechen mit einer Stelle
+     - Empfänger (View oder Aggregate root) werden notfalls erzeugt und restauriert
+
+   Verhalten:
+     - Command-Nachrichten an einen bestimmten Aktor-Typ (der notfalls neu erzeugt wird) weiter abgeleitet.
+     - Per eigenem Code können beliebige andere Command-Nachrichten individuell behandelt werden.
+     - Unbehandelte Nachrichten loggen und ignorieren
+
 
 2. Process Manager
 
-   Ein Process Manager liest seit Systemstart bestimmte Nachrichten mit und bekommt
-   so ein "Bild" vom Zusatand bestimmter Teile des Systems. Abhängig vom Zustand
-   in Verbindung mit evtl. Zeit kann der Process Manager bestimmte Vorgänge
-   (evtl. wiederholt) anstoßen.
+   Zweck:
+     - bestimmte Ereignisse mitlesen, Zustand bestimmter Dinge mit protokollieren.
+     - Abhängig vom Zustand durch Kommandos einfluß nehmen.
 
    Typisches Problem:
      - während Rekonstruktion darf nix passieren
@@ -26,19 +41,30 @@
      - evtl. wäre ein Office-ähnliches Dispatching sinnvoll
      - doch: wie restaurieren ohne Probleme? wie vermeiden von zig Kind-Aktoren?
 
+
 3. Aggregate Root
 
-   Pro Aggregate Root existiert ein Aktor, der durch ein Office angelegt und seine
-   Kommandos vom Office erhält. Ist ein Aggregate root für bestimmte Dauer inaktiv,
-   so wird es aus dem Speicher entfernt.
+   Zweck:
+     - veränderbaren Zustand für ein individuelles "Ding" speichern
+     - Bei Veränderungen Events auslösen
+     - restaurierbar über Events
+     - nur für bestimmte Dauer aktiv
+
+   Verhalten:
+     - während Rekonstruktion Commands zwischenpuffern
+     - immer Events verarbeiten und Zustand verändern
+     - Nach Konstruktion Commands + Events verarbeiten
+
 
 4. View
 
-   Wahlweise hinter einem Office oder direkt kann ein View durch Empfangen bestimmter
-   Nachrichten (mit oder ohne Rücksichtnahme auf eine PersistenceId) den Zustand
-   für ein oder mehr Aggregate Root wiedergeben. Sitzt ein View hinter einem Office,
-   wird eine Instanz für eine PersistenceId bei der ersten Anfrage erstellt und
-   bleibt dann bis zu einer bestimmten Inaktivität im Speicher und wird aktualisiert.
+   Zweck:
+     - lesbaren Zustand für ein oder mehrere Dinge generieren
+
+   Verhalten:
+     - wahlweise PersistenceId berücksichtigen
+     - bestimmte Events mitlesen
+     - Zustand ableiten
 
 
 ## Aktor-Basisklassen
@@ -114,7 +140,10 @@ Typ         | Basisklasse
    gedacht als Antwort auf Kommandos, um evtl. Validierungsfehler in Form 
    einer Nachricht zu transportieren.
 
-   ```return Reploy.Ok(); // bzw. Reply.Error("message");```
+   ```return Reply.Ok(); // bzw. Reply.Error("message");```
+
+   Idee: ```Reply.Value("some value"); Reply.Value(new Bla());```
+
 
 5. EventStore
 
