@@ -8,7 +8,7 @@
         public bool IsOk { get; private set; }
         public string Message { get; private set; }
 
-        private Reply(bool isOk, string message = null)
+        protected Reply(bool isOk, string message = null)
         {
             IsOk = isOk;
             Message = message;
@@ -27,7 +27,7 @@
         public static Reply Error(string message) =>
             new Reply(false, message);
         
-        public static Reply<T> Value(T value) => 
+        public static Reply<T> Value<T>(T value) => 
             new Reply<T>(value);
     }
 
@@ -35,7 +35,7 @@
     {
         public TResult Value { get; private set; }
 
-        public Reply<TResult>(TResult value) : base(true)
+        public Reply(TResult value) : base(true)
         {
             Value = value;    
         }

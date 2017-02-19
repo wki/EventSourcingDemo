@@ -40,8 +40,8 @@ namespace Wki.EventSourcing.Actors
         private DurableActorState durableActorState;
 
         // simpler access to current status
-        protected bool IsRestoring => durableActorState.IsRestoring();
-        protected bool IsOperating => durableActorState.IsOperating();
+        protected bool IsRestoring => durableActorState.IsRestoring;
+        protected bool IsOperating => durableActorState.IsOperating;
 
         // keep all events and commands we may respond to
         protected List<Handler> commands;
