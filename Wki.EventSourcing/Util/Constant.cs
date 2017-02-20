@@ -18,12 +18,14 @@ namespace Wki.EventSourcing.Util
         public static readonly TimeSpan MaxActorIdleTimeSpan = TimeSpan.FromMinutes(2); // live: 5
 
         // periodic trigger of an actor for reporting "stillalive" 
-        public static readonly TimeSpan ActorInactiveTimeSpan = TimeSpan.FromSeconds(30);
-
-        // typical minimum pause between "stillalive" messages
-        public static readonly TimeSpan MinStillAlivePauseTimeSpan = TimeSpan.FromSeconds(60);
+        public static readonly TimeSpan ActorStillAliveInterval = TimeSpan.FromSeconds(30);
 
         // periodic poll for inactive actors inside an office
         public static readonly TimeSpan IdleActorPollTimeSpan = TimeSpan.FromSeconds(60);
+
+        // default nr of events to restore in one block
+        public const int DefaultNrEvents = 1000;
+
+
     }
 }

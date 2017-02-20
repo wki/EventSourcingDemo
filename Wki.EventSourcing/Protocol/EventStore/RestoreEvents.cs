@@ -1,14 +1,12 @@
-﻿using System;
+﻿using static Wki.EventSourcing.Util.Constant;
 
-namespace Wki.EventSourcing.Messages
+namespace Wki.EventSourcing.Protocol.EventStore
 {
     /// <summary>
     /// Command to EventStore to expect the next n events
     /// </summary>
     public class RestoreEvents
     {
-        private const int DefaultNrEvents = 1000;
-
         /// <summary>
         /// Number of events to restore as one junk
         /// </summary>

@@ -5,6 +5,11 @@ using Akka.Actor;
 using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Util;
 using static Wki.EventSourcing.Util.Constant;
+using Wki.EventSourcing.Protocol;
+using Wki.EventSourcing.Protocol.Statistics;
+using Wki.EventSourcing.Protocol.EventStore;
+using Wki.EventSourcing.Protocol.Subscription;
+using Wki.EventSourcing.Protocol.LiveCycle;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -62,7 +67,7 @@ namespace Wki.EventSourcing.Actors
         private List<Event> events;
 
         // maintain a complete state (for knowledge and statistics)
-        private EventStoreState eventStoreState;
+        private EventStoreStatistics eventStoreStatistics;
 
         public EventStore(string dir, IActorRef reader = null, IActorRef writer = null)
         {
@@ -85,7 +90,7 @@ namespace Wki.EventSourcing.Actors
                 journalWriter = writer ?? Context.ActorOf(Props.Create(writerType, storageDir), "writer");
             }
 
-            eventStoreState = new EventStoreState();
+            eventStoreStatistics = new EventStoreStatistics();
             eventsToReceive = 0;
 
             actors = new Dictionary<string,ActorState>();
@@ -100,19 +105,19 @@ namespace Wki.EventSourcing.Actors
         {
             Context.System.Log.Info("Loading all events from event store");
 
-            eventStoreState.ChangeStatus(EventStoreStatus.Loading);
+            eventStoreStatistics.ChangeStatus(EventStoreStatus.Loading);
 
             Receive<EventLoaded>(e => EventLoaded(e));
             Receive<End>(_ => Become(Operating));
 
             // diagnostic messages for monitoring
             Receive<GetStatusReport>(_ => ReplyStatusReport());
-            Receive<GetState>(_ => Sender.Tell(eventStoreState));
+            Receive<GetStatistics>(_ => Sender.Tell(eventStoreStatistics));
 
             // could be a command - keep for later
             Receive<object>(_ =>
             {
-                eventStoreState.NrStashedCommands++;
+                eventStoreStatistics.NrStashedCommands++;
                 Stash.Stash();
             });
 
@@ -122,8 +127,8 @@ namespace Wki.EventSourcing.Actors
         // readJournal loaded an event -- save it in our list
         private void EventLoaded(EventLoaded eventLoaded)
         {
-            eventStoreState.NrEventsLoaded++;
-            eventStoreState.NrEventsTotal++;
+            eventStoreStatistics.NrEventsLoaded++;
+            eventStoreStatistics.NrEventsTotal++;
             eventsToReceive--;
 
             events.Add(eventLoaded.Event);
@@ -143,13 +148,13 @@ namespace Wki.EventSourcing.Actors
         #region Operating state
         private void Operating()
         {
-            eventStoreState.ChangeStatus(EventStoreStatus.Operating);
-            eventStoreState.LoadDuration = SystemTime.Now - eventStoreState.StartedAt;
+            eventStoreStatistics.ChangeStatus(EventStoreStatus.Operating);
+            eventStoreStatistics.LoadDuration = SystemTime.Now - eventStoreStatistics.StartedAt;
 
             Context.System.Log.Info(
                 "{0} Events loaded in {1:N3}s. Starting regular operation", 
-                eventStoreState.NrEventsLoaded,
-                eventStoreState.LoadDuration.TotalSeconds
+                eventStoreStatistics.NrEventsLoaded,
+                eventStoreStatistics.LoadDuration.TotalSeconds
             );
 
             // periodically check for inactive children
@@ -179,7 +184,7 @@ namespace Wki.EventSourcing.Actors
 
             // diagnostic messages for monitoring
             Receive<GetStatusReport>(_ => ReplyStatusReport());
-            Receive<GetState>(_ => Sender.Tell(eventStoreState));
+            Receive<GetStatistics>(_ => Sender.Tell(eventStoreStatistics));
 
             // process everything lost so far
             Stash.UnstashAll();
@@ -188,12 +193,12 @@ namespace Wki.EventSourcing.Actors
         // an actor wants to get restored
         private void StartRestore(StartRestore startRestore)
         {
-            eventStoreState.NrActorsRestored++;
+            eventStoreStatistics.NrActorsRestored++;
 
             var path = Sender.Path.ToString();
             actors[path] = new ActorState(path, Sender, startRestore.InterestingEvents);
 
-            eventStoreState.NrSubscribers = actors.Count;
+            eventStoreStatistics.NrSubscribers = actors.Count;
         }
 
         // an actor wants n more Events
@@ -237,7 +242,7 @@ namespace Wki.EventSourcing.Actors
         private void StillAlive()
         {
             var path = Sender.Path.ToString();
-            eventStoreState.NrStillAliveReceived++;
+            eventStoreStatistics.NrStillAliveReceived++;
 
             if (actors.ContainsKey(path))
             {
@@ -283,15 +288,15 @@ namespace Wki.EventSourcing.Actors
                     actors.Remove(actor.Path);
                 });
 
-            eventStoreState.NrSubscribers = actors.Count;
+            eventStoreStatistics.NrSubscribers = actors.Count;
         }
 
         // writeHournal persisted an event -- forward it to all actors interested in it
         private void EventPersisted(EventPersisted eventPersistet)
         {
-            eventStoreState.NrEventsPersisted++;
-            eventStoreState.NrEventsTotal++;
-            eventStoreState.LastEventPersistedAt = SystemTime.Now;
+            eventStoreStatistics.NrEventsPersisted++;
+            eventStoreStatistics.NrEventsTotal++;
+            eventStoreStatistics.LastEventPersistedAt = SystemTime.Now;
 
             var @event = eventPersistet.Event;
 
@@ -324,7 +329,7 @@ namespace Wki.EventSourcing.Actors
 
             var statusReport = new StatusReport
             {
-                EventStoreState = eventStoreState,
+                EventStoreState = eventStoreStatistics,
                 Actors = actorStates,
             };
 

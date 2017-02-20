@@ -31,6 +31,10 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Protocol\LiveCycle\Passivate.cs" />
+    <Compile Include="Protocol\Misc\Tick.cs" />
+    <Compile Include="Protocol\Statistics\DurableActorStatistics.cs" />
+    <Compile Include="Protocol\Statistics\DurableActorStatus.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Actors\DurableActor.cs" />
     <Compile Include="Actors\EventStore.cs" />
@@ -39,35 +43,36 @@
     <Compile Include="Actors\FileJournalWriter.cs" />
     <Compile Include="Actors\Handler.cs" />
     <Compile Include="Actors\OfficeActor.cs" />
-    <Compile Include="Messages\DispatchableCommand.cs" />
-    <Compile Include="Messages\End.cs" />
-    <Compile Include="Messages\Event.cs" />
-    <Compile Include="Messages\EventLoaded.cs" />
-    <Compile Include="Messages\EventPersisted.cs" />
-    <Compile Include="Messages\InterestingEvents.cs" />
-    <Compile Include="Messages\LoadJournal.cs" />
-    <Compile Include="Messages\PersistEvent.cs" />
-    <Compile Include="Messages\RestoreEvents.cs" />
-    <Compile Include="Messages\StartRestore.cs" />
-    <Compile Include="Messages\StillAlive.cs" />
+    <Compile Include="Protocol\DispatchableCommand.cs" />
+    <Compile Include="Protocol\EventStore\End.cs" />
+    <Compile Include="Protocol\Event.cs" />
+    <Compile Include="Protocol\EventStore\EventLoaded.cs" />
+    <Compile Include="Protocol\EventStore\EventPersisted.cs" />
+    <Compile Include="Protocol\Statistics\EventStoreStatistics.cs" />
+    <Compile Include="Protocol\Statistics\EventStoreStatus.cs" />
+    <Compile Include="Protocol\Statistics\GetStatistics.cs" />
+    <Compile Include="Protocol\Statistics\OfficeActorStatistics.cs" />
+    <Compile Include="Protocol\Subscription\InterestingEvents.cs" />
+    <Compile Include="Protocol\EventStore\LoadJournal.cs" />
+    <Compile Include="Protocol\EventStore\PersistEvent.cs" />
+    <Compile Include="Protocol\EventStore\RestoreEvents.cs" />
+    <Compile Include="Protocol\EventStore\StartRestore.cs" />
+    <Compile Include="Protocol\LiveCycle\StillAlive.cs" />
     <Compile Include="Serialisation\EventSerializer.cs" />
+    <Compile Include="Protocol\Statistics\OfficeActorChildState.cs" />
     <Compile Include="Util\SystemTime.cs" />
-    <Compile Include="Messages\GetSize.cs" />
-    <Compile Include="Messages\GetActors.cs" />
-    <Compile Include="Messages\RemoveInactiveActors.cs" />
+    <Compile Include="Protocol\Statistics\GetSize.cs" />
+    <Compile Include="Protocol\Statistics\GetActors.cs" />
+    <Compile Include="Protocol\LiveCycle\RemoveInactiveActors.cs" />
     <Compile Include="Util\Constant.cs" />
     <Compile Include="JsonNet.PrivateSettersContractResolvers\PrivateSettersContractResolvers.cs">
       <Paket>True</Paket>
     </Compile>
     <Compile Include="Serialisation\Envelope.cs" />
-    <Compile Include="Messages\Reply.cs" />
-    <Compile Include="Messages\GetStatusReport.cs" />
-    <Compile Include="Messages\StatusReport.cs" />
-    <Compile Include="Messages\DurableActorState.cs" />
-    <Compile Include="Messages\EventStoreState.cs" />
-    <Compile Include="Messages\OfficeActorState.cs" />
-    <Compile Include="Messages\GetState.cs" />
-    <Compile Include="Messages\NotAlive.cs" />
+    <Compile Include="Protocol\Reply.cs" />
+    <Compile Include="Protocol\Statistics\GetStatusReport.cs" />
+    <Compile Include="Protocol\Statistics\StatusReport.cs" />
+    <Compile Include="Protocol\LiveCycle\NotAlive.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="paket.references" />

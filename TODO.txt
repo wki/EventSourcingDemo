@@ -1,5 +1,19 @@
 # TODOs
 
+## EventSourcing
+
+ * Office Actor
+   - Events durch Office routen? bisher direkt vom EventStore
+   - Graceful passivation
+
+ * Statistik (OfficeActorChildState, OfficeActorState)
+   deutlich expliziter machen (Methoden statt Properties)
+   eigener Namespace Wki.EventSourcing.Statistics
+
+
+
+## Designer
+
  * bessere Status URLs:
    - GET /api/status/eventstore
    - GET /api/status/personoffice

@@ -5,6 +5,7 @@ using Akka.Actor;
 using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Util;
 using static Wki.EventSourcing.Util.Constant;
+using Wki.EventSourcing.Statistics;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -129,14 +130,10 @@ namespace Wki.EventSourcing.Actors
         /// <param name="message">Message.</param>
         protected override void OnReceive(object message)
         {
-            if (message is ReceiveTimeout)
-            {
-                SendStillAliveWhenNeeded();
-            }
+            if (message is Tick)
+                HandleTick();
             else if (message is GetState)
-            {
                 Sender.Tell(durableActorState);
-            }
             else
             {
                 var now = SystemTime.Now;
@@ -144,9 +141,7 @@ namespace Wki.EventSourcing.Actors
                 var eventHandler = events.Find(e => e.Type == message.GetType());
                 if (eventHandler != null)
                 {
-                    durableActorState.NrEventsTotal++;
-                    durableActorState.LastEventReceivedAt = now;
-
+                    durableActorState.EventReceived();
                     eventHandler.Action(message);
                 }
                 else
@@ -154,28 +149,25 @@ namespace Wki.EventSourcing.Actors
                     var commandHandler = commands.Find(c => c.Type == message.GetType());
                     if (commandHandler != null)
                     {
-                        durableActorState.NrCommandsTotal++;
-                        durableActorState.LastCommandReceivedAt = now;
-
+                        durableActorState.CommandReceived();
                         commandHandler.Action(message);
                     }
                     else
                     {
-                        durableActorState.NrUnhandledMessages++;
+                        durableActorState.UnhandledMessageReceived();
                         Unhandled(message);
                     }
                 }
-                SendStillAliveWhenNeeded();
             }
         }
 
-        private void SendStillAliveWhenNeeded()
+        private void HandleTick()
         {
-            var now = SystemTime.Now;
-
-            if (durableActorState.LastEventReceivedAt < now - MinStillAlivePauseTimeSpan)
+            if (durableActorState.ShouldPassivate())
+                Context.Parent.Tell(new Passivate());
+            else
             {
-                durableActorState.LastStillAliveSentAt = now;
+                durableActorState.StillAliveSent();
                 eventStore.Tell(new StillAlive());
             }
         }
@@ -191,16 +183,22 @@ namespace Wki.EventSourcing.Actors
             if (message is End)
             {
                 durableActorState.ChangeStatus(DurableActorStatus.Operating);
-                durableActorState.RestoreDuration = SystemTime.Now - durableActorState.StartedAt;
 
                 Context.System.Log.Info(
-                    "Actor {0}: CompletedRestore {1} Events, {2:N3}s", 
+                    "Actor {0}: CompletedRestore {1} Events, {2:N3}s",
                     Self.Path.Name,
                     durableActorState.NrRestoreEvents,
                     durableActorState.RestoreDuration.TotalSeconds
                 );
 
-                SetReceiveTimeout(ActorInactiveTimeSpan);
+                Context.System.Scheduler.ScheduleTellRepeatedly(
+                    initialDelay: ActorStillAliveInterval,
+                    interval: ActorStillAliveInterval,
+                    receiver: Self,
+                    message: new Tick(),
+                    sender: Self
+                );
+
                 UnbecomeStacked();
                 Stash.UnstashAll();
             }
@@ -214,8 +212,7 @@ namespace Wki.EventSourcing.Actors
 
                     Context.System.Log.Debug("Actor {0}: Restore Event: {1}", Self.Path.Name, message);
 
-                    durableActorState.NrEventsTotal++;
-                    durableActorState.NrRestoreEvents++;
+                    durableActorState.EventReceived();
 
                     eventHandler.Action(message);
                 }
@@ -223,8 +220,7 @@ namespace Wki.EventSourcing.Actors
                 {
                     Context.System.Log.Debug("Actor {0} during restore stash command: {1}", Self.Path.Name, message);
 
-                    durableActorState.NrCommandsTotal++;
-                    durableActorState.NrStashedCommands++;
+                    durableActorState.CommandReceived();
 
                     Stash.Stash();
                 }

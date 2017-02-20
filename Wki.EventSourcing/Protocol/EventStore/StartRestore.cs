@@ -1,6 +1,7 @@
 ﻿using System;
+using Wki.EventSourcing.Protocol.Subscription;
 
-namespace Wki.EventSourcing.Messages
+namespace Wki.EventSourcing.Protocol.EventStore
 {
     /// <summary>
     /// Command to EventStore: start restoring a given durable actor
@@ -11,6 +12,9 @@ namespace Wki.EventSourcing.Messages
 
         public StartRestore(InterestingEvents interestingEvents)
         {
+            if (interestingEvents == null)
+                throw new ArgumentNullException(nameof(interestingEvents));
+
             InterestingEvents = interestingEvents;
         }
     }

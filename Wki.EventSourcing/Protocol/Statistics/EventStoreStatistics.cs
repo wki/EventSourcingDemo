@@ -1,16 +1,12 @@
 ﻿using System;
 using Wki.EventSourcing.Util;
 
-namespace Wki.EventSourcing.Messages
+namespace Wki.EventSourcing.Protocol.Statistics
 {
-    public enum EventStoreStatus
-    {
-        Initializing,
-        Loading,
-        Operating,
-    }
-
-    public class EventStoreState
+    /// <summary>
+    /// Document Message (and internal storage) with statistics for the event store
+    /// </summary>
+    public class EventStoreStatistics
     {
         // status
         public EventStoreStatus Status { get; internal set; }
@@ -34,7 +30,7 @@ namespace Wki.EventSourcing.Messages
         public int NrEventsPersisted { get; internal set; }
         public int NrEventsTotal { get; internal set; }
 
-        public EventStoreState()
+        public EventStoreStatistics()
         {
             var now = SystemTime.Now;
 

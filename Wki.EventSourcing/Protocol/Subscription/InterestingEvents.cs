@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Wki.EventSourcing.Messages
+namespace Wki.EventSourcing.Protocol.Subscription
 {
     /// <summary>
     /// a list of interesting events without an Id

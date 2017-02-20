@@ -5,6 +5,7 @@ using Akka.Actor;
 using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Util;
 using static Wki.EventSourcing.Util.Constant;
+using Wki.EventSourcing.Statistics;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -12,7 +13,7 @@ namespace Wki.EventSourcing.Actors
     /// Base class for an office actor
     ///</summary>
     ///<description>
-    /// An office actor is something like a router. All messages meant for
+    /// An office actor is something like a router. All commands meant for
     /// a given Aggregate root or view with a persistence ID are first sent
     /// to the office. The office creates a not existing destination and
     /// forwards the commands to it. After some idle time, the destination

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Wki.EventSourcing.Messages
+﻿namespace Wki.EventSourcing.Protocol.EventStore
 {
     /// <summary>
     /// Answer from JournalReader containing a loaded event

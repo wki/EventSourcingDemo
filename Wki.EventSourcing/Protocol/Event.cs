@@ -1,7 +1,7 @@
 using System;
 using Wki.EventSourcing.Util;
 
-namespace Wki.EventSourcing.Messages
+namespace Wki.EventSourcing.Protocol
 {
     /// <summary>
     /// Abstract base class for an event

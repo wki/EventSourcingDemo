@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Wki.EventSourcing.Messages
+﻿namespace Wki.EventSourcing.Protocol.EventStore
 {
     /// <summary>
     /// Command to journal writer to persist an event

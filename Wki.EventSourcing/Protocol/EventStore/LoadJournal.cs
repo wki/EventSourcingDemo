@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Wki.EventSourcing.Messages
+﻿namespace Wki.EventSourcing.Protocol.EventStore
 {
     /// <summary>
     /// Command to JournalReader to load all from journal
