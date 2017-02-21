@@ -1,5 +1,5 @@
 ﻿using System;
-using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Protocol;
 using Wki.EventSourcing.Util;
 
 namespace Wki.EventSourcing.Tests.Messages

@@ -8,6 +8,7 @@ using Designer.Domain.PersonManagement.Actors;
 using Designer.Domain.PersonManagement.DTOs;
 using Designer.Domain.PersonManagement.Messages;
 using NUnit.Framework;
+using Wki.EventSourcing.Protocol.EventStore;
 
 namespace Designer.Domain.Tests
 {

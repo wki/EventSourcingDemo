@@ -26,12 +26,12 @@ namespace Designer.Domain.Rendering.Actors
 
         private void RenderingRequested(RenderingRequested renderingRequested)
         {
-            RenderingRequestedAt[renderingRequested.Id] = renderingRequested.OccuredOn;
+            // RenderingRequestedAt[renderingRequested.Id] = renderingRequested.OccuredOn;
         }
 
         private void RenderingCompleted(RenderingCompleted renderingCompleted)
         {
-            RenderingRequestedAt.Remove(renderingCompleted.Id);
+            // RenderingRequestedAt.Remove(renderingCompleted.Id);
         }
     }
 }

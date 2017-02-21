@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Akka.Actor;
 using Designer.Domain.HangtagCreation.Actors;
@@ -9,7 +8,7 @@ using Designer.Domain.PersonManagement.Messages;
 using Designer.Domain.Rendering.Actors;
 using Designer.Domain.Todos.Actors;
 using Wki.EventSourcing.Actors;
-using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Protocol.Statistics;
 
 namespace Designer.Domain
 {
@@ -89,14 +88,14 @@ namespace Designer.Domain
             return personAggregateOffice.Ask<PersonInfo>(new GetPersonInfo(id));
         }
 
-        public Task<OfficeActorState> GetPersonOfficeState()
+        public Task<OfficeActorStatistics> GetPersonOfficeState()
         {
-            return personAggregateOffice.Ask<OfficeActorState>(new GetState());
+            return personAggregateOffice.Ask<OfficeActorStatistics>(new GetStatistics());
         }
 
-        public Task<OfficeActorState> GetHangtagOfficeState()
+        public Task<OfficeActorStatistics> GetHangtagOfficeState()
         {
-            return hangtagAggregateOffice.Ask<OfficeActorState>(new GetState());
+            return hangtagAggregateOffice.Ask<OfficeActorStatistics>(new GetStatistics());
         }
         #endregion
     }

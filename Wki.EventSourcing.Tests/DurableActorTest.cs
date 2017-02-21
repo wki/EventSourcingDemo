@@ -6,6 +6,7 @@ using NUnit.Framework;
 using Wki.EventSourcing.Actors;
 using Wki.EventSourcing.Messages;
 using static Wki.EventSourcing.Util.Constant;
+using Wki.EventSourcing.Protocol.EventStore;
 
 namespace Wki.EventSourcing.Tests
 {

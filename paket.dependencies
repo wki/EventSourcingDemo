@@ -7,7 +7,8 @@ nuget Akka.TestKit.NUnit 1.1.2
 nuget FSharp.Core
 nuget JsonNet.PrivateSettersContractResolvers.Source 0.1.0
 nuget Newtonsoft.Json 9.0.1
-nuget NUnit 2.6.4
+# nuget NUnit 2.6.4
+nuget NUnit
 nuget System.Collections.Immutable 1.1.36
 nuget CommandLineParser
 nuget CommonServiceLocator

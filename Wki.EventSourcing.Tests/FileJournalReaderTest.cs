@@ -3,12 +3,13 @@ using NUnit.Framework;
 using Akka.TestKit.NUnit;
 using Akka.Actor;
 using static Wki.EventSourcing.Tests.TempDir;
-using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Protocol;
 using Wki.EventSourcing.Actors;
 using Wki.EventSourcing.Tests.Messages;
 using System.IO;
 using Wki.EventSourcing.Serialisation;
 using Wki.EventSourcing.Util;
+using Wki.EventSourcing.Protocol.EventStore;
 
 namespace Wki.EventSourcing.Tests
 {

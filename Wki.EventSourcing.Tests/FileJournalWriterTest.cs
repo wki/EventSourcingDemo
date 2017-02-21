@@ -11,6 +11,7 @@ using Wki.EventSourcing.Serialisation;
 using Wki.EventSourcing.Tests.Messages;
 using Wki.EventSourcing.Util;
 using static Wki.EventSourcing.Tests.TempDir;
+using Wki.EventSourcing.Protocol.EventStore;
 
 namespace Wki.EventSourcing.Tests
 {

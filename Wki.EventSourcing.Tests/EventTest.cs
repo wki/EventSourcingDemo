@@ -1,6 +1,5 @@
-﻿using System;
-using NUnit.Framework;
-using Wki.EventSourcing.Messages;
+﻿using NUnit.Framework;
+using Wki.EventSourcing.Protocol;
 
 namespace Wki.EventSourcing.Tests
 {

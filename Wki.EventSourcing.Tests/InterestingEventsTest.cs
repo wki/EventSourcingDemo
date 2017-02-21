@@ -1,7 +1,8 @@
 ﻿using System;
-using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Protocol;
 using NUnit.Framework;
 using System.Threading;
+using Wki.EventSourcing.Protocol.Subscription;
 
 namespace Wki.EventSourcing.Tests
 {

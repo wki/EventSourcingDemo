@@ -1,9 +1,9 @@
 using System;
 using System.IO;
 using Akka.Actor;
-using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Serialisation;
 using Wki.EventSourcing.Util;
+using Wki.EventSourcing.Protocol.EventStore;
 
 namespace Wki.EventSourcing.Actors
 {

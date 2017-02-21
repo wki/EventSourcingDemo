@@ -1,8 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using System.Web.Http;
 using Designer.Domain;
-using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Protocol.Statistics;
 
 namespace Designer.Web
 {
@@ -23,13 +22,13 @@ namespace Designer.Web
         }
 
         [HttpGet, Route("person")]
-        public Task<OfficeActorState> PersonOfficeState()
+        public Task<OfficeActorStatistics> PersonOfficeStatistics()
         {
             return designerService.GetPersonOfficeState();
         }
     
         [HttpGet, Route("hangtag")]
-        public Task<OfficeActorState> HangtagOfficeState()
+        public Task<OfficeActorStatistics> HangtagOfficeStatistics()
         {
             return designerService.GetHangtagOfficeState();
         }

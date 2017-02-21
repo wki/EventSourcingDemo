@@ -1,9 +1,8 @@
-﻿using System;
-using Akka.Actor;
+﻿using Akka.Actor;
 using Akka.TestKit.NUnit;
 using Designer.Domain.PersonManagement.Actors;
 using NUnit.Framework;
-using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Protocol.Statistics;
 
 namespace Designer.Domain.Tests
 {

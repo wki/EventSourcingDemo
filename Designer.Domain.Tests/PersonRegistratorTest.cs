@@ -6,6 +6,7 @@ using Akka.TestKit.NUnit;
 using Designer.Domain.PersonManagement.Actors;
 using Designer.Domain.PersonManagement.Messages;
 using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Protocol.EventStore;
 
 namespace Designer.Domain.Tests
 {

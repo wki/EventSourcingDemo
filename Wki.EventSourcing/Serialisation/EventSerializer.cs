@@ -1,5 +1,5 @@
 ﻿using System;
-using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Protocol;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 // using Newtonsoft.Json.Serialization;

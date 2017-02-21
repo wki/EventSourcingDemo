@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Akka.Actor;
-using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Protocol;
 using Wki.EventSourcing.Serialisation;
+using Wki.EventSourcing.Protocol.EventStore;
 
 namespace Wki.EventSourcing.Actors
 {

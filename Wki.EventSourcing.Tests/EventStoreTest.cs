@@ -5,11 +5,15 @@ using Akka.TestKit;
 using Akka.TestKit.NUnit;
 using Akka.Actor;
 using Wki.EventSourcing.Actors;
-using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Protocol;
 using Wki.EventSourcing.Util;
 using static Wki.EventSourcing.Util.Constant;
 using static Wki.EventSourcing.Tests.TempDir;
 using Wki.EventSourcing.Tests.Messages;
+using Wki.EventSourcing.Protocol.EventStore;
+using Wki.EventSourcing.Protocol.Statistics;
+using Wki.EventSourcing.Protocol.Subscription;
+using Wki.EventSourcing.Protocol.LiveCycle;
 
 namespace Wki.EventSourcing.Tests
 {

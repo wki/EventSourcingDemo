@@ -1,5 +1,5 @@
 ﻿using System;
-using Wki.EventSourcing.Messages;
+using Wki.EventSourcing.Protocol;
 
 namespace Designer.Domain.HangtagCreation.Messages
 {
