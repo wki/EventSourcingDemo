@@ -58,7 +58,7 @@ namespace Wki.EventSourcing.Tests
         public void EventStore_AfterStart_LoadsJournal()
         {
             // Assert
-            reader.ExpectMsgFrom<LoadJournal>(eventStore, loadJournal => loadJournal.NrEvents == NrRestoreEvents);
+            reader.ExpectMsgFrom<LoadNextEvents>(eventStore, loadJournal => loadJournal.NrEvents == NrRestoreEvents);
         }
         #endregion
 
@@ -67,10 +67,10 @@ namespace Wki.EventSourcing.Tests
         public void EventStore_AfterReceiving90Events_Requests100More()
         {
             // Assert
-            reader.ExpectMsgFrom<LoadJournal>(eventStore, load => load.NrEvents == NrRestoreEvents);
+            reader.ExpectMsgFrom<LoadNextEvents>(eventStore, load => load.NrEvents == NrRestoreEvents);
             for (var i = 1; i <= 90; i++)
                 eventStore.Tell(new EventLoaded(new SomethingHappened()));
-            reader.ExpectMsgFrom<LoadJournal>(eventStore, load => load.NrEvents == NrRestoreEvents);
+            reader.ExpectMsgFrom<LoadNextEvents>(eventStore, load => load.NrEvents == NrRestoreEvents);
         }
 
         [Test]
@@ -110,7 +110,7 @@ namespace Wki.EventSourcing.Tests
 
             // Act
             eventStore.Tell(new StartRestore(new InterestingEvents(new[] { typeof(SomethingHappened) })));
-            eventStore.Tell(new RestoreEvents(3));
+            eventStore.Tell(new RestoreNextEvents(3));
 
             // Assert
             ExpectMsg<SomethingHappened>(something => something.Number == 1);
@@ -131,14 +131,14 @@ namespace Wki.EventSourcing.Tests
 
             // Act
             eventStore.Tell(new StartRestore(new InterestingEvents(new[] { typeof(SomethingHappened) })));
-            eventStore.Tell(new RestoreEvents(3));
+            eventStore.Tell(new RestoreNextEvents(3));
 
             // Assert
             ExpectMsg<SomethingHappened>(something => something.Number == 1);
             ExpectMsg<SomethingHappened>(something => something.Number == 2);
             ExpectMsg<SomethingHappened>(something => something.Number == 3);
 
-            eventStore.Tell(new RestoreEvents(2));
+            eventStore.Tell(new RestoreNextEvents(2));
             ExpectMsg<SomethingHappened>(something => something.Number == 4);
             ExpectMsg<SomethingHappened>(something => something.Number == 5);
         }
@@ -154,7 +154,7 @@ namespace Wki.EventSourcing.Tests
 
             // Act
             eventStore.Tell(new StartRestore(new InterestingEvents(new[] { typeof(SomethingHappened) })));
-            eventStore.Tell(new RestoreEvents(999));
+            eventStore.Tell(new RestoreNextEvents(999));
 
             // Assert
             ExpectMsg<SomethingHappened>(something => something.Number == 1);
@@ -191,7 +191,7 @@ namespace Wki.EventSourcing.Tests
 
             // Act
             eventStore.Tell(new StartRestore(new InterestingEvents(new[] { typeof(SomethingHappened) })));
-            eventStore.Tell(new RestoreEvents(999));
+            eventStore.Tell(new RestoreNextEvents(999));
 
             // Assert
             ExpectMsg<End>();

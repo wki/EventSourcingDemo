@@ -3,11 +3,11 @@
     /// <summary>
     /// Command to JournalReader to load all from journal
     /// </summary>
-    public class LoadJournal
+    public class LoadNextEvents
     {
         public int NrEvents { get; private set; }
 
-        public LoadJournal(int nrEvents)
+        public LoadNextEvents(int nrEvents)
         {
             NrEvents = nrEvents;
         }

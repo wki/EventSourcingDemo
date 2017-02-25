@@ -140,7 +140,7 @@ namespace Wki.EventSourcing.Actors
             if (eventsToReceive <= BufferLowLimit)
             {
                 eventsToReceive += NrRestoreEvents;
-                journalReader.Tell(new LoadJournal(NrRestoreEvents));
+                journalReader.Tell(new LoadNextEvents(NrRestoreEvents));
             }
         }
         #endregion
@@ -169,7 +169,7 @@ namespace Wki.EventSourcing.Actors
 
             // messages from actors
             Receive<StartRestore>(s => StartRestore(s));
-            Receive<RestoreEvents>(r => RestoreEvents(r));
+            Receive<RestoreNextEvents>(r => RestoreEvents(r));
             Receive<StillAlive>(_ => StillAlive());
             Receive<NotAlive>(_ => NotAlive());
             Receive<PersistEvent>(e => PersistEvent(e));
@@ -202,7 +202,7 @@ namespace Wki.EventSourcing.Actors
         }
 
         // an actor wants n more Events
-        private void RestoreEvents(RestoreEvents restoreEvents)
+        private void RestoreEvents(RestoreNextEvents restoreEvents)
         {
             var path = Sender.Path.ToString();
 

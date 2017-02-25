@@ -46,7 +46,7 @@ namespace Wki.EventSourcing.Tests
         {
             // Assert
             eventStore.ExpectMsg<StartRestore>();
-            eventStore.ExpectMsg<RestoreEvents>(r => r.NrEvents == NrRestoreEvents);
+            eventStore.ExpectMsg<RestoreNextEvents>(r => r.NrEvents == NrRestoreEvents);
         }
 
         [Test]

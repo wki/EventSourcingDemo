@@ -53,17 +53,18 @@
     <Compile Include="Protocol\Statistics\GetStatistics.cs" />
     <Compile Include="Protocol\Statistics\OfficeActorStatistics.cs" />
     <Compile Include="Protocol\Subscription\InterestingEvents.cs" />
-    <Compile Include="Protocol\EventStore\LoadJournal.cs" />
+    <Compile Include="Protocol\EventStore\LoadNextEvents.cs" />
     <Compile Include="Protocol\EventStore\PersistEvent.cs" />
-    <Compile Include="Protocol\EventStore\RestoreEvents.cs" />
+    <Compile Include="Protocol\EventStore\RestoreNextEvents.cs" />
     <Compile Include="Protocol\EventStore\StartRestore.cs" />
     <Compile Include="Protocol\LiveCycle\StillAlive.cs" />
+    <Compile Include="Protocol\Subscription\Subscribe.cs" />
+    <Compile Include="Protocol\Subscription\Unsubscribe.cs" />
     <Compile Include="Serialisation\EventSerializer.cs" />
     <Compile Include="Protocol\Statistics\OfficeActorChildState.cs" />
     <Compile Include="Util\SystemTime.cs" />
     <Compile Include="Protocol\Statistics\GetSize.cs" />
     <Compile Include="Protocol\Statistics\GetActors.cs" />
-    <Compile Include="Protocol\LiveCycle\RemoveInactiveActors.cs" />
     <Compile Include="Util\Constant.cs" />
     <Compile Include="JsonNet.PrivateSettersContractResolvers\PrivateSettersContractResolvers.cs">
       <Paket>True</Paket>
@@ -72,7 +73,6 @@
     <Compile Include="Protocol\Reply.cs" />
     <Compile Include="Protocol\Statistics\GetStatusReport.cs" />
     <Compile Include="Protocol\Statistics\StatusReport.cs" />
-    <Compile Include="Protocol\LiveCycle\NotAlive.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="paket.references" />

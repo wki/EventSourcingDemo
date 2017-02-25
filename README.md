@@ -1,6 +1,6 @@
 # EventSourcing Demo
 
-## Aktor-Typen
+## Aktor-Typen (aus Prozess-Sicht)
 
 0. EventStore
 
@@ -99,6 +99,16 @@
 
    kümmert sich um alle Persistierungs-Belange.
 
+4. JournalReader
+
+   liest alle gespeicherten Ereignisse und übergibt sie dem EventStore
+   zur Pufferung.
+
+5. JournalWriter
+
+   Erhält ein Ereignis zur Persistierung und meldet die erfolgreiche
+   SPeicherung, damit danach erst das Ereignis weiterverarbeiet wird.
+
 
 **Aktoren**
 
@@ -151,6 +161,7 @@ Typ         | Basisklasse
 
 
 ## diverse Protokolle
+
 | Abk.| Bedeutung     |
 |-----|---------------|
 | ES  | EventStore    |
@@ -160,7 +171,7 @@ Typ         | Basisklasse
 | JW  | JournalWriter |
 
 
- * Zwischen EventStore und JournalReader zum Befüllen EventStore
+ * EventStore füllen
 
    - solange bis alle Events geladen: Bearbeitung von Blöcken zu n Ereignissen
      - ES -> JR: LoadJournal(n)
@@ -168,17 +179,21 @@ Typ         | Basisklasse
    - wenn fertig:
      - JR -> ES: End
 
+ * Subscribe / Unsubscribe
 
- * Zwischen EventStore und DurableActor zum Restaurieren DurableActor
+   - DA bei PreStart -> ES: Subscribe(InterestingEvents)
+   - DA bei PostStop -> ES: Unsubscribe
 
+ * Durable Actor laden
+
+   - Voraussetzung: Subscribe ist erfolgt
    - Vorbereitung
-     - DA -> ES: StartRestore(interestingEvents)
+     - DA -> ES: StartRestore
    - solange bis alle Events geladen: Restaurieren von Blöcken zu n Ereignissen
      - DA -> ES: ResotreEvents(n) 
      - ES -> DA: n x Event
    - wenn fertig
      - ES -> DA: End
-
 
  * Weiterleitung von DispatchableCommand abgeleiteten Nachrichten im OfficeActor
 
@@ -187,13 +202,18 @@ Typ         | Basisklasse
    - Sicherstellen, dass Durable Actor angelegt ist
      - OA -> DA: command (via Forward)
 
+ * Alive / Graceful Passivation
 
- * Abfrage Status (DurableActor, OfficeActor, EventStore)
+   - OA -> DA: erzeugen
+   - DA -> OA: StillAlive
+   - DA bei Inaktivität -> OA: Passivate
+   - OA -> DA: terminieren
 
-   - Status Abfrage
-     - X -> Actor: GetState
-     - Actor -> X: DurableActorState | OfficeActorState | EventStoreState
+ * div. Abfragen
 
+   - Statistik Abfrage
+     - X -> Actor: GetStatistics
+     - Actor -> X: DurableActorStatistics | OfficeActorStatistics | EventStoreStatistics
 
  * Vorgang des Persistierens
 
@@ -203,15 +223,3 @@ Typ         | Basisklasse
      - JW -> ES: EventPersisted(event)
    - Benachrichtigung aller Subscriber (incl. Absender)
      - ES -> (Subscribers): event
-
-
- * Benachrichtigung an EventStore zur Pflege der Subscriber-Liste
-
-   - solange am Leben, regelmäßig
-     - DA -> ES: StillAlive
-   - unmittelbar vor Lebensende
-     - DA -> ES: NotAlive
-
-TODO: wie erhält der Supervisor eine Nachricht vom Ableben?
-
-TODO: kann es Racing Conditions geben wenn ein Kind beim Office stirbt?

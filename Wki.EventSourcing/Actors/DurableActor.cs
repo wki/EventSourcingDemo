@@ -2,15 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
-using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Util;
-using static Wki.EventSourcing.Util.Constant;
 using Wki.EventSourcing.Protocol;
 using Wki.EventSourcing.Protocol.Statistics;
 using Wki.EventSourcing.Protocol.LiveCycle;
 using Wki.EventSourcing.Protocol.Subscription;
 using Wki.EventSourcing.Protocol.EventStore;
 using Wki.EventSourcing.Protocol.Misc;
+using static Wki.EventSourcing.Util.Constant;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -18,8 +17,13 @@ namespace Wki.EventSourcing.Actors
     /// An actor with persisted state without an Id
     /// </summary>
     /// <description>
-    /// ...melden StillAlive an EventStore
-    /// 
+    /// supported protocols:
+    ///  * subscribe at event store
+    ///  * reconstitute from event store
+    ///  * persist events
+    ///  * graceful passivation
+    ///    - default for non-id durable actors: do not passivate
+    ///    - default for with-id durable actors: passivate
     /// </description>
     /// <example>
     /// public class MyActor : DurableActor
@@ -45,6 +49,9 @@ namespace Wki.EventSourcing.Actors
         // maintain a complete state (for knowledge and statistics)
         private DurableActorStatistics durableActorStatistics;
 
+        // after this timestamp an actor of this type will assk for passivation
+        protected TimeSpan passivationTimeSpan;
+
         // simpler access to current status
         protected bool IsRestoring => durableActorStatistics.IsRestoring;
         protected bool IsOperating => durableActorStatistics.IsOperating;
@@ -67,6 +74,8 @@ namespace Wki.EventSourcing.Actors
 
             this.eventStore = eventStore;
 
+            passivationTimeSpan = TimeSpan.MaxValue;
+
             commands = new List<Handler>();
             events = new List<Handler>();
 
@@ -78,6 +87,7 @@ namespace Wki.EventSourcing.Actors
         protected override void PreStart()
         {
             base.PreStart();
+            eventStore.Tell(new Subscribe(GenerateInterestingEvents()));
             StartRestoring();
         }
 
@@ -91,7 +101,7 @@ namespace Wki.EventSourcing.Actors
         {
             base.PostStop();
             SetReceiveTimeout(null);
-            eventStore.Tell(new NotAlive());
+            eventStore.Tell(new Unsubscribe());
         }
 
         protected virtual InterestingEvents GenerateInterestingEvents()
@@ -249,7 +259,7 @@ namespace Wki.EventSourcing.Actors
             if (eventsToReceive < BufferLowLimit)
             {
                 eventsToReceive += NrRestoreEvents;
-                eventStore.Tell(new RestoreEvents(NrRestoreEvents));
+                eventStore.Tell(new RestoreNextEvents(NrRestoreEvents));
             }
         }
         #endregion
@@ -265,6 +275,7 @@ namespace Wki.EventSourcing.Actors
         protected DurableActor(IActorRef eventStore, TIndex id) : base(eventStore)
         {
             Id = id;
+            passivationTimeSpan = MaxActorIdleTimeSpan;
         }
 
         protected override InterestingEvents GenerateInterestingEvents()

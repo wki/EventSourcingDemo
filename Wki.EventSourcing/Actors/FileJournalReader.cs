@@ -24,11 +24,11 @@ namespace Wki.EventSourcing.Actors
         {
             events = AllEvents().GetEnumerator();
 
-            Receive<LoadJournal>(l => LoadJournal(l));
+            Receive<LoadNextEvents>(l => LoadJournal(l));
         }
 
         // load a junk of requested size of events
-        private void LoadJournal(LoadJournal loadJournal)
+        private void LoadJournal(LoadNextEvents loadJournal)
         {
             var nrEvents = loadJournal.NrEvents;
             var lastReached = true;

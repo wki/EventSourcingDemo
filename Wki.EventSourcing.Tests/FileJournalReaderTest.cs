@@ -44,7 +44,7 @@ namespace Wki.EventSourcing.Tests
         public void FileJournalReader_EmptyDir_RestoresNoEvent()
         {
             // Act
-            storageReader.Tell(new LoadJournal(100));
+            storageReader.Tell(new LoadNextEvents(100));
 
             // Assert
             ExpectMsg<End>();
@@ -63,7 +63,7 @@ namespace Wki.EventSourcing.Tests
             SystemTime.Fake(() => DateTime.Now);
 
             // Act
-            storageReader.Tell(new LoadJournal(5));
+            storageReader.Tell(new LoadNextEvents(5));
 
             // Assert
             for (var i = 1; i <= 5; i++)
@@ -75,7 +75,7 @@ namespace Wki.EventSourcing.Tests
             // -----------------
 
             // SECOND Act
-            storageReader.Tell(new LoadJournal(99));
+            storageReader.Tell(new LoadNextEvents(99));
 
             // SECOND Assert
             for (var i = 6; i < 10; i++)
@@ -105,7 +105,7 @@ namespace Wki.EventSourcing.Tests
             SystemTime.Fake(() => DateTime.Now);
 
             // Act
-            storageReader.Tell(new LoadJournal(99));
+            storageReader.Tell(new LoadNextEvents(99));
 
             // Assert
             for (var i = 1; i <= 10; i++)

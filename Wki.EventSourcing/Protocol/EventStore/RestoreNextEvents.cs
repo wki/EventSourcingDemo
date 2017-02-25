@@ -5,7 +5,7 @@ namespace Wki.EventSourcing.Protocol.EventStore
     /// <summary>
     /// Command to EventStore to expect the next n events
     /// </summary>
-    public class RestoreEvents
+    public class RestoreNextEvents
     {
         /// <summary>
         /// Number of events to restore as one junk
@@ -13,9 +13,9 @@ namespace Wki.EventSourcing.Protocol.EventStore
         /// <value>The nr of events.</value>
         public int NrEvents { get; private set; }
 
-        public RestoreEvents() : this(DefaultNrEvents) { }
+        public RestoreNextEvents() : this(DefaultNrEvents) { }
 
-        public RestoreEvents(int nrEvents)
+        public RestoreNextEvents(int nrEvents)
         {
             NrEvents = nrEvents;
         }
