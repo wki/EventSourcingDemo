@@ -27,5 +27,10 @@ namespace Wki.EventSourcing.Protocol.Statistics
             NrCommandsForwarded = 0;
             LastCommandForwardedAt = DateTime.MinValue;
         }
+
+        public void StillAlive()
+        {
+            LastStatusReceivedAt = SystemTime.Now;
+        }
     }
 }

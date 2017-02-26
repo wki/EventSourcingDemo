@@ -22,6 +22,12 @@ namespace Wki.EventSourcing.Protocol.Subscription
 
         public virtual bool Matches(Event @event) =>
             Events.Contains(@event.GetType());
+
+        protected string ListEvents() =>
+            String.Join(", ", Events.Select(e => e.Name).OrderBy(e => e));
+        
+        public override string ToString() =>
+            String.Format("[InterestingEvents: {0}]", ListEvents());
     }
 
     /// <summary>
@@ -47,5 +53,9 @@ namespace Wki.EventSourcing.Protocol.Subscription
                 && base.Matches(@event)
                 && typedEvent.Id.Equals(Id);
         }
+
+        public override string ToString() =>
+            String.Format("[InterestingEvents Id={0}: {1}]", Id.ToString(), ListEvents());
+
     }
 }

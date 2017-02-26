@@ -22,7 +22,6 @@ namespace Wki.EventSourcing.Protocol.Statistics
 
         // information about durable actors served
         public int NrActorsRestored { get; internal set; }
-        public int NrStillAliveReceived { get; internal set; }
         public int NrSubscribers { get; internal set; }
 
         // current size
@@ -41,7 +40,6 @@ namespace Wki.EventSourcing.Protocol.Statistics
             NrEventsLoaded = 0;
             NrStashedCommands = 0;
             NrActorsRestored = 0;
-            NrStillAliveReceived = 0;
             NrSubscribers = 0;
             LastEventPersistedAt = DateTime.MinValue;
             NrEventsPersisted = 0;

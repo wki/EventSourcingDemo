@@ -19,7 +19,7 @@ namespace Wki.EventSourcing.Actors
     public class EventStore : ReceiveActor, IWithUnboundedStash
     {
         // hold information about an actor we are in contact with
-        private class ActorState
+        private class SubscriberState
         {
             public string Path { get; set; }
             public IActorRef Actor { get; set; }
@@ -28,7 +28,7 @@ namespace Wki.EventSourcing.Actors
             public int NextMessageIndex { get; set; }
             public InterestingEvents InterestingEvents { get; set; }
 
-            public ActorState(string path, IActorRef actor, InterestingEvents interestingEvents)
+            public SubscriberState(string path, IActorRef actor, InterestingEvents interestingEvents)
             {
                 Path = path;
                 Actor = actor;
@@ -38,7 +38,7 @@ namespace Wki.EventSourcing.Actors
                 InterestingEvents = interestingEvents;
             }
 
-            public bool InterestedIn(Event @event) => InterestingEvents.Matches(@event);
+            public bool IsInterestedIn(Event @event) => InterestingEvents.Matches(@event);
 
             public override string ToString()
             {
@@ -61,7 +61,7 @@ namespace Wki.EventSourcing.Actors
         private IActorRef journalReader;
 
         // list of all actors (Path => ActorState) we are in contact with
-        private Dictionary<string, ActorState> actors;
+        private Dictionary<string, SubscriberState> subscribers;
 
         // complete event list in memory for fast access
         private List<Event> events;
@@ -76,24 +76,24 @@ namespace Wki.EventSourcing.Actors
             journalReader = reader;
             journalWriter = writer;
 
-            if (config != null)
-            {
-                var storageDir = dir ?? config.GetString("dir");
-                Context.System.Log.Info("Storage Dir: {0}", storageDir);
+            //if (config != null)
+            //{
+            //    var storageDir = dir ?? config.GetString("dir");
+            //    Context.System.Log.Info("Storage Dir: {0}", storageDir);
 
-                var readerTypeName = config.GetString("reader");
-                var readerType = Type.GetType(readerTypeName ?? "") ?? typeof(FileJournalReader);
-                journalReader = reader ?? Context.ActorOf(Props.Create(readerType, storageDir), "reader");
+            //    var readerTypeName = config.GetString("reader");
+            //    var readerType = Type.GetType(readerTypeName ?? "") ?? typeof(FileJournalReader);
+            //    journalReader = reader ?? Context.ActorOf(Props.Create(readerType, storageDir), "reader");
 
-                var writerTypeName = config.GetString("writer");
-                var writerType = Type.GetType(writerTypeName ?? "") ?? typeof(FileJournalWriter);
-                journalWriter = writer ?? Context.ActorOf(Props.Create(writerType, storageDir), "writer");
-            }
+            //    var writerTypeName = config.GetString("writer");
+            //    var writerType = Type.GetType(writerTypeName ?? "") ?? typeof(FileJournalWriter);
+            //    journalWriter = writer ?? Context.ActorOf(Props.Create(writerType, storageDir), "writer");
+            //}
 
             eventStoreStatistics = new EventStoreStatistics();
             eventsToReceive = 0;
 
-            actors = new Dictionary<string,ActorState>();
+            subscribers = new Dictionary<string,SubscriberState>();
             events = new List<Event>();
 
             Become(Loading);
@@ -107,6 +107,7 @@ namespace Wki.EventSourcing.Actors
 
             eventStoreStatistics.ChangeStatus(EventStoreStatus.Loading);
 
+            // Protocol: fill event store
             Receive<EventLoaded>(e => EventLoaded(e));
             Receive<End>(_ => Become(Operating));
 
@@ -157,30 +158,31 @@ namespace Wki.EventSourcing.Actors
                 eventStoreStatistics.LoadDuration.TotalSeconds
             );
 
-            // periodically check for inactive children
-            Context.System.Scheduler
-                   .ScheduleTellRepeatedly(
-                       initialDelay: IdleActorPollTimeSpan,
-                       interval:     IdleActorPollTimeSpan,
-                       receiver:     Self,
-                       message:      new RemoveInactiveActors(),
-                       sender:       Self
-                   );
+            //// periodically check for inactive children
+            //Context.System.Scheduler
+            //       .ScheduleTellRepeatedly(
+            //           initialDelay: IdleActorPollTimeSpan,
+            //           interval:     IdleActorPollTimeSpan,
+            //           receiver:     Self,
+            //           message:      new RemoveInactiveActors(),
+            //           sender:       Self
+            //       );
 
-            // messages from actors
+            // Protocol: Load Durable Actor
             Receive<StartRestore>(s => StartRestore(s));
             Receive<RestoreNextEvents>(r => RestoreEvents(r));
-            Receive<StillAlive>(_ => StillAlive());
-            Receive<NotAlive>(_ => NotAlive());
-            Receive<PersistEvent>(e => PersistEvent(e));
 
-            // message from journal writer
+            // Procol: Subscribe/Unsubscribe
+            Receive<Subscribe>(s => Subscribe(s));
+            Receive<Unsubscribe>(_ => Unsubscribe());
+
+            // Protocol: Persist Event
+            Receive<PersistEvent>(e => PersistEvent(e));
             Receive<EventPersisted>(p => EventPersisted(p));
 
             // diagnostic messages for testing
             Receive<GetSize>(_ => Sender.Tell(events.Count));
-            Receive<GetActors>(_ => Sender.Tell(String.Join("|", actors.Values.Select(a => a.ToString()))));
-            Receive<RemoveInactiveActors>(_ => RemoveInactiveActors());
+            Receive<GetActors>(_ => Sender.Tell(String.Join("|", subscribers.Values.Select(a => a.ToString()))));
 
             // diagnostic messages for monitoring
             Receive<GetStatusReport>(_ => ReplyStatusReport());
@@ -196,9 +198,9 @@ namespace Wki.EventSourcing.Actors
             eventStoreStatistics.NrActorsRestored++;
 
             var path = Sender.Path.ToString();
-            actors[path] = new ActorState(path, Sender, startRestore.InterestingEvents);
+            subscribers[path] = new SubscriberState(path, Sender, startRestore.InterestingEvents);
 
-            eventStoreStatistics.NrSubscribers = actors.Count;
+            eventStoreStatistics.NrSubscribers = subscribers.Count;
         }
 
         // an actor wants n more Events
@@ -206,13 +208,13 @@ namespace Wki.EventSourcing.Actors
         {
             var path = Sender.Path.ToString();
 
-            if (!actors.ContainsKey(path))
+            if (!subscribers.ContainsKey(path))
             {
                 // should not happen but silently ignore this unlikely happening request
                 return;
             }
 
-            var actorState = actors[path];
+            var actorState = subscribers[path];
             actorState.LastSeen = SystemTime.Now;
 
             var nrEvents = restoreEvents.NrEvents;
@@ -238,26 +240,31 @@ namespace Wki.EventSourcing.Actors
             }
         }
 
-        // an actor tells it is still alive
-        private void StillAlive()
+        // subscribe an actor to its requested events
+        private void Subscribe(Subscribe subscribe)
         {
-            var path = Sender.Path.ToString();
-            eventStoreStatistics.NrStillAliveReceived++;
-
-            if (actors.ContainsKey(path))
+            var path = Sender.Path.Address.ToString();
+            if (!subscribers.ContainsKey(path))
             {
-                var actorState = actors[path];
-                actorState.LastSeen = SystemTime.Now;
+                Context.System.Log.Debug("Subscribe {0}: {1}", path, subscribe.InterestingEvents.ToString());
+                var subscriberState = new SubscriberState(path, Sender, subscribe.InterestingEvents);
+                subscribers.Add(path, subscriberState);
+
+                eventStoreStatistics.NrSubscribers = subscribers.Count;
             }
         }
 
-        // an actor tells us that he just died
-        private void NotAlive()
+        // unsubscribe an actor
+        private void Unsubscribe()
         {
-            var path = Sender.Path.ToString();
-            actors.Remove(path);
+            var path = Sender.Path.Address.ToString();
+            if (subscribers.ContainsKey(path))
+            {
+                Context.System.Log.Debug("Unsubscribe {0}", path);
+                subscribers.Remove(path);
 
-            Context.System.Log.Info("Actor {0} just died, removed", path);
+                eventStoreStatistics.NrSubscribers = subscribers.Count;
+            }
         }
 
         private void PersistEvent(object @event)
@@ -266,29 +273,6 @@ namespace Wki.EventSourcing.Actors
             // z.B. Sender
             // TODO: oder überlegen, Envelopes weiter zu geben
             journalWriter.Tell(@event);
-        }
-
-        private void RemoveInactiveActors()
-        {
-            var oldestAllowedTime = SystemTime.Now - MaxActorIdleTimeSpan;
-
-            Context.System.Log.Info("Event Store - Checking actors. Oldest time: {0:HH:mm}", oldestAllowedTime);
-            // actors.Values.ToList().ForEach(a => Console.WriteLine($"{a.Path} - {a.LastSeen}"));
-
-            actors
-                .Values
-                .Where(actor => actor.LastSeen < oldestAllowedTime)
-                .ToList()
-                .ForEach(actor =>
-                {
-                    Context.System.Log.Info(
-                        "Removing actor {0}, last Seen {1} seconds ago",
-                        actor.Path, (SystemTime.Now - actor.LastSeen).TotalSeconds
-                    );
-                    actors.Remove(actor.Path);
-                });
-
-            eventStoreStatistics.NrSubscribers = actors.Count;
         }
 
         // writeHournal persisted an event -- forward it to all actors interested in it
@@ -303,10 +287,10 @@ namespace Wki.EventSourcing.Actors
             // add for all running and subsequential restore operations
             events.Add(@event);
 
-            foreach (var actor in actors.Values)
+            foreach (var actor in subscribers.Values)
             {
                 // restoring actors are omitted because they will receive the event added above
-                if (!actor.Restoring && actor.InterestedIn(@event))
+                if (!actor.Restoring && actor.IsInterestedIn(@event))
                     actor.Actor.Tell(@event);
             }
         }
@@ -317,7 +301,7 @@ namespace Wki.EventSourcing.Actors
         private void ReplyStatusReport()
         {
             var actorStates =
-                actors.Values
+                subscribers.Values
                       .Select(a => new StatusReport.ActorStatus 
                             {
                                 Path = a.Path,
