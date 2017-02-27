@@ -193,14 +193,10 @@ namespace Wki.EventSourcing.Actors
         }
 
         // an actor wants to get restored
+        // TODO: macht eigentlich nichts. Notwendig?
         private void StartRestore(StartRestore startRestore)
         {
             eventStoreStatistics.NrActorsRestored++;
-
-            var path = Sender.Path.ToString();
-            subscribers[path] = new SubscriberState(path, Sender, startRestore.InterestingEvents);
-
-            eventStoreStatistics.NrSubscribers = subscribers.Count;
         }
 
         // an actor wants n more Events
@@ -243,7 +239,7 @@ namespace Wki.EventSourcing.Actors
         // subscribe an actor to its requested events
         private void Subscribe(Subscribe subscribe)
         {
-            var path = Sender.Path.Address.ToString();
+            var path = Sender.Path.ToString();
             if (!subscribers.ContainsKey(path))
             {
                 Context.System.Log.Debug("Subscribe {0}: {1}", path, subscribe.InterestingEvents.ToString());

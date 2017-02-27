@@ -109,7 +109,8 @@ namespace Wki.EventSourcing.Tests
             eventStore.Tell(new End());
 
             // Act
-            eventStore.Tell(new StartRestore(new InterestingEvents(new[] { typeof(SomethingHappened) })));
+            eventStore.Tell(new Subscribe(new InterestingEvents(new[] { typeof(SomethingHappened) })));
+            eventStore.Tell(new StartRestore());
             eventStore.Tell(new RestoreNextEvents(3));
 
             // Assert
@@ -130,7 +131,8 @@ namespace Wki.EventSourcing.Tests
             eventStore.Tell(new End());
 
             // Act
-            eventStore.Tell(new StartRestore(new InterestingEvents(new[] { typeof(SomethingHappened) })));
+            eventStore.Tell(new Subscribe(new InterestingEvents(new[] { typeof(SomethingHappened) })));
+            eventStore.Tell(new StartRestore());
             eventStore.Tell(new RestoreNextEvents(3));
 
             // Assert
@@ -153,7 +155,8 @@ namespace Wki.EventSourcing.Tests
             eventStore.Tell(new End());
 
             // Act
-            eventStore.Tell(new StartRestore(new InterestingEvents(new[] { typeof(SomethingHappened) })));
+            eventStore.Tell(new Subscribe(new InterestingEvents(new[] { typeof(SomethingHappened) })));
+            eventStore.Tell(new StartRestore());
             eventStore.Tell(new RestoreNextEvents(999));
 
             // Assert
@@ -172,7 +175,8 @@ namespace Wki.EventSourcing.Tests
             eventStore.Tell(new End());
 
             // Act
-            eventStore.Tell(new StartRestore(new InterestingEvents(new[] { typeof(SomethingHappened) })));
+            eventStore.Tell(new Subscribe(new InterestingEvents(new[] { typeof(SomethingHappened) })));
+            eventStore.Tell(new StartRestore());
             eventStore.Tell(new GetActors());
 
             // Assert
@@ -190,7 +194,8 @@ namespace Wki.EventSourcing.Tests
             eventStore.Tell(new End());
 
             // Act
-            eventStore.Tell(new StartRestore(new InterestingEvents(new[] { typeof(SomethingHappened) })));
+            eventStore.Tell(new Subscribe(new InterestingEvents(new[] { typeof(SomethingHappened) })));
+            eventStore.Tell(new StartRestore());
             eventStore.Tell(new RestoreNextEvents(999));
 
             // Assert
@@ -204,30 +209,35 @@ namespace Wki.EventSourcing.Tests
         #endregion
 
         #region actor keepalive behavior
-        [Test]
-        public void EventStore_AfterLongIdleTime_RemovesActor()
-        {
-            // Arrange
-            var now = new DateTime(2010, 3, 5, 20, 0, 0);
-            var now6 = now.AddMinutes(6); // idle time is 5 minutes
 
-            SystemTime.Fake(() => now);
-            eventStore.Tell(new End());
+        // TODO: keepalive monitoring
+        // TODO: passivation
 
-            // Act
-            eventStore.Tell(new StartRestore(new InterestingEvents(new[] { typeof(SomethingHappened) })));
+        // [Test]
+        //public void EventStore_AfterLongIdleTime_RemovesActor()
+        //{
+        //    // Arrange
+        //    var now = new DateTime(2010, 3, 5, 20, 0, 0);
+        //    var now6 = now.AddMinutes(6); // idle time is 5 minutes
 
-            // Assert
-            eventStore.Tell(new GetActors());
-            ExpectMsg<string>();
+        //    SystemTime.Fake(() => now);
+        //    eventStore.Tell(new End());
 
-            SystemTime.Fake(() => now6);
+        //    // Act
+        //    eventStore.Tell(new Subscribe(new InterestingEvents(new[] { typeof(SomethingHappened) })));
+        //    eventStore.Tell(new StartRestore());
 
-            eventStore.Tell(new RemoveInactiveActors());
-            eventStore.Tell(new GetActors());
+        //    // Assert
+        //    eventStore.Tell(new GetActors());
+        //    ExpectMsg<string>();
 
-            ExpectMsg<string>(s => String.IsNullOrEmpty(s));
-        }
+        //    SystemTime.Fake(() => now6);
+
+        //    eventStore.Tell(new RemoveInactiveActors());
+        //    eventStore.Tell(new GetActors());
+
+        //    ExpectMsg<string>(s => String.IsNullOrEmpty(s));
+        //}
         #endregion
     }
 }

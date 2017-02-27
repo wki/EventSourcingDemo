@@ -7,6 +7,7 @@ using Wki.EventSourcing.Actors;
 using Wki.EventSourcing.Messages;
 using static Wki.EventSourcing.Util.Constant;
 using Wki.EventSourcing.Protocol.EventStore;
+using Wki.EventSourcing.Protocol.Subscription;
 
 namespace Wki.EventSourcing.Tests
 {
@@ -45,6 +46,7 @@ namespace Wki.EventSourcing.Tests
         public void DurableActor_AfterStart_RestoresEvents()
         {
             // Assert
+            eventStore.ExpectMsg<Subscribe>();
             eventStore.ExpectMsg<StartRestore>();
             eventStore.ExpectMsg<RestoreNextEvents>(r => r.NrEvents == NrRestoreEvents);
         }

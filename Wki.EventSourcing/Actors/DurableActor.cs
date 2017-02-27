@@ -248,7 +248,7 @@ namespace Wki.EventSourcing.Actors
             durableActorStatistics.ChangeStatus(DurableActorStatus.Restoring);
             BecomeStacked(Restoring);
 
-            eventStore.Tell(new StartRestore(GenerateInterestingEvents()));
+            eventStore.Tell(new StartRestore());
 
             eventsToReceive = 0;
             RequestEventsToRestore();
