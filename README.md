@@ -162,29 +162,29 @@ Typ         | Basisklasse
 
 ## diverse Protokolle
 
-| Abk.| Bedeutung     |
-|-----|---------------|
-| ES  | EventStore    |
-| DA  | DurableActor  |
-| OA  | OfficeActor   |
-| JR  | JournalReader |
-| JW  | JournalWriter |
+| Abk.| Bedeutung     | Protokoll(e)
+|-----|---------------|-----------------------
+| ES  | EventStore    | load, subscribe, reconstitute, persist
+| DA  | DurableActor  | subscribe, reconstitute, livecycle, persist
+| OA  | OfficeActor   | forward, livecycle
+| JR  | JournalReader | load
+| JW  | JournalWriter | persist
 
 
- * EventStore füllen
+ * load (Journal)
 
    - solange bis alle Events geladen: Bearbeitung von Blöcken zu n Ereignissen
-     - ES -> JR: LoadJournal(n)
+     - ES -> JR: LoadNextEvents(n)
      - JR -> ES: n x EventLoaded(event)
    - wenn fertig:
      - JR -> ES: End
 
- * Subscribe / Unsubscribe
+ * subscribe
 
    - DA bei PreStart -> ES: Subscribe(InterestingEvents)
    - DA bei PostStop -> ES: Unsubscribe
 
- * Durable Actor laden
+ * reconstitute (Durable Actor laden)
 
    - Voraussetzung: Subscribe ist erfolgt
    - Vorbereitung
@@ -195,27 +195,27 @@ Typ         | Basisklasse
    - wenn fertig
      - ES -> DA: End
 
- * Weiterleitung von DispatchableCommand abgeleiteten Nachrichten im OfficeActor
+ * forward (Weiterleitung von DispatchableCommand abgeleiteten Nachrichten im OfficeActor)
 
    - Eintreffen einer Nachricht
      - X -> OA: command
    - Sicherstellen, dass Durable Actor angelegt ist
      - OA -> DA: command (via Forward)
 
- * Alive / Graceful Passivation
+ * livecycle (Alive / Graceful Passivation)
 
    - OA -> DA: erzeugen
    - DA -> OA: StillAlive
    - DA bei Inaktivität -> OA: Passivate
    - OA -> DA: terminieren
 
- * div. Abfragen
+ * info
 
    - Statistik Abfrage
      - X -> Actor: GetStatistics
      - Actor -> X: DurableActorStatistics | OfficeActorStatistics | EventStoreStatistics
 
- * Vorgang des Persistierens
+ * persist
 
    - Persistierung
      - DA -> ES: PersistEvent(event)

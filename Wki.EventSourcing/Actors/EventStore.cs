@@ -76,19 +76,6 @@ namespace Wki.EventSourcing.Actors
             journalReader = reader;
             journalWriter = writer;
 
-            //if (config != null)
-            //{
-            //    var storageDir = dir ?? config.GetString("dir");
-            //    Context.System.Log.Info("Storage Dir: {0}", storageDir);
-
-            //    var readerTypeName = config.GetString("reader");
-            //    var readerType = Type.GetType(readerTypeName ?? "") ?? typeof(FileJournalReader);
-            //    journalReader = reader ?? Context.ActorOf(Props.Create(readerType, storageDir), "reader");
-
-            //    var writerTypeName = config.GetString("writer");
-            //    var writerType = Type.GetType(writerTypeName ?? "") ?? typeof(FileJournalWriter);
-            //    journalWriter = writer ?? Context.ActorOf(Props.Create(writerType, storageDir), "writer");
-            //}
 
             eventStoreStatistics = new EventStoreStatistics();
             eventsToReceive = 0;
@@ -181,7 +168,6 @@ namespace Wki.EventSourcing.Actors
             Receive<EventPersisted>(p => EventPersisted(p));
 
             // diagnostic messages for testing
-            Receive<GetSize>(_ => Sender.Tell(events.Count));
             Receive<GetActors>(_ => Sender.Tell(String.Join("|", subscribers.Values.Select(a => a.ToString()))));
 
             // diagnostic messages for monitoring
@@ -303,13 +289,13 @@ namespace Wki.EventSourcing.Actors
                                 Path = a.Path,
                                 Status = a.Restoring ? "Restoring" : "Operating",
                                 LastSeen = a.LastSeen,
-                                Events = a.InterestingEvents.Events.Select(e => e.Name).ToList(),
+                                Events = a.InterestingEvents.Events.Select(e => e.Name).OrderBy(e => e).ToList(),
                             })
                       .ToList();
 
             var statusReport = new StatusReport
             {
-                EventStoreState = eventStoreStatistics,
+                EventStoreStatistics = eventStoreStatistics,
                 Actors = actorStates,
             };
 

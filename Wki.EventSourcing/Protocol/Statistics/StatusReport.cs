@@ -13,7 +13,7 @@ namespace Wki.EventSourcing.Protocol.Statistics
             public List<string> Events { get; internal set; }
         }
 
-        public EventStoreStatistics EventStoreState { get; internal set; }
+        public EventStoreStatistics EventStoreStatistics { get; internal set; }
 
         public List<ActorStatus> Actors { get; internal set; }
     }

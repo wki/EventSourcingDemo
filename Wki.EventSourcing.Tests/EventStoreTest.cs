@@ -14,6 +14,7 @@ using Wki.EventSourcing.Protocol.EventStore;
 using Wki.EventSourcing.Protocol.Statistics;
 using Wki.EventSourcing.Protocol.Subscription;
 using Wki.EventSourcing.Protocol.LiveCycle;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Wki.EventSourcing.Tests
 {
@@ -60,15 +61,35 @@ namespace Wki.EventSourcing.Tests
             // Assert
             reader.ExpectMsgFrom<LoadNextEvents>(eventStore, loadJournal => loadJournal.NrEvents == NrRestoreEvents);
         }
+
+        [Test]
+        public void EventStore_AfterStart_HasEmptyStatusReport()
+        {
+            // Act
+            eventStore.Tell(new GetStatistics());
+
+            // Assert
+            FishForMessage<EventStoreStatistics>(s => s.NrSubscribers == 0); 
+        }
         #endregion
 
-        #region load journal behavior
+        #region protocol: load
         [Test]
-        public void EventStore_AfterReceiving90Events_Requests100More()
+        public void EventStore_BeforeReachingBufferLowLimit_DoesNotRequestMore()
         {
             // Assert
             reader.ExpectMsgFrom<LoadNextEvents>(eventStore, load => load.NrEvents == NrRestoreEvents);
-            for (var i = 1; i <= 90; i++)
+            for (var i = 1; i < NrRestoreEvents - BufferLowLimit; i++)
+                eventStore.Tell(new EventLoaded(new SomethingHappened()));
+            reader.ExpectNoMsg(TimeSpan.FromSeconds(0.1));
+        }
+
+        [Test]
+        public void EventStore_AfterReachingBufferLowLimit_RequestsMore()
+        {
+            // Assert
+            reader.ExpectMsgFrom<LoadNextEvents>(eventStore, load => load.NrEvents == NrRestoreEvents);
+            for (var i = 1; i <= NrRestoreEvents - BufferLowLimit; i++)
                 eventStore.Tell(new EventLoaded(new SomethingHappened()));
             reader.ExpectMsgFrom<LoadNextEvents>(eventStore, load => load.NrEvents == NrRestoreEvents);
         }
@@ -77,11 +98,15 @@ namespace Wki.EventSourcing.Tests
         public void EventStore_AfterLoading_HasEmptyEventList()
         {
             // Act
+            reader.ExpectMsgFrom<LoadNextEvents>(eventStore, load => load.NrEvents == NrRestoreEvents);
             eventStore.Tell(new End());
+            reader.ExpectNoMsg(TimeSpan.FromSeconds(0.1));
 
             // Assert
-            eventStore.Tell(new GetSize());
-            ExpectMsg<int>(0);
+            //eventStore.Tell(new GetSize());
+            //ExpectMsg<int>(0);
+            eventStore.Tell(new GetStatistics());
+            ExpectMsg<EventStoreStatistics>(s => s.NrEventsLoaded == 0);
         }
 
         [Test]
@@ -93,12 +118,18 @@ namespace Wki.EventSourcing.Tests
             eventStore.Tell(new End());
 
             // Assert
-            eventStore.Tell(new GetSize());
-            ExpectMsg<int>(10);
+            //eventStore.Tell(new GetSize());
+            //ExpectMsg<int>(10);
+            eventStore.Tell(new GetStatistics());
+            ExpectMsg<EventStoreStatistics>(s => s.NrEventsLoaded == 10);
         }
         #endregion
 
-        #region restore event behavior
+        #region protocol: subscribe
+
+        #endregion
+
+        #region protocol: reconstitute
         [Test]
         public void EventStore_RestoreEvents_PlaysBackEvents()
         {
@@ -199,6 +230,7 @@ namespace Wki.EventSourcing.Tests
             eventStore.Tell(new RestoreNextEvents(999));
 
             // Assert
+            this.
             ExpectMsg<End>();
 
             SystemTime.Fake(() => now3);
