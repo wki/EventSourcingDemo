@@ -17,10 +17,10 @@ namespace Designer.Domain.Tests
             var personOffice = Sys.ActorOf(Props.Create<PersonOffice>(eventStore), "person-office");
 
             // Act
-            personOffice.Tell(new GetSize());
+            personOffice.Tell(new GetStatistics());
 
             // Assert
-            ExpectMsg<int>(0);
+            ExpectMsg<OfficeActorStatistics>(s => s.NrActorsLoaded == 0);
         }
     }
 }

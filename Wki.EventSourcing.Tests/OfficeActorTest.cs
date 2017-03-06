@@ -58,10 +58,10 @@ namespace Wki.EventSourcing.Tests
         public void OfficeActor_Initially_HasNoChildren()
         {
             // Act
-            officeActor.Tell(new GetSize());
+            officeActor.Tell(new GetStatistics());
 
             // Assert
-            ExpectMsg<int>(i => i == 0);
+            ExpectMsg<OfficeActorStatistics>(s => s.NrActorsLoaded == 0);
         }
 
         [Test]
@@ -74,10 +74,10 @@ namespace Wki.EventSourcing.Tests
             ExpectMsg<string>("Reply to huhu");
         
             // Act #2 -- expect no children
-            officeActor.Tell(new GetSize());
+            officeActor.Tell(new GetStatistics());
 
             // Assert #2
-            ExpectMsg<int>(0);
+            ExpectMsg<OfficeActorStatistics>(s => s.NrActorsLoaded == 0);
         }
 
         // DispatchableCommand --> neuen Actor anlegen, weiterleiten
@@ -91,10 +91,10 @@ namespace Wki.EventSourcing.Tests
             ExpectMsg<string>("Hello from 42");
 
             // Act #2 -- expect one child
-            officeActor.Tell(new GetSize());
+            officeActor.Tell(new GetStatistics());
 
             // Assert #2
-            ExpectMsg<int>(1);
+            ExpectMsg<OfficeActorStatistics>(s => s.NrActorsLoaded == 1);
         }
     }
 }

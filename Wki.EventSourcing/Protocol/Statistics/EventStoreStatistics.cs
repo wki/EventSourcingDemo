@@ -46,15 +46,65 @@ namespace Wki.EventSourcing.Protocol.Statistics
             NrEventsTotal = 0;
         }
 
+        /// <summary>
+        /// Change the status of the event store
+        /// </summary>
+        /// <param name="status"></param>
         internal void ChangeStatus(EventStoreStatus status)
         {
             Status = status;
             StatusChangedAt = SystemTime.Now;
+
+            if (status == EventStoreStatus.Operating)
+                LoadDuration = SystemTime.Now - StartedAt; 
         }
 
+        /// <summary>
+        /// update statistics after a stashed command
+        /// </summary>
+        internal void StashedCommand()
+        {
+            NrStashedCommands++;
+        }
+
+        /// <summary>
+        /// update statistics after an event was loaded
+        /// </summary>
+        internal void LoadedEvent()
+        {
+            NrEventsLoaded++;
+            NrEventsTotal++;
+        }
+
+        /// <summary>
+        /// update statistics when starting to restore an actor
+        /// </summary>
+        internal void StartRestore()
+        {
+            NrActorsRestored++;
+        }
+
+        /// <summary>
+        /// update statistics when persisting an event
+        /// </summary>
+        internal void PersistedEvent()
+        {
+            NrEventsPersisted++;
+            NrEventsTotal++;
+            LastEventPersistedAt = SystemTime.Now;
+        }
+
+        /// <summary>
+        /// report if we are loading
+        /// </summary>
+        /// <returns></returns>
         public bool IsLoading() =>
             Status == EventStoreStatus.Loading;
 
+        /// <summary>
+        /// report if we are operating
+        /// </summary>
+        /// <returns></returns>
         public bool IsOperating() =>
             Status == EventStoreStatus.Operating;
     }

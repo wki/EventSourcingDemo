@@ -198,7 +198,7 @@ namespace Wki.EventSourcing.Tests
 
             ExpectMsg<End>();
         }
-
+        
         [Test]
         public void EventStore_AfterStartRestore_ReportsActorRestoring()
         {
@@ -208,10 +208,11 @@ namespace Wki.EventSourcing.Tests
             // Act
             eventStore.Tell(new Subscribe(new InterestingEvents(new[] { typeof(SomethingHappened) })));
             eventStore.Tell(new StartRestore());
-            eventStore.Tell(new GetActors());
+            eventStore.Tell(new GetStatistics());
 
             // Assert
-            ExpectMsg<string>(s => Regex.IsMatch(s, ">akka://test/user/testActor.*-0"));
+            // TODO: ist das korrekt?
+            ExpectMsg<EventStoreStatistics>(s => s.NrActorsRestored == 1);
         }
 
         [Test]
@@ -230,13 +231,13 @@ namespace Wki.EventSourcing.Tests
             eventStore.Tell(new RestoreNextEvents(999));
 
             // Assert
-            this.
             ExpectMsg<End>();
 
             SystemTime.Fake(() => now3);
-            eventStore.Tell(new GetActors());
+            eventStore.Tell(new GetStatistics());
 
-            ExpectMsg<string>(s => Regex.IsMatch(s, "=akka://test/user/testActor.*-3"));
+            // TODO: ist das korrekt?
+            ExpectMsg<EventStoreStatistics>(s => s.NrSubscribers == 1);
         }
         #endregion
 

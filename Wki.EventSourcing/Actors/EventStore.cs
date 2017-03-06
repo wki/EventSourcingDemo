@@ -1,15 +1,11 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Akka.Actor;
-using Wki.EventSourcing.Messages;
 using Wki.EventSourcing.Util;
 using static Wki.EventSourcing.Util.Constant;
 using Wki.EventSourcing.Protocol;
 using Wki.EventSourcing.Protocol.Statistics;
 using Wki.EventSourcing.Protocol.EventStore;
 using Wki.EventSourcing.Protocol.Subscription;
-using Wki.EventSourcing.Protocol.LiveCycle;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -18,37 +14,6 @@ namespace Wki.EventSourcing.Actors
     /// </summary>
     public class EventStore : ReceiveActor, IWithUnboundedStash
     {
-        // hold information about an actor we are in contact with
-        private class SubscriberState
-        {
-            public string Path { get; set; }
-            public IActorRef Actor { get; set; }
-            public bool Restoring { get; set; }
-            public DateTime LastSeen { get; set; }
-            public int NextMessageIndex { get; set; }
-            public InterestingEvents InterestingEvents { get; set; }
-
-            public SubscriberState(string path, IActorRef actor, InterestingEvents interestingEvents)
-            {
-                Path = path;
-                Actor = actor;
-                Restoring = true;
-                LastSeen = SystemTime.Now;
-                NextMessageIndex = 0;
-                InterestingEvents = interestingEvents;
-            }
-
-            public bool IsInterestedIn(Event @event) => InterestingEvents.Matches(@event);
-
-            public override string ToString()
-            {
-                var restoreFlag = Restoring ? ">" : "=";
-                var age = (SystemTime.Now - LastSeen).TotalSeconds;
-
-                return string.Format($"{restoreFlag}{Path}-{age:N0}");
-            }
-        }
-
         public IStash Stash { get; set; }
 
         // during restore count events for aquiring next junk before completion
@@ -76,7 +41,6 @@ namespace Wki.EventSourcing.Actors
             journalReader = reader;
             journalWriter = writer;
 
-
             eventStoreStatistics = new EventStoreStatistics();
             eventsToReceive = 0;
 
@@ -99,13 +63,12 @@ namespace Wki.EventSourcing.Actors
             Receive<End>(_ => Become(Operating));
 
             // diagnostic messages for monitoring
-            Receive<GetStatusReport>(_ => ReplyStatusReport());
             Receive<GetStatistics>(_ => Sender.Tell(eventStoreStatistics));
 
             // could be a command - keep for later
             Receive<object>(_ =>
             {
-                eventStoreStatistics.NrStashedCommands++;
+                eventStoreStatistics.StashedCommand();
                 Stash.Stash();
             });
 
@@ -115,8 +78,7 @@ namespace Wki.EventSourcing.Actors
         // readJournal loaded an event -- save it in our list
         private void EventLoaded(EventLoaded eventLoaded)
         {
-            eventStoreStatistics.NrEventsLoaded++;
-            eventStoreStatistics.NrEventsTotal++;
+            eventStoreStatistics.LoadedEvent();
             eventsToReceive--;
 
             events.Add(eventLoaded.Event);
@@ -137,23 +99,12 @@ namespace Wki.EventSourcing.Actors
         private void Operating()
         {
             eventStoreStatistics.ChangeStatus(EventStoreStatus.Operating);
-            eventStoreStatistics.LoadDuration = SystemTime.Now - eventStoreStatistics.StartedAt;
 
             Context.System.Log.Info(
                 "{0} Events loaded in {1:N3}s. Starting regular operation", 
                 eventStoreStatistics.NrEventsLoaded,
                 eventStoreStatistics.LoadDuration.TotalSeconds
             );
-
-            //// periodically check for inactive children
-            //Context.System.Scheduler
-            //       .ScheduleTellRepeatedly(
-            //           initialDelay: IdleActorPollTimeSpan,
-            //           interval:     IdleActorPollTimeSpan,
-            //           receiver:     Self,
-            //           message:      new RemoveInactiveActors(),
-            //           sender:       Self
-            //       );
 
             // Protocol: Load Durable Actor
             Receive<StartRestore>(s => StartRestore(s));
@@ -167,11 +118,7 @@ namespace Wki.EventSourcing.Actors
             Receive<PersistEvent>(e => PersistEvent(e));
             Receive<EventPersisted>(p => EventPersisted(p));
 
-            // diagnostic messages for testing
-            Receive<GetActors>(_ => Sender.Tell(String.Join("|", subscribers.Values.Select(a => a.ToString()))));
-
             // diagnostic messages for monitoring
-            Receive<GetStatusReport>(_ => ReplyStatusReport());
             Receive<GetStatistics>(_ => Sender.Tell(eventStoreStatistics));
 
             // process everything lost so far
@@ -182,7 +129,7 @@ namespace Wki.EventSourcing.Actors
         // TODO: macht eigentlich nichts. Notwendig?
         private void StartRestore(StartRestore startRestore)
         {
-            eventStoreStatistics.NrActorsRestored++;
+            eventStoreStatistics.StartRestore();
         }
 
         // an actor wants n more Events
@@ -192,33 +139,33 @@ namespace Wki.EventSourcing.Actors
 
             if (!subscribers.ContainsKey(path))
             {
-                // should not happen but silently ignore this unlikely happening request
+                Context.System.Log.Warning("trying to restore not subscribing actor {0} -- ignoring", path);
                 return;
             }
 
-            var actorState = subscribers[path];
-            actorState.LastSeen = SystemTime.Now;
+            var subscriber = subscribers[path];
+            subscriber.LastSent = SystemTime.Now;
 
             var nrEvents = restoreEvents.NrEvents;
-            var index = actorState.NextMessageIndex; // next index to test and send
+            var index = subscriber.NextMessageIndex;
 
             while (nrEvents > 0 && index < events.Count)
             {
                 var @event = events[index];
-                if (actorState.InterestingEvents.Matches(@event))
+                if (subscriber.IsInterestedIn(@event))
                 {
                     Sender.Tell(@event);
                     nrEvents--;
                 }
                 index++;
-                actorState.NextMessageIndex++;
             }
+            subscriber.NextMessageIndex = index;
 
-            if (actorState.NextMessageIndex >= events.Count)
+            if (subscriber.NextMessageIndex >= events.Count)
             {
                 // we reached the end
                 Sender.Tell(new End());
-                actorState.Restoring = false;
+                subscriber.Restoring = false;
             }
         }
 
@@ -229,7 +176,7 @@ namespace Wki.EventSourcing.Actors
             if (!subscribers.ContainsKey(path))
             {
                 Context.System.Log.Debug("Subscribe {0}: {1}", path, subscribe.InterestingEvents.ToString());
-                var subscriberState = new SubscriberState(path, Sender, subscribe.InterestingEvents);
+                var subscriberState = new SubscriberState(Sender, subscribe.InterestingEvents);
                 subscribers.Add(path, subscriberState);
 
                 eventStoreStatistics.NrSubscribers = subscribers.Count;
@@ -260,46 +207,22 @@ namespace Wki.EventSourcing.Actors
         // writeHournal persisted an event -- forward it to all actors interested in it
         private void EventPersisted(EventPersisted eventPersistet)
         {
-            eventStoreStatistics.NrEventsPersisted++;
-            eventStoreStatistics.NrEventsTotal++;
-            eventStoreStatistics.LastEventPersistedAt = SystemTime.Now;
+            eventStoreStatistics.PersistedEvent();
 
             var @event = eventPersistet.Event;
 
             // add for all running and subsequential restore operations
             events.Add(@event);
 
-            foreach (var actor in subscribers.Values)
+            foreach (var subscriber in subscribers.Values)
             {
                 // restoring actors are omitted because they will receive the event added above
-                if (!actor.Restoring && actor.IsInterestedIn(@event))
-                    actor.Actor.Tell(@event);
+                if (!subscriber.Restoring && subscriber.IsInterestedIn(@event))
+                {
+                    subscriber.Actor.Tell(@event);
+                    subscriber.ReceivedEvent();
+                }
             }
-        }
-        #endregion
-
-        #region status report (common to both states)
-        // generate ans reply status report
-        private void ReplyStatusReport()
-        {
-            var actorStates =
-                subscribers.Values
-                      .Select(a => new StatusReport.ActorStatus 
-                            {
-                                Path = a.Path,
-                                Status = a.Restoring ? "Restoring" : "Operating",
-                                LastSeen = a.LastSeen,
-                                Events = a.InterestingEvents.Events.Select(e => e.Name).OrderBy(e => e).ToList(),
-                            })
-                      .ToList();
-
-            var statusReport = new StatusReport
-            {
-                EventStoreStatistics = eventStoreStatistics,
-                Actors = actorStates,
-            };
-
-            Sender.Tell(statusReport);
         }
         #endregion
     }

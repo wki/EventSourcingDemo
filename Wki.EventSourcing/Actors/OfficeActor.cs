@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using Akka.Actor;
 using Wki.EventSourcing.Messages;
@@ -63,10 +61,6 @@ namespace Wki.EventSourcing.Actors
             Receive<Passivate>(_ => Passivate());
             Receive<RemoveInactiveActors>(_ => RemoveInactiveActors());
 
-            // diagnostic messages for testing
-            Receive<GetSize>(_ => Sender.Tell(officeActorStatistics.ChildActorStates.Count));
-            Receive<GetActors>(_ => Sender.Tell(String.Join("|", officeActorStatistics.ChildActorStates.Keys.Select(k => k))));
-            
             // diagnostic messages for monitoring
             Receive<GetStatistics>(_ => Sender.Tell(officeActorStatistics));
             Receive<DurableActorStatistics>(d => UpdateChild(d));
@@ -80,45 +74,37 @@ namespace Wki.EventSourcing.Actors
             var command = message as DispatchableCommand<TIndex>;
             if (command != null)
             {
-                officeActorStatistics.NrCommandsForwarded++;
-                officeActorStatistics.LastCommandForwardedAt = SystemTime.Now;
+                officeActorStatistics.ForwardedCommand();
 
                 ForwardToDestinationActor(command);
             }
             else
             {
-                officeActorStatistics.NrUnhandledMessages++;
+                officeActorStatistics.UnhandledMessage();
 
                 Context.System.Log.Warning("Received {0} -- ignoring", message);
             }
         }
 
-        private void StillAlive()
-        {
-            var name = Sender.Path.Name;
-            if (officeActorStatistics.ChildActorStates.ContainsKey(name))
-            {
-                var child = officeActorStatistics.ChildActorStates[name];
-                child.StillAlive();
-            }
-        }
+        private void StillAlive() =>
+            officeActorStatistics.ChildStillAlive(Sender.Path.Name);
 
         private void Passivate()
         {
             var name = Sender.Path.Name;
-            if (officeActorStatistics.ChildActorStates.ContainsKey(name))
+            if (officeActorStatistics.ContainsChild(name))
             {
-                officeActorStatistics.ChildActorStates.Remove(name);
                 Context.System.Log.Info("Office {0}: removed child {1}", Self.Path.Name, name);
+                Context.Stop(Sender);
+                officeActorStatistics.RemoveChildActor(name);
             }
         }
 
         private void RemoveInactiveActors()
         {
-            officeActorStatistics.NrActorChecks++;
-            officeActorStatistics.LastActorCheckAt = SystemTime.Now;
+            officeActorStatistics.InactiveActorCheck();
 
-            foreach (var actorName in officeActorStatistics.ChildActorStates.Keys.ToList())
+            foreach (var actorName in officeActorStatistics.ChildActorNames())
             {
                 var child = Context.Child(actorName);
                 var childActorState = officeActorStatistics.ChildActorStates[actorName];
@@ -160,7 +146,7 @@ namespace Wki.EventSourcing.Actors
         {
             var actorName = Sender.Path.Name;
 
-            if (officeActorStatistics.ChildActorStates.ContainsKey(actorName))
+            if (officeActorStatistics.ContainsChild(actorName))
             {
                 var childActorState = officeActorStatistics.ChildActorStates[actorName];
                 childActorState.LastStatusReceivedAt = SystemTime.Now;

@@ -9,6 +9,7 @@ using Designer.Domain.Rendering.Actors;
 using Designer.Domain.Todos.Actors;
 using Wki.EventSourcing.Actors;
 using Wki.EventSourcing.Protocol.Statistics;
+using System;
 
 namespace Designer.Domain
 {
@@ -67,7 +68,8 @@ namespace Designer.Domain
         #region Diagnostics
         public Task<StatusReport> GetStatusReport()
         {
-            return eventStore.Ask<StatusReport>(new GetStatusReport());
+            throw new NotImplementedException();
+            // return eventStore.Ask<StatusReport>(new GetStatusReport());
         }
         #endregion
 

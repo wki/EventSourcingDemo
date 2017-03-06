@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Wki.EventSourcing.Util;
 
 namespace Wki.EventSourcing.Protocol.Statistics
@@ -43,6 +44,12 @@ namespace Wki.EventSourcing.Protocol.Statistics
             LastCommandForwardedAt = DateTime.MinValue;
         }
 
+        internal IEnumerable<string> ChildActorNames() =>
+            ChildActorStates.Keys.ToList();
+
+        internal bool ContainsChild(string name) =>
+            ChildActorStates.ContainsKey(name);
+            
         internal void AddChildActor(string name)
         {
             if (ChildActorStates.ContainsKey(name))
@@ -65,6 +72,29 @@ namespace Wki.EventSourcing.Protocol.Statistics
                 LastActorRemovedAt = SystemTime.Now;
                 ChildActorStates.Remove(name);
             }
+        }
+
+        internal void ChildStillAlive(string name)
+        {
+            if (ChildActorStates.ContainsKey(name))
+                ChildActorStates[name].StillAlive();
+        }
+
+        internal void InactiveActorCheck()
+        {
+            NrActorChecks++;
+            LastActorCheckAt = SystemTime.Now;
+        }
+
+        internal void ForwardedCommand()
+        {
+            NrCommandsForwarded++;
+            LastCommandForwardedAt = SystemTime.Now;
+        }
+
+        internal void UnhandledMessage()
+        {
+            NrUnhandledMessages++;
         }
     }
 }

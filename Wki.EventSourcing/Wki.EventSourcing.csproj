@@ -53,6 +53,7 @@
     <Compile Include="Protocol\Statistics\EventStoreStatus.cs" />
     <Compile Include="Protocol\Statistics\GetStatistics.cs" />
     <Compile Include="Protocol\Statistics\OfficeActorStatistics.cs" />
+    <Compile Include="Protocol\Statistics\SubscriberState.cs" />
     <Compile Include="Protocol\Subscription\InterestingEvents.cs" />
     <Compile Include="Protocol\EventStore\LoadNextEvents.cs" />
     <Compile Include="Protocol\EventStore\PersistEvent.cs" />
@@ -64,15 +65,12 @@
     <Compile Include="Serialisation\EventSerializer.cs" />
     <Compile Include="Protocol\Statistics\OfficeActorChildState.cs" />
     <Compile Include="Util\SystemTime.cs" />
-    <Compile Include="Protocol\Statistics\GetSize.cs" />
-    <Compile Include="Protocol\Statistics\GetActors.cs" />
     <Compile Include="Util\Constant.cs" />
     <Compile Include="JsonNet.PrivateSettersContractResolvers\PrivateSettersContractResolvers.cs">
       <Paket>True</Paket>
     </Compile>
     <Compile Include="Serialisation\Envelope.cs" />
     <Compile Include="Protocol\Reply.cs" />
-    <Compile Include="Protocol\Statistics\GetStatusReport.cs" />
     <Compile Include="Protocol\Statistics\StatusReport.cs" />
   </ItemGroup>
   <ItemGroup>
