@@ -45,7 +45,7 @@
     <Compile Include="Actors\Handler.cs" />
     <Compile Include="Actors\OfficeActor.cs" />
     <Compile Include="Protocol\DispatchableCommand.cs" />
-    <Compile Include="Protocol\EventStore\End.cs" />
+    <Compile Include="Protocol\EventStore\EndOfTransmission.cs" />
     <Compile Include="Protocol\Event.cs" />
     <Compile Include="Protocol\EventStore\EventLoaded.cs" />
     <Compile Include="Protocol\EventStore\EventPersisted.cs" />

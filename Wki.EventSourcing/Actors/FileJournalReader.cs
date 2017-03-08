@@ -41,7 +41,7 @@ namespace Wki.EventSourcing.Actors
             {
                 Context.System.Log.Debug("Reached end after {0} Events, End Loading", loadJournal.NrEvents-nrEvents-1);
 
-                Sender.Tell(new End());
+                Sender.Tell(new EndOfTransmission());
             }
         }
 

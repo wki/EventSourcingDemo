@@ -39,7 +39,7 @@ namespace Designer.Domain.Tests
         public void PersonList_AfterRestore_Answers()
         {
             // Arrange
-            personList.Tell(new End());
+            personList.Tell(new EndOfTransmission());
 
             // Act
             personList.Tell(new ListPersons());
@@ -52,7 +52,7 @@ namespace Designer.Domain.Tests
         public void PersonList_AfterRegistration_ListsPersons()
         {
             // Arrange
-            personList.Tell(new End());
+            personList.Tell(new EndOfTransmission());
 
             // Act
             personList.Tell(new PersonRegistered(1, "f1", "e1@x.de"));

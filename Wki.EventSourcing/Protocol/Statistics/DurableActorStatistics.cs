@@ -31,7 +31,7 @@ namespace Wki.EventSourcing.Protocol.Statistics
         public int NrUnhandledMessages { get; private set; }
 
         // last time something happened (except keepalive)
-        public DateTime LastActivity { get { return LastCommandReceivedAt > LastEventReceivedAt ? LastCommandReceivedAt : LastEventReceivedAt; } }
+        public DateTime LastActivity { get; private set; }
 
         // stillalive send time
         public DateTime LastStillAliveSentAt { get; private set; }
@@ -51,9 +51,13 @@ namespace Wki.EventSourcing.Protocol.Statistics
             NrEventsTotal = 0;
             NrCommandsTotal = 0;
             NrUnhandledMessages = 0;
+            LastActivity = startTime;
             LastStillAliveSentAt = DateTime.MinValue;
         }
-
+        /// <summary>
+        /// Switch to a different status
+        /// </summary>
+        /// <param name="status"></param>
         internal void ChangeStatus(DurableActorStatus status)
         {
             if (Status == DurableActorStatus.Restoring)
@@ -62,8 +66,12 @@ namespace Wki.EventSourcing.Protocol.Statistics
             }
             Status = status;
             StatusChangedAt = SystemTime.Now;
+            LastActivity = SystemTime.Now;
         }
 
+        /// <summary>
+        /// update statistics for a received command
+        /// </summary>
         internal void CommandReceived()
         {
             if (Status == DurableActorStatus.Restoring)
@@ -71,8 +79,12 @@ namespace Wki.EventSourcing.Protocol.Statistics
             else
                 NrCommandsTotal++;
             LastCommandReceivedAt = SystemTime.Now;
+            LastActivity = SystemTime.Now;
         }
 
+        /// <summary>
+        /// update statistics for a receive event
+        /// </summary>
         internal void EventReceived()
         {
             if (Status == DurableActorStatus.Restoring)
@@ -80,21 +92,23 @@ namespace Wki.EventSourcing.Protocol.Statistics
             else
                 NrEventsTotal++;
             LastEventReceivedAt = SystemTime.Now;
+            LastActivity = SystemTime.Now;
         }
 
+        /// <summary>
+        /// update statistics for an unhandled message
+        /// </summary>
         internal void UnhandledMessageReceived()
         {
             NrUnhandledMessages++;
         }
 
+        /// <summary>
+        /// update statistics for a sent stillalive message
+        /// </summary>
         internal void StillAliveSent()
         {
             LastStillAliveSentAt = SystemTime.Now;
-        }
-
-        internal bool ShouldPassivate()
-        {
-            return SystemTime.Now > LastActivity + MaxActorIdleTimeSpan;
         }
     }
 }

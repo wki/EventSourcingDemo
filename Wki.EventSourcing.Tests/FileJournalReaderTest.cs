@@ -47,7 +47,7 @@ namespace Wki.EventSourcing.Tests
             storageReader.Tell(new LoadNextEvents(100));
 
             // Assert
-            ExpectMsg<End>();
+            ExpectMsg<EndOfTransmission>();
         }
 
         [Test]
@@ -81,7 +81,7 @@ namespace Wki.EventSourcing.Tests
             for (var i = 6; i < 10; i++)
                 ExpectMsg<EventLoaded>(e => ((SomethingHappened)e.Event).Number == i);
 
-            ExpectMsg<End>();
+            ExpectMsg<EndOfTransmission>();
         }
 
         [Test]
@@ -111,7 +111,7 @@ namespace Wki.EventSourcing.Tests
             for (var i = 1; i <= 10; i++)
                 ExpectMsg<EventLoaded>(e => ((SomethingHappened)e.Event).Number == i);
 
-            ExpectMsg<End>();
+            ExpectMsg<EndOfTransmission>();
         }
 
         #region helper

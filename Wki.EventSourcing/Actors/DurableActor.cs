@@ -47,14 +47,14 @@ namespace Wki.EventSourcing.Actors
         public IStash Stash { get; set; }
 
         // maintain a complete state (for knowledge and statistics)
-        private DurableActorStatistics durableActorStatistics;
+        private DurableActorStatistics statistics;
 
         // after this timestamp an actor of this type will assk for passivation
         protected TimeSpan passivationTimeSpan;
 
         // simpler access to current status
-        protected bool IsRestoring => durableActorStatistics.IsRestoring;
-        protected bool IsOperating => durableActorStatistics.IsOperating;
+        protected bool IsRestoring => statistics.IsRestoring;
+        protected bool IsOperating => statistics.IsOperating;
 
         // keep all events and commands we may respond to
         protected List<Handler> commands;
@@ -79,7 +79,7 @@ namespace Wki.EventSourcing.Actors
             commands = new List<Handler>();
             events = new List<Handler>();
 
-            durableActorStatistics = new DurableActorStatistics();
+            statistics = new DurableActorStatistics();
 
             Context.System.Log.Info("start Building {0}", Self.Path.ToString());
         }
@@ -139,6 +139,20 @@ namespace Wki.EventSourcing.Actors
         #endregion
 
         #region regular operation
+        private void StartOperating()
+        {
+            UnbecomeStacked();
+            Stash.UnstashAll();
+
+            Context.System.Scheduler.ScheduleTellRepeatedly(
+                initialDelay: ActorStillAliveInterval,
+                interval: ActorStillAliveInterval,
+                receiver: Self,
+                message: new Tick(),
+                sender: Self
+            );
+        }
+
         /// <summary>
         /// Regular Operation: receive Commands and Events
         /// </summary>
@@ -148,28 +162,27 @@ namespace Wki.EventSourcing.Actors
             if (message is Tick)
                 HandleTick();
             else if (message is GetStatistics)
-                Sender.Tell(durableActorStatistics);
+                Sender.Tell(statistics);
             else
             {
-                var now = SystemTime.Now;
-
-                var eventHandler = events.Find(e => e.Type == message.GetType());
+                var messageType = message.GetType();
+                var eventHandler = events.Find(e => e.Type == messageType);
                 if (eventHandler != null)
                 {
-                    durableActorStatistics.EventReceived();
+                    statistics.EventReceived();
                     eventHandler.Action(message);
                 }
                 else
                 {
-                    var commandHandler = commands.Find(c => c.Type == message.GetType());
+                    var commandHandler = commands.Find(c => c.Type == messageType);
                     if (commandHandler != null)
                     {
-                        durableActorStatistics.CommandReceived();
+                        statistics.CommandReceived();
                         commandHandler.Action(message);
                     }
                     else
                     {
-                        durableActorStatistics.UnhandledMessageReceived();
+                        statistics.UnhandledMessageReceived();
                         Unhandled(message);
                     }
                 }
@@ -178,13 +191,22 @@ namespace Wki.EventSourcing.Actors
 
         private void HandleTick()
         {
-            if (durableActorStatistics.ShouldPassivate())
+            if (ShouldPassivate())
                 Context.Parent.Tell(new Passivate());
             else
             {
-                durableActorStatistics.StillAliveSent();
-                eventStore.Tell(new StillAlive());
+                statistics.StillAliveSent();
+                Context.Parent.Tell(new StillAlive());
             }
+        }
+
+        private bool ShouldPassivate()
+        {
+            return passivationTimeSpan == TimeSpan.MaxValue
+                // never passivate in case of infinite timespan
+                ? false
+                // passivate if we idled longer than passivation timespan
+                : SystemTime.Now > statistics.LastActivity + passivationTimeSpan;
         }
         #endregion
 
@@ -195,27 +217,18 @@ namespace Wki.EventSourcing.Actors
         /// <param name="message">Message.</param>
         private void Restoring(object message)
         {
-            if (message is End)
+            if (message is EndOfTransmission)
             {
-                durableActorStatistics.ChangeStatus(DurableActorStatus.Operating);
+                statistics.ChangeStatus(DurableActorStatus.Operating);
 
                 Context.System.Log.Info(
                     "Actor {0}: CompletedRestore {1} Events, {2:N3}s",
                     Self.Path.Name,
-                    durableActorStatistics.NrRestoreEvents,
-                    durableActorStatistics.RestoreDuration.TotalSeconds
+                    statistics.NrRestoreEvents,
+                    statistics.RestoreDuration.TotalSeconds
                 );
 
-                Context.System.Scheduler.ScheduleTellRepeatedly(
-                    initialDelay: ActorStillAliveInterval,
-                    interval: ActorStillAliveInterval,
-                    receiver: Self,
-                    message: new Tick(),
-                    sender: Self
-                );
-
-                UnbecomeStacked();
-                Stash.UnstashAll();
+                StartOperating();
             }
             else
             {
@@ -227,7 +240,7 @@ namespace Wki.EventSourcing.Actors
 
                     Context.System.Log.Debug("Actor {0}: Restore Event: {1}", Self.Path.Name, message);
 
-                    durableActorStatistics.EventReceived();
+                    statistics.EventReceived();
 
                     eventHandler.Action(message);
                 }
@@ -235,7 +248,7 @@ namespace Wki.EventSourcing.Actors
                 {
                     Context.System.Log.Debug("Actor {0} during restore stash command: {1}", Self.Path.Name, message);
 
-                    durableActorStatistics.CommandReceived();
+                    statistics.CommandReceived();
 
                     Stash.Stash();
                 }
@@ -245,7 +258,7 @@ namespace Wki.EventSourcing.Actors
         private void StartRestoring()
         {
             Context.System.Log.Debug("Actor {0}: StartRestore", Self.Path.Name);
-            durableActorStatistics.ChangeStatus(DurableActorStatus.Restoring);
+            statistics.ChangeStatus(DurableActorStatus.Restoring);
             BecomeStacked(Restoring);
 
             eventStore.Tell(new StartRestore());

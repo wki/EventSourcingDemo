@@ -37,7 +37,7 @@ namespace Designer.Domain.Tests
         public void PersonRegistrator_AfterRestore_ReportedIds()
         {
             // Arrange
-            personRegistrator.Tell(new End());
+            personRegistrator.Tell(new EndOfTransmission());
 
             // Act
             personRegistrator.Tell(new ReturnIds());
@@ -50,7 +50,7 @@ namespace Designer.Domain.Tests
         public void PersonRegistrator_AfterRegistration_IncreaseUsableId()
         {
             // Arrange
-            personRegistrator.Tell(new End());
+            personRegistrator.Tell(new EndOfTransmission());
 
             // Act
             personRegistrator.Tell(new RegisterPerson("Full", "mail@domain.de"));
@@ -66,7 +66,7 @@ namespace Designer.Domain.Tests
         public void PersonRegistrator_AfterMultipleRegistrations_IncreaseUsableId()
         {
             // Arrange
-            personRegistrator.Tell(new End());
+            personRegistrator.Tell(new EndOfTransmission());
 
             // Act
             foreach (var mail in new[] { "1@x.de", "2@x.de", "3@x.de" })
@@ -83,7 +83,7 @@ namespace Designer.Domain.Tests
         public void PersonRegistrator_RegisterDuplicatedEmail_IncreaseUsableIdAndRaiseError()
         {
             // Arrange
-            personRegistrator.Tell(new End());
+            personRegistrator.Tell(new EndOfTransmission());
 
             // Act
             personRegistrator.Tell(new RegisterPerson("Full", "mail@domain.de"));
@@ -100,7 +100,7 @@ namespace Designer.Domain.Tests
         public void PersonRegistrator_AfterRecover_IncreaseUsableIds()
         {
             // Arrange
-            personRegistrator.Tell(new End());
+            personRegistrator.Tell(new EndOfTransmission());
 
             // Act
             personRegistrator.Tell(new PersonRegistered(23, "Full", "mail@domain.de"));

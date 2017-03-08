@@ -65,7 +65,7 @@ namespace Wki.EventSourcing.Tests
         public void DurableActor_AfterRestore_ProcessesCustomMessage()
         {
             // Arrange
-            durableActor.Tell(new End()); // end restore
+            durableActor.Tell(new EndOfTransmission()); // end restore
 
             // Act
             durableActor.Tell("Hello");
@@ -78,7 +78,7 @@ namespace Wki.EventSourcing.Tests
         public void DurableActor_AfterRestore_ReturnsOkWhenNoException()
         {
             // Arrange
-            durableActor.Tell(new End()); // end restore
+            durableActor.Tell(new EndOfTransmission()); // end restore
 
             // Act
             durableActor.Tell(42);
@@ -91,7 +91,7 @@ namespace Wki.EventSourcing.Tests
         public void DurableActor_AfterRestore_ReturnsErrorWhenException()
         {
             // Arrange
-            durableActor.Tell(new End()); // end restore
+            durableActor.Tell(new EndOfTransmission()); // end restore
 
             // Act
             durableActor.Tell(-42);

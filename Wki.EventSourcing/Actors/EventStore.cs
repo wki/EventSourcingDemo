@@ -6,6 +6,8 @@ using Wki.EventSourcing.Protocol;
 using Wki.EventSourcing.Protocol.Statistics;
 using Wki.EventSourcing.Protocol.EventStore;
 using Wki.EventSourcing.Protocol.Subscription;
+using System;
+using System.Linq;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -32,19 +34,20 @@ namespace Wki.EventSourcing.Actors
         private List<Event> events;
 
         // maintain a complete state (for knowledge and statistics)
-        private EventStoreStatistics eventStoreStatistics;
+        private EventStoreStatistics statistics;
 
-        public EventStore(string dir, IActorRef reader = null, IActorRef writer = null)
+        public EventStore(string dir, IActorRef reader, IActorRef writer)
         {
-            var config = Context.System.Settings.Config.GetConfig("eventstore");
+            // maybe some day we read from config
+            // var config = Context.System.Settings.Config.GetConfig("eventstore");
 
-            journalReader = reader;
-            journalWriter = writer;
+            journalReader = reader ?? throw new ArgumentNullException(nameof(reader));
+            journalWriter = writer ?? throw new ArgumentNullException(nameof(writer));
 
-            eventStoreStatistics = new EventStoreStatistics();
+            statistics = new EventStoreStatistics();
             eventsToReceive = 0;
 
-            subscribers = new Dictionary<string,SubscriberState>();
+            subscribers = new Dictionary<string, SubscriberState>();
             events = new List<Event>();
 
             Become(Loading);
@@ -54,21 +57,21 @@ namespace Wki.EventSourcing.Actors
         // junk-wise request events from journal reader
         private void Loading()
         {
-            Context.System.Log.Info("Loading all events from event store");
+            Context.System.Log.Debug("Loading all events from event store");
 
-            eventStoreStatistics.ChangeStatus(EventStoreStatus.Loading);
+            statistics.ChangeStatus(EventStoreStatus.Loading);
 
             // Protocol: fill event store
             Receive<EventLoaded>(e => EventLoaded(e));
-            Receive<End>(_ => Become(Operating));
+            Receive<EndOfTransmission>(_ => Become(Operating));
 
             // diagnostic messages for monitoring
-            Receive<GetStatistics>(_ => Sender.Tell(eventStoreStatistics));
+            Receive<GetStatistics>(_ => Sender.Tell(statistics));
 
             // could be a command - keep for later
             Receive<object>(_ =>
             {
-                eventStoreStatistics.StashedCommand();
+                statistics.StashedCommand();
                 Stash.Stash();
             });
 
@@ -78,7 +81,7 @@ namespace Wki.EventSourcing.Actors
         // readJournal loaded an event -- save it in our list
         private void EventLoaded(EventLoaded eventLoaded)
         {
-            eventStoreStatistics.LoadedEvent();
+            statistics.LoadedEvent();
             eventsToReceive--;
 
             events.Add(eventLoaded.Event);
@@ -98,12 +101,12 @@ namespace Wki.EventSourcing.Actors
         #region Operating state
         private void Operating()
         {
-            eventStoreStatistics.ChangeStatus(EventStoreStatus.Operating);
+            statistics.ChangeStatus(EventStoreStatus.Operating);
 
             Context.System.Log.Info(
-                "{0} Events loaded in {1:N3}s. Starting regular operation", 
-                eventStoreStatistics.NrEventsLoaded,
-                eventStoreStatistics.LoadDuration.TotalSeconds
+                "{0} Events loaded in {1:N3}s. Starting regular operation",
+                statistics.NrEventsLoaded,
+                statistics.LoadDuration.TotalSeconds
             );
 
             // Protocol: Load Durable Actor
@@ -119,7 +122,7 @@ namespace Wki.EventSourcing.Actors
             Receive<EventPersisted>(p => EventPersisted(p));
 
             // diagnostic messages for monitoring
-            Receive<GetStatistics>(_ => Sender.Tell(eventStoreStatistics));
+            Receive<GetStatistics>(_ => Sender.Tell(statistics));
 
             // process everything lost so far
             Stash.UnstashAll();
@@ -129,7 +132,7 @@ namespace Wki.EventSourcing.Actors
         // TODO: macht eigentlich nichts. Notwendig?
         private void StartRestore(StartRestore startRestore)
         {
-            eventStoreStatistics.StartRestore();
+            statistics.StartRestore();
         }
 
         // an actor wants n more Events
@@ -139,7 +142,10 @@ namespace Wki.EventSourcing.Actors
 
             if (!subscribers.ContainsKey(path))
             {
-                Context.System.Log.Warning("trying to restore not subscribing actor {0} -- ignoring", path);
+                Context.System.Log.Warning(
+                    "trying to restore not subscribing actor {0} -- ignored",
+                    path
+                );
                 return;
             }
 
@@ -164,7 +170,7 @@ namespace Wki.EventSourcing.Actors
             if (subscriber.NextMessageIndex >= events.Count)
             {
                 // we reached the end
-                Sender.Tell(new End());
+                Sender.Tell(new EndOfTransmission());
                 subscriber.Restoring = false;
             }
         }
@@ -173,13 +179,21 @@ namespace Wki.EventSourcing.Actors
         private void Subscribe(Subscribe subscribe)
         {
             var path = Sender.Path.ToString();
-            if (!subscribers.ContainsKey(path))
+            if (subscribers.ContainsKey(path))
+                Context.System.Log.Warning(
+                    "trying to subscribe already subscribing actor {0} -- ignored",
+                    path
+                );
+            else
             {
-                Context.System.Log.Debug("Subscribe {0}: {1}", path, subscribe.InterestingEvents.ToString());
+                Context.System.Log.Debug(
+                    "Subscribe {0}: {1}",
+                    path, subscribe.InterestingEvents
+                );
                 var subscriberState = new SubscriberState(Sender, subscribe.InterestingEvents);
                 subscribers.Add(path, subscriberState);
 
-                eventStoreStatistics.NrSubscribers = subscribers.Count;
+                statistics.NrSubscribers = subscribers.Count;
             }
         }
 
@@ -192,8 +206,13 @@ namespace Wki.EventSourcing.Actors
                 Context.System.Log.Debug("Unsubscribe {0}", path);
                 subscribers.Remove(path);
 
-                eventStoreStatistics.NrSubscribers = subscribers.Count;
+                statistics.NrSubscribers = subscribers.Count;
             }
+            else
+                Context.System.Log.Warning(
+                    "trying to unsubscribe not subscribing actor {0} -- ignored",
+                    path
+                );
         }
 
         private void PersistEvent(object @event)
@@ -207,17 +226,22 @@ namespace Wki.EventSourcing.Actors
         // writeHournal persisted an event -- forward it to all actors interested in it
         private void EventPersisted(EventPersisted eventPersistet)
         {
-            eventStoreStatistics.PersistedEvent();
+            statistics.PersistedEvent();
 
             var @event = eventPersistet.Event;
 
             // add for all running and subsequential restore operations
             events.Add(@event);
 
-            foreach (var subscriber in subscribers.Values)
+            foreach (var subscriber in subscribers.Values.Where(s => s.IsInterestedIn(@event)))
             {
-                // restoring actors are omitted because they will receive the event added above
-                if (!subscriber.Restoring && subscriber.IsInterestedIn(@event))
+                if (subscriber.Restoring)
+                    // restoring actors will receive the event during their restore cycle
+                    Context.System.Log.Debug(
+                        "trying to send {0} to restoring actor {1} -- stashed",
+                        @event.GetType().Name, subscriber.Actor.Path
+                    );
+                else
                 {
                     subscriber.Actor.Tell(@event);
                     subscriber.ReceivedEvent();

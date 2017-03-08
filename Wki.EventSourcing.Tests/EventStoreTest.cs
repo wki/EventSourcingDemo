@@ -99,7 +99,7 @@ namespace Wki.EventSourcing.Tests
         {
             // Act
             reader.ExpectMsgFrom<LoadNextEvents>(eventStore, load => load.NrEvents == NrRestoreEvents);
-            eventStore.Tell(new End());
+            eventStore.Tell(new EndOfTransmission());
             reader.ExpectNoMsg(TimeSpan.FromSeconds(0.1));
 
             // Assert
@@ -115,7 +115,7 @@ namespace Wki.EventSourcing.Tests
             // Act
             for (var i = 1; i <= 10; i++)
                 eventStore.Tell(new EventLoaded(new SomethingHappened(i)));
-            eventStore.Tell(new End());
+            eventStore.Tell(new EndOfTransmission());
 
             // Assert
             //eventStore.Tell(new GetSize());
@@ -137,7 +137,7 @@ namespace Wki.EventSourcing.Tests
             eventStore.Tell(new EventLoaded(new IgnoreWhatHappened()));
             for (var i = 1; i <= 10; i++)
                 eventStore.Tell(new EventLoaded(new SomethingHappened(i)));
-            eventStore.Tell(new End());
+            eventStore.Tell(new EndOfTransmission());
 
             // Act
             eventStore.Tell(new Subscribe(new InterestingEvents(new[] { typeof(SomethingHappened) })));
@@ -159,7 +159,7 @@ namespace Wki.EventSourcing.Tests
             eventStore.Tell(new EventLoaded(new IgnoreWhatHappened()));
             for (var i = 1; i <= 10; i++)
                 eventStore.Tell(new EventLoaded(new SomethingHappened(i)));
-            eventStore.Tell(new End());
+            eventStore.Tell(new EndOfTransmission());
 
             // Act
             eventStore.Tell(new Subscribe(new InterestingEvents(new[] { typeof(SomethingHappened) })));
@@ -183,7 +183,7 @@ namespace Wki.EventSourcing.Tests
             eventStore.Tell(new EventLoaded(new IgnoreWhatHappened()));
             for (var i = 1; i <= 4; i++)
                 eventStore.Tell(new EventLoaded(new SomethingHappened(i)));
-            eventStore.Tell(new End());
+            eventStore.Tell(new EndOfTransmission());
 
             // Act
             eventStore.Tell(new Subscribe(new InterestingEvents(new[] { typeof(SomethingHappened) })));
@@ -196,14 +196,14 @@ namespace Wki.EventSourcing.Tests
             ExpectMsg<SomethingHappened>(something => something.Number == 3);
             ExpectMsg<SomethingHappened>(something => something.Number == 4);
 
-            ExpectMsg<End>();
+            ExpectMsg<EndOfTransmission>();
         }
         
         [Test]
         public void EventStore_AfterStartRestore_ReportsActorRestoring()
         {
             // Arrange
-            eventStore.Tell(new End());
+            eventStore.Tell(new EndOfTransmission());
 
             // Act
             eventStore.Tell(new Subscribe(new InterestingEvents(new[] { typeof(SomethingHappened) })));
@@ -223,7 +223,7 @@ namespace Wki.EventSourcing.Tests
             var now3 = now.AddSeconds(3);
 
             SystemTime.Fake(() => now);
-            eventStore.Tell(new End());
+            eventStore.Tell(new EndOfTransmission());
 
             // Act
             eventStore.Tell(new Subscribe(new InterestingEvents(new[] { typeof(SomethingHappened) })));
@@ -231,7 +231,7 @@ namespace Wki.EventSourcing.Tests
             eventStore.Tell(new RestoreNextEvents(999));
 
             // Assert
-            ExpectMsg<End>();
+            ExpectMsg<EndOfTransmission>();
 
             SystemTime.Fake(() => now3);
             eventStore.Tell(new GetStatistics());
