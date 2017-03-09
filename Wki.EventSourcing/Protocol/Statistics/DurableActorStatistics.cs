@@ -33,8 +33,9 @@ namespace Wki.EventSourcing.Protocol.Statistics
         // last time something happened (except keepalive)
         public DateTime LastActivity { get; private set; }
 
-        // stillalive send time
+        // stillalive/passivate send time
         public DateTime LastStillAliveSentAt { get; private set; }
+        public DateTime PassivateSentAt { get; private set; }
 
         public DurableActorStatistics()
         {
@@ -53,6 +54,7 @@ namespace Wki.EventSourcing.Protocol.Statistics
             NrUnhandledMessages = 0;
             LastActivity = startTime;
             LastStillAliveSentAt = DateTime.MinValue;
+            PassivateSentAt = DateTime.MinValue;
         }
         /// <summary>
         /// Switch to a different status
@@ -109,6 +111,14 @@ namespace Wki.EventSourcing.Protocol.Statistics
         internal void StillAliveSent()
         {
             LastStillAliveSentAt = SystemTime.Now;
+        }
+
+        /// <summary>
+        /// update statistics for a sent passivate message
+        /// </summary>
+        internal void PassivateSent()
+        {
+            PassivateSentAt = SystemTime.Now;
         }
     }
 }

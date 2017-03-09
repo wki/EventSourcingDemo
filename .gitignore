@@ -46,3 +46,5 @@ node_modules/
 build/
 npm-debug.log
 Designer.App/public/
+
+.vs/

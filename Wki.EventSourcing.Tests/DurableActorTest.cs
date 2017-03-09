@@ -7,14 +7,29 @@ using Wki.EventSourcing.Actors;
 using Wki.EventSourcing.Messages;
 using static Wki.EventSourcing.Util.Constant;
 using Wki.EventSourcing.Protocol.EventStore;
+using Wki.EventSourcing.Protocol.LiveCycle;
+using Wki.EventSourcing.Protocol.Misc;
 using Wki.EventSourcing.Protocol.Subscription;
+using Wki.EventSourcing.Protocol.Statistics;
+using Wki.EventSourcing.Protocol;
+using System.Linq;
+using Wki.EventSourcing.Util;
 
 namespace Wki.EventSourcing.Tests
 {
     public class SimpleDurableActor : DurableActor
     {
+        public class SomethingHappened : Event { }
+
+        public int NrSomethingHappened { get; set; }
+
         public SimpleDurableActor(IActorRef eventStore) : base(eventStore)
         {
+            passivationTimeSpan = TimeSpan.FromSeconds(300);
+
+            NrSomethingHappened = 0;
+
+            Recover<SomethingHappened>(_ => NrSomethingHappened++);
             Receive<string>(s => Sender.Tell($"Reply: {s}"));
             Receive<int>(i => 
             {
@@ -26,8 +41,11 @@ namespace Wki.EventSourcing.Tests
                 else
                     Sender.Tell(Reply.Ok());
             });
+
+            // Context.Parent.Tell(new StillAlive());
         }
     }
+
 
     [TestFixture]
     public class DurableActorTest : TestKit
@@ -35,20 +53,44 @@ namespace Wki.EventSourcing.Tests
         private TestProbe eventStore;
         private IActorRef durableActor;
 
+        // the begin of our test timebase
+        private DateTime fakeStartTime;
+
+        // Cast the TestActorSystem scheduler to be a TestScheduler
+        private TestScheduler Scheduler => (TestScheduler)Sys.Scheduler;
+
+        // change scheduler implementation
+        public DurableActorTest()
+            : base(@"akka.scheduler.implementation = ""Akka.TestKit.TestScheduler, Akka.TestKit""")
+        { }
+
         [SetUp]
         public void SetUp()
         {
+            fakeStartTime = DateTime.Now; // new DateTime(2017, 1, 1, 12, 21, 43);
+            SystemTime.Fake(() => fakeStartTime);
+
             eventStore = CreateTestProbe("eventStore");
-            durableActor = Sys.ActorOf(Props.Create<SimpleDurableActor>(eventStore));
+
+            var props =
+                Props.Create<SimpleDurableActor>(eventStore)
+                     .WithDispatcher(CallingThreadDispatcher.Id);
+            durableActor = Sys.ActorOf(props);
         }
 
+        #region initial behavior
         [Test]
-        public void DurableActor_AfterStart_RestoresEvents()
+        public void DurableActor_AfterStart_Statistics()
         {
+            // Act
+            durableActor.Tell(new GetStatistics());
+
             // Assert
-            eventStore.ExpectMsg<Subscribe>();
-            eventStore.ExpectMsg<StartRestore>();
-            eventStore.ExpectMsg<RestoreNextEvents>(r => r.NrEvents == NrRestoreEvents);
+            var statistics = ExpectMsg<DurableActorStatistics>();
+            Assert.AreEqual(DurableActorStatus.Restoring, statistics.Status, "Status");
+            Assert.AreEqual(0, statistics.NrEventsTotal, "NrEvents");
+            Assert.AreEqual(0, statistics.NrCommandsTotal, "NrCommands");
+            Assert.AreEqual(0, statistics.NrUnhandledMessages, "NrUnhandled");
         }
 
         [Test]
@@ -60,7 +102,145 @@ namespace Wki.EventSourcing.Tests
             // Assert
             ExpectNoMsg(TimeSpan.FromSeconds(0.1));
         }
+        #endregion
 
+        #region restore events
+        [Test]
+        public void DurableActor_AfterStart_RestoresEvents()
+        {
+            // Assert
+            eventStore.FishForMessage<RestoreNextEvents>(r => r.NrEvents == NrRestoreEvents);
+        }
+
+        [Test]
+        public void DurableActor_AfterReceivingEnoughRestoreEvents_RequestsNextJunk()
+        {
+            // Arrange
+            eventStore.FishForMessage<RestoreNextEvents>(m => true, TimeSpan.FromSeconds(0.5), "restore #1");
+
+            // Act
+            var somethingHappened = new SimpleDurableActor.SomethingHappened();
+            for (var i = 1; i <= NrRestoreEvents; i++)
+                durableActor.Tell(somethingHappened);
+
+            // Assert
+            eventStore.ExpectMsg<RestoreNextEvents>(r => r.NrEvents == NrRestoreEvents, TimeSpan.FromSeconds(0.5), "restore #2");
+        }
+
+        [Test]
+        public void DurableActor_AfterReceivingEndOfTransmission_SwitchesToOperating()
+        {
+            // Arrange
+            eventStore.FishForMessage<RestoreNextEvents>(m => true, TimeSpan.FromSeconds(0.5), "restore #1");
+            durableActor.Tell(new SimpleDurableActor.SomethingHappened());
+            durableActor.Tell(new SimpleDurableActor.SomethingHappened());
+
+            // Act
+            durableActor.Tell(new EndOfTransmission());
+
+            // Assert
+            durableActor.Tell(new GetStatistics());
+            var statistics = ExpectMsg<DurableActorStatistics>();
+            Assert.AreEqual(DurableActorStatus.Operating, statistics.Status, "Status");
+            Assert.AreEqual(0, statistics.NrEventsTotal, "NrEvents");
+            Assert.AreEqual(2, statistics.NrRestoreEvents, "NrRestoreEvents");
+            Assert.AreEqual(0, statistics.NrCommandsTotal, "NrCommands");
+        }
+        #endregion
+
+        #region subscribe
+        [Test]
+        public void DurableActor_AfterStart_Subscribes()
+        {
+            // Assert
+            var subscribe = eventStore.FishForMessage<Subscribe>(m => true, TimeSpan.FromSeconds(0.5), "Subscribe");
+            Assert.AreEqual(1, subscribe.InterestingEvents.Events.Count, "nr events");
+            Assert.AreEqual(
+                "SomethingHappened",
+                String.Join(
+                    ",", 
+                    subscribe.InterestingEvents.Events
+                             .ToList()
+                             .Select(t => t.Name)
+                ),
+                "Events"
+            );
+        }
+
+        [Test]
+        public void DurableActor_AfterStop_Unsubscribes()
+        {
+            // Act
+            durableActor.Tell(PoisonPill.Instance);
+
+            // Assert
+            eventStore.FishForMessage<Unsubscribe>(m => true);
+        }
+        #endregion
+
+        #region passivate
+        [Test]
+        public void DurableActor_BeforeStillAliveInterval_NoAction()
+        {
+            // Arrange
+            durableActor.Tell(new EndOfTransmission());
+            var halfInterval = TimeSpan.FromMilliseconds(ActorStillAliveInterval.TotalMilliseconds / 2);
+            Scheduler.Advance(halfInterval);
+
+            // Act
+            /* scheduler does not fire */
+
+            // Assert
+            ExpectNoMsg(TimeSpan.FromSeconds(0.5));
+        }
+
+        [Test]
+        public void DurablActor_AfterStillAliveInterval_FiresStillAlive()
+        {
+            // Arrange
+            durableActor.Tell(new EndOfTransmission());
+            var moreThanInterval = TimeSpan.FromMilliseconds(ActorStillAliveInterval.TotalMilliseconds * 1.1);
+            Scheduler.Advance(moreThanInterval);
+            var timerFiredAt = fakeStartTime + moreThanInterval;
+            SystemTime.Fake(() => timerFiredAt);
+
+            // Act
+            /* scheduler should fire. does not work, so we simulate... */
+            durableActor.Tell(new Tick());
+
+            // Assert
+            // does not occur - parent is not an actor
+            // ExpectMsg<StillAlive>();
+            durableActor.Tell(new GetStatistics());
+            ExpectMsg<DurableActorStatistics>(s => s.LastStillAliveSentAt == timerFiredAt);
+        }
+
+        [Test]
+        public void DurableActor_AfterPassivationInterval_FiresPassivate()
+        {
+            // Arrange
+            durableActor.Tell(new EndOfTransmission());
+            var moreThanInterval = TimeSpan.FromSeconds(301);
+            Scheduler.Advance(moreThanInterval);
+            var timerFiredAt = fakeStartTime + moreThanInterval;
+            SystemTime.Fake(() => timerFiredAt);
+
+            // Act
+            /* scheduler should fire. does not work, so we simulate... */
+            durableActor.Tell(new Tick());
+
+            // Assert
+            // does not occur - parent is not an actor
+            // ExpectMsg<Passivate>();
+            durableActor.Tell(new GetStatistics());
+            ExpectMsg<DurableActorStatistics>(s => s.PassivateSentAt == timerFiredAt);
+        }
+        #endregion
+
+        #region persist event
+        #endregion
+
+        #region regular operation
         [Test]
         public void DurableActor_AfterRestore_ProcessesCustomMessage()
         {
@@ -99,6 +279,6 @@ namespace Wki.EventSourcing.Tests
             // Assert
             ExpectMsg<Reply>(r => r.Message == "lt zero");
         }
-
+        #endregion
     }
 }

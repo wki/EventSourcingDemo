@@ -192,7 +192,10 @@ namespace Wki.EventSourcing.Actors
         private void HandleTick()
         {
             if (ShouldPassivate())
+            {
+                statistics.PassivateSent();
                 Context.Parent.Tell(new Passivate());
+            }
             else
             {
                 statistics.StillAliveSent();
@@ -230,6 +233,8 @@ namespace Wki.EventSourcing.Actors
 
                 StartOperating();
             }
+            else if (message is GetStatistics)
+                Sender.Tell(statistics);
             else
             {
                 var eventHandler = events.Find(e => e.Type == message.GetType());
