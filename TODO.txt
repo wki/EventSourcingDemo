@@ -2,14 +2,11 @@
 
 ## EventSourcing
 
- * Office Actor
-   - Events durch Office routen? bisher direkt vom EventStore
-   - Graceful passivation
-
- * Statistik (OfficeActorChildState, OfficeActorState)
-   deutlich expliziter machen (Methoden statt Properties)
-   eigener Namespace Wki.EventSourcing.Statistics
-
+ * DurableActor
+   - bessere Namen für Receive<> und Recover<>
+     z.B. OnEvent<> OnCommand<>
+   - zusätzlichen Mechanismus für sofort in jedem Zustand beantwortete Messages
+     z.B. When<> OnMessage<> AlwaysRespondTo<>
 
 
 ## Designer

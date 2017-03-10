@@ -20,6 +20,15 @@ namespace Wki.EventSourcing.Tests
     public class SimpleDurableActor : DurableActor
     {
         public class SomethingHappened : Event { }
+        public class CallPersist
+        {
+            public Event Event { get; set; }
+
+            public CallPersist(Event @event)
+            {
+                Event = @event;
+            }
+        }
 
         public int NrSomethingHappened { get; set; }
 
@@ -42,7 +51,8 @@ namespace Wki.EventSourcing.Tests
                     Sender.Tell(Reply.Ok());
             });
 
-            // Context.Parent.Tell(new StillAlive());
+            // not an event but wired this way to ensure a test case works
+            Recover<CallPersist>(p => Persist(p.Event));
         }
     }
 
@@ -238,9 +248,63 @@ namespace Wki.EventSourcing.Tests
         #endregion
 
         #region persist event
+        [Test]
+        public void DurableActor_PersistEvent_TellsEventStore()
+        {
+            // Arrange
+            durableActor.Tell(new EndOfTransmission());
+
+            // Act
+            durableActor.Tell(new SimpleDurableActor.CallPersist(new SimpleDurableActor.SomethingHappened()));
+
+            // Assert
+            eventStore.FishForMessage<PersistEvent>(p => p.Event.GetType() == typeof(SimpleDurableActor.SomethingHappened));
+        }
         #endregion
 
         #region regular operation
+        [Test]
+        public void DurableActor_DuringRestore_DoesNotProcessCommand()
+        {
+            // Arrange
+            eventStore.FishForMessage<RestoreNextEvents>(m => true);
+
+            // Act
+            durableActor.Tell("hello");
+
+            // Assert
+            ExpectNoMsg(TimeSpan.FromSeconds(0.5));
+        }
+
+        [Test]
+        public void DurableActor_DuringRestore_StashesCommand()
+        {
+            // Arrange
+            eventStore.FishForMessage<RestoreNextEvents>(m => true);
+
+            // Act
+            durableActor.Tell("hello");
+            durableActor.Tell("hello");
+
+            // Assert
+            durableActor.Tell(new GetStatistics());
+            FishForMessage<DurableActorStatistics>(s => s.NrStashedCommands == 2);
+        }
+
+        [Test]
+        public void DurableActor_DuringRestore_ProcessEvents()
+        {
+            // Arrange
+            eventStore.FishForMessage<RestoreNextEvents>(m => true);
+
+            // Act
+            durableActor.Tell(new SimpleDurableActor.SomethingHappened());
+
+            // Assert
+            durableActor.Tell(new GetStatistics());
+            FishForMessage<DurableActorStatistics>(s => s.NrRestoreEvents == 1);
+        }
+
         [Test]
         public void DurableActor_AfterRestore_ProcessesCustomMessage()
         {
