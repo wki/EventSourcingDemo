@@ -31,6 +31,7 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Protocol\LiveCycle\DiedDuringRestore.cs" />
     <Compile Include="Protocol\LiveCycle\Passivate.cs" />
     <Compile Include="Protocol\LiveCycle\RemoveInactiveActors.cs" />
     <Compile Include="Protocol\Misc\Tick.cs" />

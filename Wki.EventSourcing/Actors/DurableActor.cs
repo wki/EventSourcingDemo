@@ -100,7 +100,6 @@ namespace Wki.EventSourcing.Actors
         protected override void PostStop()
         {
             base.PostStop();
-            SetReceiveTimeout(null);
             eventStore.Tell(new Unsubscribe());
         }
 
@@ -191,6 +190,7 @@ namespace Wki.EventSourcing.Actors
 
         private void HandleTick()
         {
+            Console.WriteLine("Parent:{0}", Context.Parent.Path);
             if (ShouldPassivate())
             {
                 statistics.PassivateSent();
@@ -247,7 +247,18 @@ namespace Wki.EventSourcing.Actors
 
                     statistics.EventReceived();
 
-                    eventHandler.Action(message);
+                    try
+                    {
+                        eventHandler.Action(message);
+                    }
+                    catch (Exception e)
+                    {
+                        // if we die during load this will repeat next time
+                        Context.Parent.Tell(new DiedDuringRestore());
+
+                        Context.System.Log.Error("Actor {0}: Died during Restore Event {1} with {2}", Self.Path.Name, message, e);
+                        throw new ActorInitializationException(Self, $"Died during Restore Event {message}", e);
+                    }
                 }
                 else
                 {

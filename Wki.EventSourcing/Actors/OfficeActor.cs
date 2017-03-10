@@ -59,6 +59,7 @@ namespace Wki.EventSourcing.Actors
             // Alive / Graceful passivation
             Receive<StillAlive>(_ => StillAlive());
             Receive<Passivate>(_ => Passivate());
+            Receive<DiedDuringRestore>(_ => Lockout());
             Receive<RemoveInactiveActors>(_ => RemoveInactiveActors());
 
             // diagnostic messages for monitoring
@@ -98,6 +99,11 @@ namespace Wki.EventSourcing.Actors
                 Context.Stop(Sender);
                 officeActorStatistics.RemoveChildActor(name);
             }
+        }
+
+        private void Lockout()
+        {
+            // TODO: lock an actor for further requests.
         }
 
         private void RemoveInactiveActors()

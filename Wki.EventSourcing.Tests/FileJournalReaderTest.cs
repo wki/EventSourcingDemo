@@ -17,13 +17,13 @@ namespace Wki.EventSourcing.Tests
     public class FileJournalReaderTest : TestKit
     {
         private string storageDir;
-        private IActorRef storageReader;
+        private IActorRef journalReader;
 
         [SetUp]
         public void SetUp()
         {
             storageDir = CreateTempDir();
-            storageReader = Sys.ActorOf(Props.Create<FileJournalReader>(storageDir), "reader");
+            journalReader = Sys.ActorOf(Props.Create<FileJournalReader>(storageDir), "reader");
         }
 
         [TearDown]
@@ -44,7 +44,7 @@ namespace Wki.EventSourcing.Tests
         public void FileJournalReader_EmptyDir_RestoresNoEvent()
         {
             // Act
-            storageReader.Tell(new LoadNextEvents(100));
+            journalReader.Tell(new LoadNextEvents(100));
 
             // Assert
             ExpectMsg<EndOfTransmission>();
@@ -63,7 +63,7 @@ namespace Wki.EventSourcing.Tests
             SystemTime.Fake(() => DateTime.Now);
 
             // Act
-            storageReader.Tell(new LoadNextEvents(5));
+            journalReader.Tell(new LoadNextEvents(5));
 
             // Assert
             for (var i = 1; i <= 5; i++)
@@ -75,7 +75,7 @@ namespace Wki.EventSourcing.Tests
             // -----------------
 
             // SECOND Act
-            storageReader.Tell(new LoadNextEvents(99));
+            journalReader.Tell(new LoadNextEvents(99));
 
             // SECOND Assert
             for (var i = 6; i < 10; i++)
@@ -105,10 +105,48 @@ namespace Wki.EventSourcing.Tests
             SystemTime.Fake(() => DateTime.Now);
 
             // Act
-            storageReader.Tell(new LoadNextEvents(99));
+            journalReader.Tell(new LoadNextEvents(99));
 
             // Assert
             for (var i = 1; i <= 10; i++)
+                ExpectMsg<EventLoaded>(e => ((SomethingHappened)e.Event).Number == i);
+
+            ExpectMsg<EndOfTransmission>();
+        }
+
+        [Test]
+        public void FileJournalReader_FilledDirWithManyFiles_StopsAfterRequestedAmount()
+        {
+            // Arrange
+            for (int i = 1; i <= 150; i++)
+                AppendEvent(new SomethingHappened(i));
+
+            // Act
+            journalReader.Tell(new LoadNextEvents(50));
+
+            // Assert
+            for (var i = 1; i <= 50; i++)
+                ExpectMsg<EventLoaded>(e => ((SomethingHappened)e.Event).Number == i);
+
+            ExpectNoMsg(TimeSpan.FromSeconds(0.5));
+        }
+
+        [Test]
+        public void FileJournalReader_FilledDirWithManyFiles_ContinuesAfterRequestedAmount()
+        {
+            // Arrange
+            for (int i = 1; i <= 150; i++)
+                AppendEvent(new SomethingHappened(i));
+
+            // Act
+            journalReader.Tell(new LoadNextEvents(100));
+            for (var i = 1; i <= 100; i++)
+                ExpectMsg<EventLoaded>(e => ((SomethingHappened)e.Event).Number == i);
+
+            journalReader.Tell(new LoadNextEvents(100));
+
+            // Assert
+            for (var i = 101; i <= 150; i++)
                 ExpectMsg<EventLoaded>(e => ((SomethingHappened)e.Event).Number == i);
 
             ExpectMsg<EndOfTransmission>();

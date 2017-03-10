@@ -54,6 +54,7 @@ namespace Wki.EventSourcing.Tests
         {
         }
 
+        #region initial behavior
         [Test]
         public void OfficeActor_Initially_HasNoChildren()
         {
@@ -63,7 +64,9 @@ namespace Wki.EventSourcing.Tests
             // Assert
             ExpectMsg<OfficeActorStatistics>(s => s.NrActorsLoaded == 0);
         }
+        #endregion
 
+        #region forward command
         [Test]
         public void OfficeActor_NonCommandMessage_IsHandledByOffice()
         {
@@ -96,5 +99,9 @@ namespace Wki.EventSourcing.Tests
             // Assert #2
             ExpectMsg<OfficeActorStatistics>(s => s.NrActorsLoaded == 1);
         }
+        #endregion
+
+        #region alive/passivate
+        #endregion
     }
 }
