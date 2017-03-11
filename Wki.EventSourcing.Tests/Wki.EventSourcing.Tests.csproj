@@ -34,6 +34,7 @@
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DurableActorParentTest.cs" />
     <Compile Include="EventSerializerTest.cs" />
     <Compile Include="InterestingEventsTest.cs" />
     <Compile Include="SystemTimeTest.cs" />

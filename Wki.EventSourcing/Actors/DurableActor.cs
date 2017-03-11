@@ -190,7 +190,7 @@ namespace Wki.EventSourcing.Actors
 
         private void HandleTick()
         {
-            Console.WriteLine("Parent:{0}", Context.Parent.Path);
+            //Console.WriteLine("Parent:{0}", Context.Parent.Path);
             if (ShouldPassivate())
             {
                 statistics.PassivateSent();
@@ -205,11 +205,17 @@ namespace Wki.EventSourcing.Actors
 
         private bool ShouldPassivate()
         {
+            var passivationTime = statistics.LastActivity + passivationTimeSpan;
+
+            //Console.WriteLine(
+            //    "Now: {0}, started: {1}, LastActivity: {2}, Passivation: {3}", 
+            //    SystemTime.Now, statistics.StartedAt, statistics.LastActivity, passivationTime
+            //);
             return passivationTimeSpan == TimeSpan.MaxValue
                 // never passivate in case of infinite timespan
                 ? false
                 // passivate if we idled longer than passivation timespan
-                : SystemTime.Now > statistics.LastActivity + passivationTimeSpan;
+                : SystemTime.Now > passivationTime;
         }
         #endregion
 
