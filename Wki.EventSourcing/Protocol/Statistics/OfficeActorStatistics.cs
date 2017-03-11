@@ -5,6 +5,9 @@ using Wki.EventSourcing.Util;
 
 namespace Wki.EventSourcing.Protocol.Statistics
 {
+    /// <summary>
+    /// Statistics for an office
+    /// </summary>
     public class OfficeActorStatistics
     {
         // start information
@@ -15,12 +18,10 @@ namespace Wki.EventSourcing.Protocol.Statistics
         public DateTime LastActorLoadedAt { get; internal set; }
         public int NrActorsRemoved { get; internal set; }
         public DateTime LastActorRemovedAt { get; internal set; }
-        public int NrActorChecks { get; internal set; }
-        public DateTime LastActorCheckAt { get; internal set; }
-
-        // currently loaded actors
-        public Dictionary<string, OfficeActorChildState> ChildActorStates { get; internal set; }
-        public int NrActorsMissed { get; internal set; }
+        public int NrActorsDied { get; internal set; }
+        public DateTime LastActorDiedAt { get; internal set; }
+        public int NrActorsDiedDuringRestore { get; internal set; }
+        public DateTime LastActorDiedDuringRestoreAt { get; set; }
 
         // message handling
         public int NrCommandsForwarded { get; internal set; }
@@ -30,60 +31,45 @@ namespace Wki.EventSourcing.Protocol.Statistics
         public OfficeActorStatistics()
         {
             var now = SystemTime.Now;
+
             StartedAt = now;
+
             NrActorsLoaded = 0;
             LastActorLoadedAt = DateTime.MinValue;
             NrActorsRemoved = 0;
             LastActorRemovedAt = DateTime.MinValue;
-            NrActorChecks = 0;
-            LastActorCheckAt = DateTime.MinValue;
-            ChildActorStates = new Dictionary<string, OfficeActorChildState>();
-            NrActorsMissed = 0;
+            NrActorsDied = 0;
+            LastActorDiedAt = DateTime.MinValue;
+            NrActorsDiedDuringRestore = 0;
+            LastActorDiedDuringRestoreAt = DateTime.MinValue;
+
             NrCommandsForwarded = 0;
             NrUnhandledMessages = 0;
             LastCommandForwardedAt = DateTime.MinValue;
         }
 
-        internal IEnumerable<string> ChildActorNames() =>
-            ChildActorStates.Keys.ToList();
-
-        internal bool ContainsChild(string name) =>
-            ChildActorStates.ContainsKey(name);
-            
-        internal void AddChildActor(string name)
+        internal void ActorAdded()
         {
-            if (ChildActorStates.ContainsKey(name))
-            {
-                // already present. Just update if needed
-            }
-            else
-            {
-                NrActorsLoaded++;
-                LastActorLoadedAt = SystemTime.Now;
-                ChildActorStates[name] = new OfficeActorChildState();
-            }
+            NrActorsLoaded++;
+            LastActorLoadedAt = SystemTime.Now;
         }
 
-        internal void RemoveChildActor(string name)
+        internal void ActorRemoved()
         {
-            if (ChildActorStates.ContainsKey(name))
-            {
-                NrActorsRemoved++;
-                LastActorRemovedAt = SystemTime.Now;
-                ChildActorStates.Remove(name);
-            }
+            NrActorsRemoved++;
+            LastActorRemovedAt = SystemTime.Now;
         }
 
-        internal void ChildStillAlive(string name)
+        internal void ActorDied()
         {
-            if (ChildActorStates.ContainsKey(name))
-                ChildActorStates[name].StillAlive();
+            NrActorsDied++;
+            LastActorDiedAt = SystemTime.Now;
         }
 
-        internal void InactiveActorCheck()
+        internal void ActorDiedDuringRestore()
         {
-            NrActorChecks++;
-            LastActorCheckAt = SystemTime.Now;
+            NrActorsDiedDuringRestore++;
+            LastActorDiedDuringRestoreAt = SystemTime.Now;
         }
 
         internal void ForwardedCommand()

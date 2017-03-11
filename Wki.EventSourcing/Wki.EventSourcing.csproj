@@ -53,6 +53,7 @@
     <Compile Include="Protocol\Statistics\EventStoreStatistics.cs" />
     <Compile Include="Protocol\Statistics\EventStoreStatus.cs" />
     <Compile Include="Protocol\Statistics\GetStatistics.cs" />
+    <Compile Include="Protocol\Statistics\OfficeActorChildStatus.cs" />
     <Compile Include="Protocol\Statistics\OfficeActorStatistics.cs" />
     <Compile Include="Protocol\Statistics\SubscriberState.cs" />
     <Compile Include="Protocol\Subscription\InterestingEvents.cs" />

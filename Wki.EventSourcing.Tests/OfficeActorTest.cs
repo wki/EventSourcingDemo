@@ -45,13 +45,8 @@ namespace Wki.EventSourcing.Tests
         [SetUp]
         public void SetUp()
         {
-            eventStore = CreateTestProbe("event-store");
-            officeActor = Sys.ActorOf(Props.Create<FooOffice>(eventStore), "foo-office");
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
+            eventStore = CreateTestProbe("eventStore");
+            officeActor = Sys.ActorOf(Props.Create<FooOffice>(eventStore), "fooOffice");
         }
 
         #region initial behavior

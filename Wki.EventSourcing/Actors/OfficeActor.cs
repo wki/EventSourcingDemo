@@ -5,6 +5,7 @@ using Wki.EventSourcing.Util;
 using static Wki.EventSourcing.Util.Constant;
 using Wki.EventSourcing.Protocol.Statistics;
 using Wki.EventSourcing.Protocol.LiveCycle;
+using System.Collections.Generic;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -37,14 +38,16 @@ namespace Wki.EventSourcing.Actors
         // we need to know the eventStore to forward it to our children
         private readonly IActorRef eventStore;
 
-        // maintain a complete state (for knowledge and statistics)
-        private OfficeActorStatistics officeActorStatistics;
+        private Dictionary<string, OfficeActorChildState> children;
+        
+        private OfficeActorStatistics statistics;
 
         protected OfficeActor(IActorRef eventStore)
         {
             // initialize
             this.eventStore = eventStore;
-            officeActorStatistics = new OfficeActorStatistics();
+            children = new Dictionary<string, OfficeActorChildState>();
+            statistics = new OfficeActorStatistics();
 
             // periodically check for inactive children
             Context.System.Scheduler
@@ -63,8 +66,8 @@ namespace Wki.EventSourcing.Actors
             Receive<RemoveInactiveActors>(_ => RemoveInactiveActors());
 
             // diagnostic messages for monitoring
-            Receive<GetStatistics>(_ => Sender.Tell(officeActorStatistics));
-            Receive<DurableActorStatistics>(d => UpdateChild(d));
+            Receive<GetStatistics>(_ => Sender.Tell(statistics));
+            // Receive<DurableActorStatistics>(d => UpdateChild(d));
 
             // all commands will pass thru Unhandled()...
         }
@@ -75,108 +78,125 @@ namespace Wki.EventSourcing.Actors
             var command = message as DispatchableCommand<TIndex>;
             if (command != null)
             {
-                officeActorStatistics.ForwardedCommand();
+                statistics.ForwardedCommand();
 
                 ForwardToDestinationActor(command);
             }
             else
             {
-                officeActorStatistics.UnhandledMessage();
+                statistics.UnhandledMessage();
 
                 Context.System.Log.Warning("Received {0} -- ignoring", message);
             }
         }
 
-        private void StillAlive() =>
-            officeActorStatistics.ChildStillAlive(Sender.Path.Name);
+        private void StillAlive()
+        {
+            var name = Sender.Path.Name;
+            if (children.ContainsKey(name))
+                children[name].StillAlive();
+            else
+                Context.System.Log.Warning("Office {0}: Received 'StillAlive' from unknown actor '{1}' - ignored", Self.Path.Name, Sender.Path);
+        }
+            
 
         private void Passivate()
         {
             var name = Sender.Path.Name;
-            if (officeActorStatistics.ContainsChild(name))
+            if (children.ContainsKey(name))
             {
                 Context.System.Log.Info("Office {0}: removed child {1}", Self.Path.Name, name);
                 Context.Stop(Sender);
-                officeActorStatistics.RemoveChildActor(name);
+                children.Remove(name);
+                statistics.ActorRemoved();
             }
+            else
+                Context.System.Log.Warning("Office {0}: Received 'Passivate' from unknown actor '{1}' - ignored", Self.Path.Name, Sender.Path);
         }
 
         private void Lockout()
         {
-            // TODO: lock an actor for further requests.
+            var name = Sender.Path.Name;
+            if (children.ContainsKey(name))
+            {
+                Context.System.Log.Error("Office {0}: actor '{1}' died during restore - locking out", Self.Path.Name, Sender.Path);
+                children[name].ChangeStatus(OfficeActorChildStatus.DiedDuringRestore);
+            }
+            else
+                Context.System.Log.Warning("Office {0}: Received 'DiedDuringRestore' from unknown actor '{1}' - ignored", Self.Path.Name, Sender.Path);
         }
 
         private void RemoveInactiveActors()
         {
-            officeActorStatistics.InactiveActorCheck();
+            //statistics.InactiveActorCheck();
 
-            foreach (var actorName in officeActorStatistics.ChildActorNames())
-            {
-                var child = Context.Child(actorName);
-                var childActorState = officeActorStatistics.ChildActorStates[actorName];
+            //foreach (var actorName in statistics.ChildActorNames())
+            //{
+            //    var child = Context.Child(actorName);
+            //    var childActorState = statistics.ChildActorStates[actorName];
 
-                Context.System.Log.Info(
-                    "Office {0}: child {1} - last cmd {2:HH:mm:ss}, oldest allowed {3:HH:mm:ss}",
-                    Self.Path.Name,
-                    actorName,
-                    childActorState.LastCommandForwardedAt,
-                    SystemTime.Now - MaxActorIdleTimeSpan
-                );
+            //    Context.System.Log.Info(
+            //        "Office {0}: child {1} - last cmd {2:HH:mm:ss}, oldest allowed {3:HH:mm:ss}",
+            //        Self.Path.Name,
+            //        actorName,
+            //        childActorState.LastCommandForwardedAt,
+            //        SystemTime.Now - MaxActorIdleTimeSpan
+            //    );
 
-                if (child == Nobody.Instance)
-                {
-                    // Aktor nicht mehr vorhanden. weg damit
-                    Context.System.Log.Info("Office {0}: removing dead Child {1}", Self.Path.Name, actorName);
+            //    if (child == Nobody.Instance)
+            //    {
+            //        // Aktor nicht mehr vorhanden. weg damit
+            //        Context.System.Log.Info("Office {0}: removing dead Child {1}", Self.Path.Name, actorName);
 
-                    officeActorStatistics.RemoveChildActor(actorName);
-                }
-                else if (childActorState.LastCommandForwardedAt < SystemTime.Now - MaxActorIdleTimeSpan)
-                {
-                    // Aktor zu lange inaktiv. auch weg.
-                    Context.System.Log.Info("Office {0}: removing inactive Child {1}", Self.Path.Name, actorName);
+            //        statistics.RemoveChildActor(actorName);
+            //    }
+            //    else if (childActorState.LastCommandForwardedAt < SystemTime.Now - MaxActorIdleTimeSpan)
+            //    {
+            //        // Aktor zu lange inaktiv. auch weg.
+            //        Context.System.Log.Info("Office {0}: removing inactive Child {1}", Self.Path.Name, actorName);
 
-                    Context.Stop(child);
-                    officeActorStatistics.RemoveChildActor(actorName);
-                }
-                else
-                {
-                    // Aktuellen Aktor-Status erfragen
-                    childActorState.LastStatusQuerySentAt = SystemTime.Now;
-                    child.Tell(new GetStatistics());
-                }
-            }
+            //        Context.Stop(child);
+            //        statistics.RemoveChildActor(actorName);
+            //    }
+            //    else
+            //    {
+            //        // Aktuellen Aktor-Status erfragen
+            //        childActorState.LastStatusQuerySentAt = SystemTime.Now;
+            //        child.Tell(new GetStatistics());
+            //    }
+            //}
         }
 
         // a durable actor has answered to GetState
-        private void UpdateChild(DurableActorStatistics durableActorStatistics)
-        {
-            var actorName = Sender.Path.Name;
+        //private void UpdateChild(DurableActorStatistics durableActorStatistics)
+        //{
+        //    var actorName = Sender.Path.Name;
 
-            if (officeActorStatistics.ContainsChild(actorName))
-            {
-                var childActorState = officeActorStatistics.ChildActorStates[actorName];
-                childActorState.LastStatusReceivedAt = SystemTime.Now;
-                childActorState.Status = durableActorStatistics.Status;
-            }
-            else
-                officeActorStatistics.NrActorsMissed++;
-        }
+        //    if (statistics.ContainsChild(actorName))
+        //    {
+        //        var childActorState = statistics.ChildActorStates[actorName];
+        //        childActorState.LastStillAliveReceivedAt = SystemTime.Now;
+        //        childActorState.Status = durableActorStatistics.Status;
+        //    }
+        //    else
+        //        statistics.NrActorsMissed++;
+        //}
 
         private void ForwardToDestinationActor(DispatchableCommand<TIndex> cmd)
         {
-            var destination = LookupOrCreateChild(cmd.Id);
-            var actorName = destination.Path.Name;
+            //var destination = LookupOrCreateChild(cmd.Id);
+            //var actorName = destination.Path.Name;
 
-            if (officeActorStatistics.ChildActorStates.ContainsKey(actorName))
-            {
-                var childActorState = officeActorStatistics.ChildActorStates[actorName];
-                childActorState.LastCommandForwardedAt = SystemTime.Now;
-                childActorState.NrCommandsForwarded++;
+            //if (statistics.ChildActorStates.ContainsKey(actorName))
+            //{
+            //    var childActorState = statistics.ChildActorStates[actorName];
+            //    childActorState.LastCommandForwardedAt = SystemTime.Now;
+            //    childActorState.NrCommandsForwarded++;
 
-                destination.Forward(cmd);
-            }
-            else
-                officeActorStatistics.NrActorsMissed++;
+            //    destination.Forward(cmd);
+            //}
+            //else
+            //    statistics.NrActorsMissed++;
         }
 
         private IActorRef LookupOrCreateChild(TIndex id)
@@ -190,9 +210,10 @@ namespace Wki.EventSourcing.Actors
 
             Context.System.Log.Info("Office {0}: creating Child {1}", Self.Path.Name, name);
 
-            officeActorStatistics.AddChildActor(name);
+            child = Context.ActorOf(Props.Create(type, eventStore, id), name);
+            children.Add(name, new OfficeActorChildState(child));
 
-            return Context.ActorOf(Props.Create(type, eventStore, id), name);
+            return child;
         }
     }
 }
