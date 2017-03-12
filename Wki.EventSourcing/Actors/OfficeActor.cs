@@ -15,30 +15,31 @@ namespace Wki.EventSourcing.Actors
     ///<description>
     /// An office actor is something like a router. All commands meant for
     /// a given Aggregate root or view with a persistence ID are first sent
-    /// to the office. The office creates a not existing destination and
-    /// forwards the commands to it. After some idle time, the destination
-    /// actor is removed again
+    /// to the office. The office creates a not existing clerk and
+    /// forwards the commands to it. 
+    /// Clerks not reporting alive or asking for passivation are removed.
+    /// Clerks dying during restore are blocked forever.
     ///</description>
     ///<example>
+    /// // Office handles Articles with Index type int
     /// public class ArticleOffice : OfficeActor&lt;ArticleActor, int&gt;
     /// {
     ///     public ArticleOffice(IActorRef eventStore) : base(eventStore)
     ///     {
-    ///         // set idle time (if different from 60 seconds)
-    ///         IdleTime = TimeSpan.
-    /// 
-    ///         // handle some commands in the office.
-    ///         // all unhandled will be forwarded to a child actor
+    ///         // handle some messages inside the office.
+    ///         // all unhandled commands of Type DispatchableCommand<>
+    ///         // will be forwarded to a clerk
     ///         Receive<SomeMessage>(...);
     ///     }
     /// }
     ///</example>
     public abstract class OfficeActor<TActor, TIndex> : ReceiveActor
     {
-        // we need to know the eventStore to forward it to our children
+        // we need to know the eventStore to forward it to our clerks
         private readonly IActorRef eventStore;
 
-        private Dictionary<string, OfficeActorChildState> children;
+        // our clerks with some state information for each of them 
+        private Dictionary<string, ClerkState> clerks;
         
         private OfficeActorStatistics statistics;
 
@@ -46,14 +47,14 @@ namespace Wki.EventSourcing.Actors
         {
             // initialize
             this.eventStore = eventStore;
-            children = new Dictionary<string, OfficeActorChildState>();
+            clerks = new Dictionary<string, ClerkState>();
             statistics = new OfficeActorStatistics();
 
-            // periodically check for inactive children
+            // periodically check for dead clerks
             Context.System.Scheduler
                    .ScheduleTellRepeatedly(
-                       initialDelay: IdleActorPollTimeSpan,
-                       interval: IdleActorPollTimeSpan,
+                       initialDelay: DeadActorRemoveTimeSpan,
+                       interval: DeadActorRemoveTimeSpan,
                        receiver: Self,
                        message: new RemoveInactiveActors(),
                        sender: Self
@@ -63,16 +64,19 @@ namespace Wki.EventSourcing.Actors
             Receive<StillAlive>(_ => StillAlive());
             Receive<Passivate>(_ => Passivate());
             Receive<DiedDuringRestore>(_ => Lockout());
-            Receive<RemoveInactiveActors>(_ => RemoveInactiveActors());
 
-            // diagnostic messages for monitoring
+            // timer
+            Receive<RemoveInactiveActors>(_ => RemoveDeadActors());
+
+            // statistics
             Receive<GetStatistics>(_ => Sender.Tell(statistics));
-            // Receive<DurableActorStatistics>(d => UpdateChild(d));
 
-            // all commands will pass thru Unhandled()...
+            // all commands will pass thru Unhandled() if not handled by derived class...
         }
 
-        // handle all commands sent to the actor by forwarding
+        // commands are not handled in the derived office actor
+        // so they appear here and are forwarded to the clerk
+        // if they can be identified as commands.
         protected override void Unhandled(object message)
         {
             var command = message as DispatchableCommand<TIndex>;
@@ -80,140 +84,108 @@ namespace Wki.EventSourcing.Actors
             {
                 statistics.ForwardedCommand();
 
-                ForwardToDestinationActor(command);
+                ForwardToClerk(command);
             }
             else
             {
                 statistics.UnhandledMessage();
 
-                Context.System.Log.Warning("Received {0} -- ignoring", message);
+                Context.System.Log.Warning("Office {0}: Received {1} -- ignoring", Self.Path.Name, message);
             }
         }
 
+        // a clerk just told he is alive
         private void StillAlive()
         {
             var name = Sender.Path.Name;
-            if (children.ContainsKey(name))
-                children[name].StillAlive();
+            if (clerks.ContainsKey(name))
+                clerks[name].StillAlive();
             else
                 Context.System.Log.Warning("Office {0}: Received 'StillAlive' from unknown actor '{1}' - ignored", Self.Path.Name, Sender.Path);
         }
             
-
+        // a clerk wants to get removed
         private void Passivate()
         {
+            // FIXME: did we recently forward a message to this clerk?
+
             var name = Sender.Path.Name;
-            if (children.ContainsKey(name))
+            if (clerks.ContainsKey(name))
             {
-                Context.System.Log.Info("Office {0}: removed child {1}", Self.Path.Name, name);
+                Context.System.Log.Info("Office {0}: removed clerk {1}", Self.Path.Name, name);
                 Context.Stop(Sender);
-                children.Remove(name);
+                clerks.Remove(name);
                 statistics.ActorRemoved();
             }
             else
                 Context.System.Log.Warning("Office {0}: Received 'Passivate' from unknown actor '{1}' - ignored", Self.Path.Name, Sender.Path);
         }
 
+        // a clerk died during restore and cannot be reused any more
         private void Lockout()
         {
             var name = Sender.Path.Name;
-            if (children.ContainsKey(name))
+            if (clerks.ContainsKey(name))
             {
-                Context.System.Log.Error("Office {0}: actor '{1}' died during restore - locking out", Self.Path.Name, Sender.Path);
-                children[name].ChangeStatus(OfficeActorChildStatus.DiedDuringRestore);
+                Context.System.Log.Error("Office {0}: clerk '{1}' died during restore - locking out", Self.Path.Name, Sender.Path);
+                clerks[name].ChangeStatus(ClerkStatus.DiedDuringRestore);
             }
             else
                 Context.System.Log.Warning("Office {0}: Received 'DiedDuringRestore' from unknown actor '{1}' - ignored", Self.Path.Name, Sender.Path);
         }
 
-        private void RemoveInactiveActors()
+        // periodically remove clerks not reported themselves alive
+        // should never happen...
+        private void RemoveDeadActors()
         {
-            //statistics.InactiveActorCheck();
+            foreach (var clerkState in clerks.Values.Where(c => c.IsDead()).ToList())
+            {
+                var clerk = clerkState.Clerk;
+                var name = clerk.Path.Name;
+                Context.System.Log.Info("Office {0}: removing dead clerk '{1}'", Self.Path.Name, name);
 
-            //foreach (var actorName in statistics.ChildActorNames())
-            //{
-            //    var child = Context.Child(actorName);
-            //    var childActorState = statistics.ChildActorStates[actorName];
-
-            //    Context.System.Log.Info(
-            //        "Office {0}: child {1} - last cmd {2:HH:mm:ss}, oldest allowed {3:HH:mm:ss}",
-            //        Self.Path.Name,
-            //        actorName,
-            //        childActorState.LastCommandForwardedAt,
-            //        SystemTime.Now - MaxActorIdleTimeSpan
-            //    );
-
-            //    if (child == Nobody.Instance)
-            //    {
-            //        // Aktor nicht mehr vorhanden. weg damit
-            //        Context.System.Log.Info("Office {0}: removing dead Child {1}", Self.Path.Name, actorName);
-
-            //        statistics.RemoveChildActor(actorName);
-            //    }
-            //    else if (childActorState.LastCommandForwardedAt < SystemTime.Now - MaxActorIdleTimeSpan)
-            //    {
-            //        // Aktor zu lange inaktiv. auch weg.
-            //        Context.System.Log.Info("Office {0}: removing inactive Child {1}", Self.Path.Name, actorName);
-
-            //        Context.Stop(child);
-            //        statistics.RemoveChildActor(actorName);
-            //    }
-            //    else
-            //    {
-            //        // Aktuellen Aktor-Status erfragen
-            //        childActorState.LastStatusQuerySentAt = SystemTime.Now;
-            //        child.Tell(new GetStatistics());
-            //    }
-            //}
+                Context.Stop(clerk);
+                clerks.Remove(name);
+            }
         }
 
-        // a durable actor has answered to GetState
-        //private void UpdateChild(DurableActorStatistics durableActorStatistics)
-        //{
-        //    var actorName = Sender.Path.Name;
-
-        //    if (statistics.ContainsChild(actorName))
-        //    {
-        //        var childActorState = statistics.ChildActorStates[actorName];
-        //        childActorState.LastStillAliveReceivedAt = SystemTime.Now;
-        //        childActorState.Status = durableActorStatistics.Status;
-        //    }
-        //    else
-        //        statistics.NrActorsMissed++;
-        //}
-
-        private void ForwardToDestinationActor(DispatchableCommand<TIndex> cmd)
+        private void ForwardToClerk(DispatchableCommand<TIndex> cmd)
         {
-            //var destination = LookupOrCreateChild(cmd.Id);
-            //var actorName = destination.Path.Name;
-
-            //if (statistics.ChildActorStates.ContainsKey(actorName))
-            //{
-            //    var childActorState = statistics.ChildActorStates[actorName];
-            //    childActorState.LastCommandForwardedAt = SystemTime.Now;
-            //    childActorState.NrCommandsForwarded++;
-
-            //    destination.Forward(cmd);
-            //}
-            //else
-            //    statistics.NrActorsMissed++;
+            var destination = LookupOrCreateClerk(cmd.Id);
+            if (destination == null)
+            {
+                statistics.DiscardedCommand();
+                Context.System.Log.Warning("Office {0}: discarding command {1}", Self.Path.Name, cmd);
+                Sender.Tell(Reply.Error("message '{0}' discarded: clerk {1} died during restore", cmd, cmd.Id));
+            }
+            else
+            {
+                statistics.ForwardedCommand();
+                destination.Forward(cmd);
+            }
         }
 
-        private IActorRef LookupOrCreateChild(TIndex id)
+        private IActorRef LookupOrCreateClerk(TIndex id)
         {
-            var type = typeof(TActor);
             var name = id.ToString();
+            if (clerks.ContainsKey(name))
+            {
+                // we know this clerk. Ensure he did not die during restore
+                var clerk = clerks[name];
+                if (clerk.IsOperating())
+                    return clerk.Clerk;
+                else
+                    return null;
+            }
+            else
+            {
+                Context.System.Log.Info("Office {0}: creating clerk {1}", Self.Path.Name, name);
 
-            var child = Context.Child(name);
-            if (child != Nobody.Instance)
-                return child;
+                var clerk = Context.ActorOf(Props.Create(typeof(TActor), eventStore, id), name);
+                clerks.Add(name, new ClerkState(clerk));
 
-            Context.System.Log.Info("Office {0}: creating Child {1}", Self.Path.Name, name);
-
-            child = Context.ActorOf(Props.Create(type, eventStore, id), name);
-            children.Add(name, new OfficeActorChildState(child));
-
-            return child;
+                return clerk;
+            }
         }
     }
 }

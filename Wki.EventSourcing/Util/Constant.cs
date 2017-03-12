@@ -14,14 +14,14 @@ namespace Wki.EventSourcing.Util
         /// </summary>
         public const int BufferLowLimit = 10;
 
-        // idle time in seconds after which an actor is passivating itself
-        public static readonly TimeSpan MaxActorIdleTimeSpan = TimeSpan.FromMinutes(2); // live: 5
+        // idle time in seconds after which a durable actor with ID is asking for passivation
+        public static readonly TimeSpan MaxActorIdleTimeSpan = TimeSpan.FromSeconds(120); // live: 300
 
-        // periodic trigger of an actor for reporting "stillalive" 
+        // periodic trigger of an actor for reporting "still alive" 
         public static readonly TimeSpan ActorStillAliveInterval = TimeSpan.FromSeconds(30);
 
-        // periodic poll for inactive actors inside an office
-        public static readonly TimeSpan IdleActorPollTimeSpan = TimeSpan.FromSeconds(60);
+        // periodic cleanup interval for clerks not reporting "still alive"
+        public static readonly TimeSpan DeadActorRemoveTimeSpan = TimeSpan.FromSeconds(120);
 
         // default nr of events to restore in one block
         public const int DefaultNrEvents = 1000;

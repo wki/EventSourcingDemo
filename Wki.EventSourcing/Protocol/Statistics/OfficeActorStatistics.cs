@@ -25,6 +25,7 @@ namespace Wki.EventSourcing.Protocol.Statistics
 
         // message handling
         public int NrCommandsForwarded { get; internal set; }
+        public int NrCommandsDiscarded { get; internal set; }
         public int NrUnhandledMessages { get; internal set; }
         public DateTime LastCommandForwardedAt { get; internal set; }
 
@@ -44,6 +45,7 @@ namespace Wki.EventSourcing.Protocol.Statistics
             LastActorDiedDuringRestoreAt = DateTime.MinValue;
 
             NrCommandsForwarded = 0;
+            NrCommandsDiscarded = 0;
             NrUnhandledMessages = 0;
             LastCommandForwardedAt = DateTime.MinValue;
         }
@@ -76,6 +78,11 @@ namespace Wki.EventSourcing.Protocol.Statistics
         {
             NrCommandsForwarded++;
             LastCommandForwardedAt = SystemTime.Now;
+        }
+
+        internal void DiscardedCommand()
+        {
+            NrCommandsDiscarded++;
         }
 
         internal void UnhandledMessage()

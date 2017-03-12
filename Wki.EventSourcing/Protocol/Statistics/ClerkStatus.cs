@@ -1,6 +1,6 @@
 ﻿namespace Wki.EventSourcing.Protocol.Statistics
 {
-    public enum OfficeActorChildStatus
+    public enum ClerkStatus
     {
         Operating,          // regular operation -- nothing to do
         DiedDuringRestore   // could not restore -- do not reuse
