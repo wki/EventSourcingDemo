@@ -2,6 +2,14 @@
 
 ## EventSourcing
 
+ * DispatchableCommand<TIndex>
+   - add Version for aggregate? null == don't care
+
+ * class StreamEvent (=Envelope)
+   - string PersistenceId
+   - int Version
+   - Event Event
+
  * DurableActor
    - bessere Namen für Receive<> und Recover<>
      z.B. OnEvent<> OnCommand<>
