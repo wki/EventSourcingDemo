@@ -10,7 +10,7 @@
 
         protected Reply(bool isOk, string message = null)
         {
-            IsOk = isOk;
+            IsOk    = isOk;
             Message = message;
         }
 

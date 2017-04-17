@@ -18,7 +18,7 @@ namespace Wki.EventSourcing.Actors
 
         public FileJournalBase(string storageDir)
         {
-            this.storageDir = storageDir;
+            this.storageDir = storageDir ?? throw new ArgumentNullException(nameof(storageDir));
         }
 
         /// <summary>

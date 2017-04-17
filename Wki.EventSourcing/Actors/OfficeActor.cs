@@ -1,11 +1,11 @@
 using System.Linq;
 using Akka.Actor;
 using Wki.EventSourcing.Messages;
-using Wki.EventSourcing.Util;
 using static Wki.EventSourcing.Util.Constant;
 using Wki.EventSourcing.Protocol.Statistics;
 using Wki.EventSourcing.Protocol.LiveCycle;
 using System.Collections.Generic;
+using System;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -46,7 +46,7 @@ namespace Wki.EventSourcing.Actors
         protected OfficeActor(IActorRef eventStore)
         {
             // initialize
-            this.eventStore = eventStore;
+            this.eventStore = eventStore ?? throw new ArgumentNullException(nameof(eventStore));
             clerks = new Dictionary<string, ClerkState>();
             statistics = new OfficeActorStatistics();
 
@@ -79,18 +79,17 @@ namespace Wki.EventSourcing.Actors
         // if they can be identified as commands.
         protected override void Unhandled(object message)
         {
-            var command = message as DispatchableCommand<TIndex>;
-            if (command != null)
+            switch(message)
             {
-                statistics.ForwardedCommand();
+                case DispatchableCommand<TIndex> command:
+                    statistics.ForwardedCommand();
+                    ForwardToClerk(command);
+                    break;
 
-                ForwardToClerk(command);
-            }
-            else
-            {
-                statistics.UnhandledMessage();
-
-                Context.System.Log.Warning("Office {0}: Received {1} -- ignoring", Self.Path.Name, message);
+                default:
+                    statistics.UnhandledMessage();
+                    Context.System.Log.Warning("Office {0}: Received {1} -- ignoring", Self.Path.Name, message);
+                    break;
             }
         }
 
@@ -138,7 +137,7 @@ namespace Wki.EventSourcing.Actors
         // should never happen...
         private void RemoveDeadActors()
         {
-            foreach (var clerkState in clerks.Values.Where(c => c.IsDead()).ToList())
+            foreach (var clerkState in clerks.Values.Where(c => c.IsDead).ToList())
             {
                 var clerk = clerkState.Clerk;
                 var name = clerk.Path.Name;
@@ -172,10 +171,7 @@ namespace Wki.EventSourcing.Actors
             {
                 // we know this clerk. Ensure he did not die during restore
                 var clerk = clerks[name];
-                if (clerk.IsOperating())
-                    return clerk.Clerk;
-                else
-                    return null;
+                return clerk.IsOperating ? clerk.Clerk : null;
             }
             else
             {

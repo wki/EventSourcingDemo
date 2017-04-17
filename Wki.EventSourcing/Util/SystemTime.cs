@@ -14,7 +14,8 @@ namespace Wki.EventSourcing.Util
     /// </example>
     public static class SystemTime
     {
-        private static Func<DateTime> dateTimeProvider = () => DateTime.Now;
+        private static Func<DateTime> dateTimeProvider = 
+            () => DateTime.Now;
 
         /// <summary>
         /// add a fake provider
@@ -27,6 +28,7 @@ namespace Wki.EventSourcing.Util
         /// return time given from provider
         /// </summary>
         /// <value>The now.</value>
-        public static DateTime Now { get { return dateTimeProvider(); } }
+        public static DateTime Now => 
+            dateTimeProvider();
     }
 }

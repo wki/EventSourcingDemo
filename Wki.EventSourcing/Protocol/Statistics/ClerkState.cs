@@ -46,11 +46,11 @@ namespace Wki.EventSourcing.Protocol.Statistics
             LastCommandForwardedAt = DateTime.MinValue;
         }
 
-        public bool IsOperating() => 
+        public bool IsOperating => 
             Status == ClerkStatus.Operating;
 
-        public bool IsDead() =>
-            IsOperating() &&
+        public bool IsDead =>
+            IsOperating &&
             SystemTime.Now > LastStillAliveReceivedAt + DeadActorRemoveTimeSpan;
 
         public void StillAlive()

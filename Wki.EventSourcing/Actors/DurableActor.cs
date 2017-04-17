@@ -57,8 +57,9 @@ namespace Wki.EventSourcing.Actors
         protected bool IsOperating => statistics.IsOperating;
 
         // keep all events and commands we may respond to
-        protected List<Handler> commands;
-        protected List<Handler> events;
+        protected Dictionary<Type, Handler> commands;
+        protected Dictionary<Type, Handler> events;
+
 
         // we must know our event store. Typically the office will tell us
         private readonly IActorRef eventStore;
@@ -69,15 +70,12 @@ namespace Wki.EventSourcing.Actors
 
         protected DurableActor(IActorRef eventStore)
         {
-            if (eventStore == null)
-                throw new ArgumentNullException(nameof(eventStore));
-
-            this.eventStore = eventStore;
+            this.eventStore = eventStore ?? throw new ArgumentNullException(nameof(eventStore));
 
             passivationTimeSpan = TimeSpan.MaxValue;
 
-            commands = new List<Handler>();
-            events = new List<Handler>();
+            commands = new Dictionary<Type, Handler>();
+            events = new Dictionary<Type, Handler>();
 
             statistics = new DurableActorStatistics();
 
@@ -103,10 +101,8 @@ namespace Wki.EventSourcing.Actors
             eventStore.Tell(new Unsubscribe());
         }
 
-        protected virtual InterestingEvents GenerateInterestingEvents()
-        {
-            return new InterestingEvents(events.Select(e => e.Type));
-        }
+        protected virtual InterestingEvents GenerateInterestingEvents() =>
+            new InterestingEvents(events.Values.Select(e => e.Type));
 
         #region Event and Command Handling
         /// <summary>
@@ -115,7 +111,7 @@ namespace Wki.EventSourcing.Actors
         /// <param name="eventHandler">Event handler.</param>
         /// <typeparam name="E">The 1st type parameter.</typeparam>
         protected void Recover<E>(Action<E> eventHandler) =>
-            events.Add(new Handler(typeof(E), e => eventHandler((E)e)));
+            events.Add(typeof(E), new Handler(typeof(E), e => eventHandler((E)e)));
 
         /// <summary>
         /// Receive an event (alias to command)
@@ -123,7 +119,7 @@ namespace Wki.EventSourcing.Actors
         /// <param name="eventHandler">Event handler.</param>
         /// <typeparam name="E">Type of the event to receive</typeparam>
         protected void Receive<E>(Action<E> eventHandler) =>
-            commands.Add(new Handler(typeof(E), c => eventHandler((E)c)));
+            commands.Add(typeof(E), new Handler(typeof(E), c => eventHandler((E)c)));
 
         /// <summary>
         /// Persist (and subsequently handle) an event
@@ -158,34 +154,63 @@ namespace Wki.EventSourcing.Actors
         /// <param name="message">Message.</param>
         protected override void OnReceive(object message)
         {
-            if (message is Tick)
-                HandleTick();
-            else if (message is GetStatistics)
-                Sender.Tell(statistics);
-            else
+            var messageType = message.GetType();
+
+            switch(message)
             {
-                var messageType = message.GetType();
-                var eventHandler = events.Find(e => e.Type == messageType);
-                if (eventHandler != null)
-                {
+                case Tick _:
+                    HandleTick();
+                    break;
+
+                case GetStatistics _:
+                    Sender.Tell(statistics);
+                    break;
+
+                case Event e when (events.ContainsKey(messageType)):
                     statistics.EventReceived();
-                    eventHandler.Action(message);
-                }
-                else
-                {
-                    var commandHandler = commands.Find(c => c.Type == messageType);
-                    if (commandHandler != null)
-                    {
-                        statistics.CommandReceived();
-                        commandHandler.Action(message);
-                    }
-                    else
-                    {
-                        statistics.UnhandledMessageReceived();
-                        Unhandled(message);
-                    }
-                }
+                    events[messageType].Handle(e);
+                    break;
+
+                case Object c when (commands.ContainsKey(messageType)):
+                    statistics.CommandReceived();
+                    commands[messageType].Handle(c);
+                    break;
+
+                default:
+                    statistics.UnhandledMessageReceived();
+                    Unhandled(message);
+                    break;
             }
+
+
+            //if (message is Tick)
+            //    HandleTick();
+            //else if (message is GetStatistics)
+            //    Sender.Tell(statistics);
+            //else
+            //{
+            //    var messageType = message.GetType();
+            //    var eventHandler = events.Find(e => e.Type == messageType);
+            //    if (eventHandler != null)
+            //    {
+            //        statistics.EventReceived();
+            //        eventHandler.Action(message);
+            //    }
+            //    else
+            //    {
+            //        var commandHandler = commands.Find(c => c.Type == messageType);
+            //        if (commandHandler != null)
+            //        {
+            //            statistics.CommandReceived();
+            //            commandHandler.Action(message);
+            //        }
+            //        else
+            //        {
+            //            statistics.UnhandledMessageReceived();
+            //            Unhandled(message);
+            //        }
+            //    }
+            //}
         }
 
         private void HandleTick()
@@ -226,26 +251,28 @@ namespace Wki.EventSourcing.Actors
         /// <param name="message">Message.</param>
         private void Restoring(object message)
         {
-            if (message is EndOfTransmission)
-            {
-                statistics.ChangeStatus(DurableActorStatus.Operating);
+            var messageType = message.GetType();
 
-                Context.System.Log.Info(
-                    "Actor {0}: CompletedRestore {1} Events, {2:N3}s",
-                    Self.Path.Name,
-                    statistics.NrRestoreEvents,
-                    statistics.RestoreDuration.TotalSeconds
-                );
-
-                StartOperating();
-            }
-            else if (message is GetStatistics)
-                Sender.Tell(statistics);
-            else
+            switch(message)
             {
-                var eventHandler = events.Find(e => e.Type == message.GetType());
-                if (eventHandler != null)
-                {
+                case EndOfTransmission _:
+                    statistics.ChangeStatus(DurableActorStatus.Operating);
+
+                    Context.System.Log.Info(
+                        "Actor {0}: CompletedRestore {1} Events, {2:N3}s",
+                        Self.Path.Name,
+                        statistics.NrRestoreEvents,
+                        statistics.RestoreDuration.TotalSeconds
+                    );
+
+                    StartOperating();
+                    break;
+
+                case GetStatistics _:
+                    Sender.Tell(statistics);
+                    break;
+
+                case Event e when (events.ContainsKey(messageType)):
                     eventsToReceive--;
                     RequestEventsToRestore();
 
@@ -255,26 +282,74 @@ namespace Wki.EventSourcing.Actors
 
                     try
                     {
-                        eventHandler.Action(message);
+                        events[messageType].Handle(message);
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
                         // if we die during load this will repeat next time
                         Context.Parent.Tell(new DiedDuringRestore());
 
-                        Context.System.Log.Error("Actor {0}: Died during Restore Event {1} with {2}", Self.Path.Name, message, e);
-                        throw new ActorInitializationException(Self, $"Died during Restore Event {message}", e);
+                        Context.System.Log.Error("Actor {0}: Died during Restore Event {1} with {2}", Self.Path.Name, message, ex);
+                        throw new ActorInitializationException(Self, $"Died during Restore Event {message}", ex);
                     }
-                }
-                else
-                {
+                    break;
+
+                default:
                     Context.System.Log.Debug("Actor {0} during restore stash command: {1}", Self.Path.Name, message);
 
                     statistics.CommandReceived();
-
                     Stash.Stash();
-                }
+                    break;
             }
+            //if (message is EndOfTransmission)
+            //{
+            //    statistics.ChangeStatus(DurableActorStatus.Operating);
+
+            //    Context.System.Log.Info(
+            //        "Actor {0}: CompletedRestore {1} Events, {2:N3}s",
+            //        Self.Path.Name,
+            //        statistics.NrRestoreEvents,
+            //        statistics.RestoreDuration.TotalSeconds
+            //    );
+
+            //    StartOperating();
+            //}
+            //else if (message is GetStatistics)
+            //    Sender.Tell(statistics);
+            //else
+            //{
+            //    var eventHandler = events.Find(e => e.Type == message.GetType());
+            //    if (eventHandler != null)
+            //    {
+            //        eventsToReceive--;
+            //        RequestEventsToRestore();
+
+            //        Context.System.Log.Debug("Actor {0}: Restore Event: {1}", Self.Path.Name, message);
+
+            //        statistics.EventReceived();
+
+            //        try
+            //        {
+            //            eventHandler.Action(message);
+            //        }
+            //        catch (Exception e)
+            //        {
+            //            // if we die during load this will repeat next time
+            //            Context.Parent.Tell(new DiedDuringRestore());
+
+            //            Context.System.Log.Error("Actor {0}: Died during Restore Event {1} with {2}", Self.Path.Name, message, e);
+            //            throw new ActorInitializationException(Self, $"Died during Restore Event {message}", e);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        Context.System.Log.Debug("Actor {0} during restore stash command: {1}", Self.Path.Name, message);
+
+            //        statistics.CommandReceived();
+
+            //        Stash.Stash();
+            //    }
+            //}
         }
 
         private void StartRestoring()
@@ -315,7 +390,7 @@ namespace Wki.EventSourcing.Actors
 
         protected override InterestingEvents GenerateInterestingEvents()
         {
-            return new InterestingEvents<TIndex>(Id, events.Select(e => e.Type));
+            return new InterestingEvents<TIndex>(Id, events.Values.Select(e => e.Type));
         }
     }
 }

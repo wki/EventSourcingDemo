@@ -9,17 +9,17 @@ namespace Wki.EventSourcing.Actors
     /// List<Handler> events;
     ///
     /// protected void Recover<E>(Action<E> eventHandler) =>
-    ///     events.Add(new Handler(typeof(E), e => eventHandler((E)e)));
+    ///     events.Add(typeof(E), new Handler(typeof(E), e => eventHandler((E)e)));
     /// </example>
     public class Handler
     {
         public Type Type { get; private set; }
-        public Action<object> Action { get; private set; }
+        public Action<object> Handle { get; private set; }
 
-        public Handler(Type type, Action<object> action)
+        public Handler(Type type, Action<object> handle)
         {
-            Type = type;
-            Action = action;
+            Type   = type;
+            Handle = handle;
         }
     }
 }
