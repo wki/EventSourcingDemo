@@ -1,13 +1,13 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.10
+VisualStudioVersion = 15.0.26430.6
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{042E7749-8B48-4920-A720-17C01D5007B3}"
 	ProjectSection(SolutionItems) = preProject
 		paket.dependencies = paket.dependencies
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wki.EventSourcing", "Wki.EventSourcing\Wki.EventSourcing.csproj", "{041C375E-55DC-4E76-9010-D6F9A0D0300D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wki.EventSourcingOld", "Wki.EventSourcingOld\Wki.EventSourcingOld.csproj", "{041C375E-55DC-4E76-9010-D6F9A0D0300D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wki.EventSourcing.Tests", "Wki.EventSourcing.Tests\Wki.EventSourcing.Tests.csproj", "{6C7B3BA9-73FE-4A08-BDC7-20991286B078}"
 EndProject
@@ -29,6 +29,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SandBox", "SandBox\SandBox.csproj", "{B3E3AF0B-9E5B-40F0-AA14-9076FD76DB0A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wki.EventSourcing", "Wki.EventSourcing\Wki.EventSourcing.csproj", "{B6E1353D-A251-4DBB-A7E6-C8BD322BC71E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,6 +70,10 @@ Global
 		{B3E3AF0B-9E5B-40F0-AA14-9076FD76DB0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B3E3AF0B-9E5B-40F0-AA14-9076FD76DB0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B3E3AF0B-9E5B-40F0-AA14-9076FD76DB0A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6E1353D-A251-4DBB-A7E6-C8BD322BC71E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6E1353D-A251-4DBB-A7E6-C8BD322BC71E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6E1353D-A251-4DBB-A7E6-C8BD322BC71E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6E1353D-A251-4DBB-A7E6-C8BD322BC71E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

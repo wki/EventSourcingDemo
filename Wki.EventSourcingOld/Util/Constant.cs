@@ -14,12 +14,6 @@ namespace Wki.EventSourcing.Util
         /// </summary>
         public const int BufferLowLimit = 10;
 
-        // idle time during restore resulting in an abort
-        public static readonly TimeSpan MaxRestoreIdleTimeSpan = TimeSpan.FromSeconds(5);
-
-        // idle time during persist resulting in reporting Error
-        public static readonly TimeSpan MaxPersistIdleTimeSpan = TimeSpan.FromSeconds(2);
-
         // idle time in seconds after which a durable actor with ID is asking for passivation
         public static readonly TimeSpan MaxActorIdleTimeSpan = TimeSpan.FromSeconds(120); // live: 300
 

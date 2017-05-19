@@ -1,4 +1,4 @@
-﻿namespace Wki.EventSourcing.Protocol
+﻿namespace Wki.EventSourcing.Messages
 {
     /// <summary>
     /// Reply to a command: either OK or Error(Message)
@@ -10,14 +10,14 @@
 
         protected Reply(bool isOk, string message = null)
         {
-            IsOk = isOk;
+            IsOk    = isOk;
             Message = message;
         }
 
         /// <summary>
         /// Construct and return an Ok-reply
         /// </summary>
-        public static Reply Ok() =>
+        public static Reply Ok() => 
             new Reply(true);
 
         /// <summary>
@@ -42,7 +42,7 @@
         /// <typeparam name="T"></typeparam>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static Reply<T> Value<T>(T value) =>
+        public static Reply<T> Value<T>(T value) => 
             new Reply<T>(value);
     }
     /// <summary>
@@ -55,7 +55,7 @@
 
         public Reply(TResult value) : base(true)
         {
-            Value = value;
+            Value = value;    
         }
     }
 }
