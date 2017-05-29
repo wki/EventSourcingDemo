@@ -1,19 +1,16 @@
 ﻿using System;
 using Akka.Actor;
-using Wki.EventSourcing.Infrastructure;
 using Wki.EventSourcing.Protocol;
+using Wki.EventSourcing.Statistics;
 using static Wki.EventSourcing.Util.Constant;
-using Akka.Util;
-using Wki.EventSourcing.Protocol.Statistics;
 
 namespace Wki.EventSourcing.Actors
 {
     /// <summary>
     /// Base class for a durable actor
     /// </summary>
-    public abstract class DurableActor: UntypedActor, IWithUnboundedStash
+    public abstract class DurableActor: SubscribingActor, IWithUnboundedStash
     {
-        public IActorRef EventStore;
         public string PersistenceId;
         public int LastEventPos;
         public IActorRef LastCommandSender;
@@ -22,14 +19,18 @@ namespace Wki.EventSourcing.Actors
 
         public IStash Stash { get; set; }
 
-        public DurableActor(IActorRef eventStore)
+        public DurableActor(IActorRef eventStore): base(eventStore)
         {
-            EventStore = eventStore;
             PersistenceId = this.GetType().Name;
             LastEventPos = -1;
             LastCommandSender = null;
             DefaultReceiveTimeout = MaxActorIdleTimeSpan;
             Statistics = new DurableActorStatistics();
+        }
+
+        protected override EventFilter BuildEventFilter()
+        {
+            throw new NotImplementedException();
         }
 
         protected override void PreStart()
@@ -56,13 +57,13 @@ namespace Wki.EventSourcing.Actors
         /// To be implemented by each actor implementation
         /// </summary>
         /// <param name="e"></param>
-        public abstract void Apply(DomainEvent e);
+        public abstract void Apply(IEvent e);
 
         /// <summary>
         /// Persist a given domain Event to the event Store
         /// </summary>
         /// <param name="domainEvent"></param>
-        public void Persist(DomainEvent domainEvent)
+        public void Persist(IEvent domainEvent)
         {
             Statistics.EventPersisted();
             LastCommandSender = Sender;
@@ -140,37 +141,29 @@ namespace Wki.EventSourcing.Actors
     /// <typeparam name="TIndex"></typeparam>
     /// <typeparam name="TState"></typeparam>
     /// <example>
-    /// public class Xxx : DurableActor&lt;int, XxxState&gt;
+    /// // Xxx: Aggregate Root, Xxx.Event, Xxx.Command: Basis Klassen
+    /// public class XxxClerk : DurableActor&lt;int, Xxx&gt;
     /// {
-    ///     public Xxx(int id) : base(id)
+    ///     public XxxClerk(int id) : base(id)
     ///     {
     ///     // TODO: Subscribe auf alle Events für PersistenceId
     ///     }
     /// 
-    ///     #region commands with a local base class (allow matching via Xxx.Command)
-    ///     public class Command : DispatchableCommand<int>
-    ///     {
-    ///         public Command(int id) : base(id) { }
-    ///     }
-    ///     
-    ///     public class DoSomething : Command
-    ///     {
-    ///         public string Thing { get; private set; }
-    ///     
-    ///         public DoSomething(int id, string thing) : base(id)
-    ///         {
-    ///             Thing = thing;
-    ///         }
-    ///     }
-    ///     #endregion
-    ///     
     ///     protected override void OnReceive(object message)
     ///     {
     ///         switch (message)
     ///         {
+    ///             // one example command handler
     ///             case DoSomething d:
-    ///                 Persist(new XxxState.SomethingDone(42, "foo"));
+    ///                 Persist(new Xxx.SomethingDone(42, "foo"));
     ///                 break;
+    ///             
+    ///             // handle all events
+    ///             case Xxx.Event e:
+    ///                 Apply(e);
+    ///                 break;
+    ///                 
+    ///             // maybe handle more messages
     ///         }
     ///     }
     ///     
@@ -199,8 +192,8 @@ namespace Wki.EventSourcing.Actors
         /// Default implementation: let the state comsume the event
         /// </summary>
         /// <param name="e"></param>
-        override public void Apply(DomainEvent e) =>
-            state = state.Update(e);
+        override public void Apply(IEvent e) =>
+            state = state.Apply(e);
 
     }
 }

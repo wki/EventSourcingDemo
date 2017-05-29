@@ -1,8 +1,7 @@
-﻿    using System;
+﻿using System;
 using Wki.EventSourcing.Util;
-using static Wki.EventSourcing.Util.Constant;
 
-namespace Wki.EventSourcing.Protocol.Statistics
+namespace Wki.EventSourcing.Statistics
 {
     /// <summary>
     /// Document Message (and internal storage) with statistics for a durable actor

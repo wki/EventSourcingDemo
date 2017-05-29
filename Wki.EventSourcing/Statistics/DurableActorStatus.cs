@@ -1,4 +1,4 @@
-﻿namespace Wki.EventSourcing.Protocol.Statistics
+﻿namespace Wki.EventSourcing.Statistics
 {
     /// <summary>
     /// Possible states for a durable actor during its life cycle

@@ -1,6 +1,5 @@
-﻿using System;
-using Akka.Actor;
-using Wki.EventSourcing.Infrastructure;
+﻿using Akka.Actor;
+using Wki.EventSourcing.Protocol;
 using static Wki.EventSourcing.Util.Constant;
 
 namespace Wki.EventSourcing.Actors
@@ -21,14 +20,15 @@ namespace Wki.EventSourcing.Actors
                    message: new RemoveInactiveActors(),
                    sender: Self
                 );
-
         }
 
         protected override void OnReceive(object message)
         {
+            // TODO: wie bauen wir ein Coordination Office?
+            //       evtl. Receptor -> Message an Office?
             switch(message)
             {
-                case DispatchableCommand<TIndex> cmd:
+                case ICommand<TIndex> cmd:
                     // TODO: find or create matching office actor
                     break;
 
@@ -42,7 +42,10 @@ namespace Wki.EventSourcing.Actors
 
                 case RemoveInactiveActors _:
                     // TODO: remove them
-                    break;                
+                    break;
+
+                default:
+                    break;
             }
         }
     }
