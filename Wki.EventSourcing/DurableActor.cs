@@ -3,42 +3,60 @@ using Akka.Actor;
 using Wki.EventSourcing.Protocol;
 using Wki.EventSourcing.Statistics;
 using static Wki.EventSourcing.Util.Constant;
+using Wki.EventSourcing.Protocol.Load;
+using Wki.EventSourcing.Protocol.Persistence;
+using Wki.EventSourcing.Persistence;
+using Wki.EventSourcing.Protocol.Subscription;
 
 namespace Wki.EventSourcing.Actors
 {
     /// <summary>
     /// Base class for a durable actor
     /// </summary>
-    public abstract class DurableActor: SubscribingActor, IWithUnboundedStash
+    public abstract class DurableActor: UntypedActor, IWithUnboundedStash
     {
+        public IActorRef EventStore;
         public string PersistenceId;
-        public int LastEventPos;
+        public bool HasState;
+        public int LastEventId;
         public IActorRef LastCommandSender;
         public TimeSpan DefaultReceiveTimeout;
         public DurableActorStatistics Statistics;
 
         public IStash Stash { get; set; }
 
-        public DurableActor(IActorRef eventStore): base(eventStore)
+        public DurableActor(IActorRef eventStore)
         {
-            PersistenceId = this.GetType().Name;
-            LastEventPos = -1;
+            EventStore = eventStore;
+            PersistenceId = GetType().Name;
+            HasState = false;
+            LastEventId = -1;
             LastCommandSender = null;
             DefaultReceiveTimeout = MaxActorIdleTimeSpan;
             Statistics = new DurableActorStatistics();
         }
 
-        protected override EventFilter BuildEventFilter()
-        {
-            throw new NotImplementedException();
-        }
+        protected void Subscribe() =>
+            Subscribe(BuildEventFilter());
+
+        protected void Subscribe(EventFilter eventFilter) =>
+            EventStore.Tell(new Subscribe(eventFilter));
+
+        protected void UnSubscribe() =>
+            EventStore.Tell(Unsubscribe.Instance);
+
+        // must be overloaded in order to return events we are interested in
+        protected abstract EventFilter BuildEventFilter();
 
         protected override void PreStart()
         {
             base.PreStart();
-            EventStore.Tell(LoadNextEvents.StartingAt(LastEventPos));
+            EventStore.Tell(new LoadSnapshot(PersistenceId));
             SetReceiveTimeout(MaxRestoreIdleTimeSpan);
-            BecomeStacked(Loading);
+            if (HasState)
+                BecomeStacked(WaitingForSnapshot);
+            else
+                BecomeStacked(Loading);
             Statistics.StartRestoring();
         }
 
@@ -49,27 +67,52 @@ namespace Wki.EventSourcing.Actors
         protected void HandleEventRecord(EventRecord eventRecord)
         {
             Statistics.EventReceived();
-            LastEventPos = eventRecord.Id;
+            LastEventId = eventRecord.Id;
             Apply(eventRecord.Event);
         }
 
         /// <summary>
-        /// To be implemented by each actor implementation
+        /// To be implemented by each actor implementation: Apply an event
         /// </summary>
         /// <param name="e"></param>
-        public abstract void Apply(IEvent e);
+        protected abstract void Apply(IEvent e);
 
         /// <summary>
         /// Persist a given domain Event to the event Store
         /// </summary>
         /// <param name="domainEvent"></param>
-        public void Persist(IEvent domainEvent)
+        protected void Persist(IEvent domainEvent)
         {
             Statistics.EventPersisted();
             LastCommandSender = Sender;
-            EventStore.Tell(new Persist(domainEvent, PersistenceId));
+            EventStore.Tell(new PersistEvent(PersistenceId, domainEvent));
             SetReceiveTimeout(MaxPersistIdleTimeSpan);
             BecomeStacked(Persisting);
+        }
+
+        /// <summary>
+        /// Save the state obtained state. default behavior: do nothing
+        /// </summary>
+        /// <param name="state"></param>
+        virtual protected void SaveSnapshot(Snapshot snapshot) { }
+
+        // Wait for Snapshot behavior
+        protected virtual void WaitingForSnapshot(object message)
+        {
+            switch(message)
+            {
+                case ReceiveTimeout _:
+                case NoSnapshot _:
+                    // switch to Loading
+                    break;
+
+                case Snapshot snapshot:
+                    SaveSnapshot(snapshot);
+                    break;
+            }
+
+            EventStore.Tell(LoadNextEvents.After(LastEventId));
+            Become(Loading);
         }
 
         // Loading behavior
@@ -78,15 +121,11 @@ namespace Wki.EventSourcing.Actors
             switch(message)
             {
                 case ReceiveTimeout _:
-                    throw new PersistException("Timeout reached during Load");
-
-    ///             case OfferSnapshot s:
-    ///                 HandleSnapshot(s);
-    ///                 break;
-    ///
+                    throw new PersistTimeoutException("Timeout reached during Load");
 
                 case EventRecord r:
                     HandleEventRecord(r);
+                    // TODO: nach 1000 Messages ist Schluss... 
                     break;
 
                 case End _:
@@ -109,7 +148,7 @@ namespace Wki.EventSourcing.Actors
                 case ReceiveTimeout _:
                     var error = "Timeout during persisting";
                     LastCommandSender.Tell(Reply.Error(error));
-                    throw new PersistException(error);
+                    throw new PersistTimeoutException(error);
 
                 case EventRecord r:
                     HandleEventRecord(r);
@@ -124,27 +163,10 @@ namespace Wki.EventSourcing.Actors
     }
 
     /// <summary>
-    /// Base class for a durable actor with an Index
-    /// </summary>
-    /// <typeparam name="TIndex"></typeparam>
-    public abstract class DurableActor<TIndex>: DurableActor
-    {
-        public TIndex id;
-
-        public DurableActor(IActorRef eventStore, TIndex id)
-            :base(eventStore)
-        {
-            this.id = id;
-            PersistenceId = $"{this.GetType().Name}-{id}";
-        }
-    }
-
-    
-    /// <summary>
     /// Base class for a durable actor with index and state
     /// </summary>
-    /// <typeparam name="TIndex"></typeparam>
     /// <typeparam name="TState"></typeparam>
+    /// <typeparam name="TIndex"></typeparam>
     /// <example>
     /// // Xxx: Aggregate Root, Xxx.Event, Xxx.Command: Basis Klassen
     /// public class XxxClerk : DurableActor&lt;int, Xxx&gt;
@@ -171,32 +193,58 @@ namespace Wki.EventSourcing.Actors
     ///     }
     ///     
     ///     // only BuildInitialState() is needed, Apply() has a default implementation
-    ///     protected override State<XxxState> BuildInitialState() =>
+    ///     protected override IState<XxxState> BuildInitialState() =>
     ///         new XxxState(Id, "foo");
     /// }
     /// </example>
-    public abstract class DurableActor<TIndex, TState>: DurableActor<TIndex>
+    public abstract class DurableActor<TState>: DurableActor
+        where TState: IState<TState>
     {
-        public State<TState> state;
+        public IState<TState> State;
 
-        public DurableActor(IActorRef eventStore, TIndex id) 
-            : base(eventStore, id)
+        public DurableActor(IActorRef eventStore) 
+            : base(eventStore)
         {
-            state = BuildInitialState();
+            State = BuildInitialState();
         }
 
         /// <summary>
         /// initially construct the state
         /// </summary>
         /// <returns></returns>
-        protected abstract State<TState> BuildInitialState();
+        protected abstract TState BuildInitialState();
 
         /// <summary>
-        /// Default implementation: let the state comsume the event
+        /// Default implementation: let the state consume the event
         /// </summary>
-        /// <param name="e"></param>
-        override public void Apply(IEvent e) =>
-            state = state.Apply(e);
+        /// <param name="event"></param>
+        override protected void Apply(IEvent @event) =>
+            State = State.Apply(@event);
 
+        protected override void SaveSnapshot(Snapshot snapshot)
+        {
+            if (snapshot.State is TState state)
+            {
+                State = state;
+                LastEventId = snapshot.LastEventId;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Base class for a durable actor with a State and an index
+    /// </summary>
+    /// <typeparam name="TIndex"></typeparam>
+    public abstract class DurableActor<TState, TIndex> : DurableActor<TState>
+        where TState: IState<TState>
+    {
+        public TIndex Id;
+
+        public DurableActor(IActorRef eventStore, TIndex id)
+            : base(eventStore)
+        {
+            Id = id;
+            PersistenceId = $"{this.GetType().Name}-{id}";
+        }
     }
 }

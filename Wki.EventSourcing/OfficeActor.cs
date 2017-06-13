@@ -1,5 +1,5 @@
 ﻿using Akka.Actor;
-using Wki.EventSourcing.Protocol;
+using Wki.EventSourcing.Protocol.LiveCycle;
 using static Wki.EventSourcing.Util.Constant;
 
 namespace Wki.EventSourcing.Actors
@@ -17,7 +17,7 @@ namespace Wki.EventSourcing.Actors
                    initialDelay: DeadActorRemoveTimeSpan,
                    interval: DeadActorRemoveTimeSpan,
                    receiver: Self,
-                   message: new RemoveInactiveActors(),
+                   message: RemoveInactiveActors.Instance,
                    sender: Self
                 );
         }

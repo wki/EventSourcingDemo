@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using Wki.EventSourcing.Util;
 using Newtonsoft.Json;
 using System.Linq;
+using Wki.EventSourcing.Protocol.Load;
 
 namespace Wki.EventSourcing.Persistence.Ef
 {
-    public class Journal : IJournalStore
+    public class JournalStore : IJournalStore
     {
         public int LastEventId { get; private set; }
 
@@ -18,7 +19,7 @@ namespace Wki.EventSourcing.Persistence.Ef
                 Formatting = Formatting.None,
             };
 
-        public Journal()
+        public JournalStore()
         {
             var eventType = typeof(IEvent);
 
@@ -58,7 +59,7 @@ namespace Wki.EventSourcing.Persistence.Ef
             // TODO: nicht in SQL ausdrückbar.
             bool MatchesFilter(EventRow row)
             {
-                if (row.Id <= filter.StartingAtIndexExcluding)
+                if (row.Id <= filter.StartAfterEventId)
                     return false;
 
                 if (filter.PersistenceId != null && filter.PersistenceId != row.PersistenceId)
@@ -82,13 +83,13 @@ namespace Wki.EventSourcing.Persistence.Ef
         public bool HasSnapshot(string persistenceId) =>
             Context.SnapshotRows.Find(persistenceId) != null;
 
-        public Snapshot<TState> LoadSnapshot<TState>(string persistenceId)
+        public Snapshot LoadSnapshot<TState>(string persistenceId)
         {
             var snapshotRow = Context.SnapshotRows.Find(persistenceId);
             if (snapshotRow != null)
             {
                 var state = JsonConvert.DeserializeObject<TState>(snapshotRow.Data);
-                return new Snapshot<TState>(snapshotRow.CreatedAt, snapshotRow.LastEventId, state);
+                return new Snapshot(state, snapshotRow.LastEventId);
             }
             else
                 return null;

@@ -3,11 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using Wki.EventSourcing.Protocol.Load;
 using static Wki.EventSourcing.Util.Serializer;
 
 namespace Wki.EventSourcing.Persistence.Npgsql
 {
-    public class Journal : IJournalStore, IDisposable
+    public class JournalStore : IJournalStore, IDisposable
     {
         public int LastEventId { get; private set; }
 
@@ -45,7 +46,7 @@ namespace Wki.EventSourcing.Persistence.Npgsql
         private Dictionary<string, Type> EventTypeLookup;
 
 
-        public Journal()
+        public JournalStore()
         {
             var connectionString = ConfigurationManager.ConnectionStrings["eventstore"].ConnectionString;
 
@@ -115,7 +116,7 @@ namespace Wki.EventSourcing.Persistence.Npgsql
             }
         }
 
-        public Snapshot<TState> LoadSnapshot<TState>(string persistenceId)
+        public Snapshot LoadSnapshot<TState>(string persistenceId)
         {
             using (var cmd = new NpgsqlCommand(SelectSnapshot))
             {
@@ -123,10 +124,9 @@ namespace Wki.EventSourcing.Persistence.Npgsql
                 cmd.Prepare();
                 using (var reader = cmd.ExecuteReader())
                 {
-                    return new Snapshot<TState>(
-                        reader.GetDateTime(0),
-                        reader.GetInt32(1),
-                        Deserialize<TState>(reader.GetString(2))
+                    return new Snapshot(
+                        Deserialize<TState>(reader.GetString(2)),
+                        reader.GetInt32(1)
                     );
                 }
             }

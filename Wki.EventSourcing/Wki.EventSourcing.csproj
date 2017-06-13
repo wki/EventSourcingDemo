@@ -43,18 +43,18 @@
   <ItemGroup>
     <Compile Include="Persistence\Ef\EventStoreContext.cs" />
     <Compile Include="Persistence\Ef\EventRow.cs" />
-    <Compile Include="Persistence\Ef\Journal.cs" />
+    <Compile Include="Persistence\Ef\JournalStore.cs" />
     <Compile Include="Persistence\Ef\SnapshotRow.cs" />
     <Compile Include="Persistence\EventCache.cs" />
     <Compile Include="Persistence\EventStore.cs" />
     <Compile Include="Persistence\IJournalStore.cs" />
     <Compile Include="OfficeActor.cs" />
     <Compile Include="Persistence\Journal.cs" />
-    <Compile Include="Persistence\Npgsql\Journal.cs" />
+    <Compile Include="Persistence\Npgsql\JournalStore.cs" />
     <Compile Include="Persistence\Subscriptions.cs" />
-    <Compile Include="SubscribingActor.cs" />
+    <Compile Include="Protocol\Retrieval.cs" />
+    <Compile Include="Protocol\Persistence.cs" />
     <Compile Include="EventFilter.cs" />
-    <Compile Include="Persistence\Snapshot.cs" />
     <Compile Include="JsonNet.PrivateSettersContractResolvers\PrivateSettersContractResolvers.cs">
       <Paket>True</Paket>
     </Compile>
@@ -62,18 +62,12 @@
     <Compile Include="ICommand.cs" />
     <Compile Include="IEvent.cs" />
     <Compile Include="EventRecord.cs" />
-    <Compile Include="State.cs" />
+    <Compile Include="IState.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Protocol\End.cs" />
-    <Compile Include="Protocol\LoadNextEvents.cs" />
-    <Compile Include="Protocol\Passivate.cs" />
-    <Compile Include="Protocol\Persist.cs" />
-    <Compile Include="Protocol\PersistException.cs" />
-    <Compile Include="Protocol\RemoveInactiveActors.cs" />
-    <Compile Include="Protocol\Reply.cs" />
-    <Compile Include="Protocol\StillAlive.cs" />
-    <Compile Include="Protocol\Subscribe.cs" />
-    <Compile Include="Protocol\Unsubscribe.cs" />
+    <Compile Include="Protocol\PersistTimeoutException.cs" />
+    <Compile Include="Reply.cs" />
+    <Compile Include="Protocol\LiveCycle.cs" />
+    <Compile Include="Protocol\Subscription.cs" />
     <Compile Include="Statistics\DurableActorStatistics.cs" />
     <Compile Include="Statistics\DurableActorStatus.cs" />
     <Compile Include="Util\Constant.cs" />

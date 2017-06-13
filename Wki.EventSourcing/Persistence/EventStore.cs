@@ -1,6 +1,7 @@
 ﻿using System;
 using Akka.Actor;
 using Wki.EventSourcing.Protocol;
+using Wki.EventSourcing.Protocol.Load;
 
 namespace Wki.EventSourcing.Persistence
 {

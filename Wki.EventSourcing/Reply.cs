@@ -1,4 +1,4 @@
-﻿namespace Wki.EventSourcing.Protocol
+﻿namespace Wki.EventSourcing
 {
     /// <summary>
     /// Reply to a command: either OK or Error(Message)

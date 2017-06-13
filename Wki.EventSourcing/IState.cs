@@ -1,11 +1,11 @@
 ﻿namespace Wki.EventSourcing
 {
     /// <summary>
-    /// Base class for an immutable state getting updated by events
+    /// Interface for an immutable state getting updated by events
     /// </summary>
     /// <typeparam name="TState"></typeparam>
     /// <example>
-    /// public class Xxx : State<Xxx>
+    /// public class Xxx : IState<Xxx>
     /// {
     ///     #region commands
     ///     public class Command : DispatchableCommand<int>
@@ -35,7 +35,7 @@
     ///     {
     ///     }
     /// 
-    ///     public override State<Xxx> Apply(DomainEvent @event)
+    ///     public IState<Xxx> Apply(DomainEvent @event)
     ///     {
     ///         switch(@event)
     ///         {
@@ -47,13 +47,13 @@
     ///     }
     /// }
     /// </example>
-    abstract public class State<TState>
+    public interface IState<TState>
     {
         /// <summary>
         /// applies an event to the current state returning a new state
         /// </summary>
         /// <param name="event"></param>
         /// <returns>a new state instance</returns>
-        public abstract State<TState> Apply(IEvent @event);
+        IState<TState> Apply(IEvent @event);
     }
 }

@@ -10,7 +10,7 @@ namespace Wki.EventSourcing
         // evtl. List<Type> durch HashSet<Type> mit allen abgeleiteten Typen ersetzen...
         public string PersistenceId { get; set; } = null;
         public List<Type> Events { get; set; } = new List<Type>();
-        public int StartingAtIndexExcluding { get; set; } = -1;
+        public int StartAfterEventId { get; set; } = -1;
 
         #region Builder DSL
         public EventFilter ForPersistenceId(string persistenceId)
@@ -38,23 +38,23 @@ namespace Wki.EventSourcing
             return this;
         }
 
-        public EventFilter StartingAtExcluding(int index)
+        public EventFilter StartingAfterEventId(int index)
         {
-            StartingAtIndexExcluding = index;
+            StartAfterEventId = index;
             return this;
         }
 
         public EventFilter StartFromBeginning() => 
-            StartingAtExcluding(-1);
+            StartingAfterEventId(-1);
 
         public EventFilter OnlyFutureEvents() => 
-            StartingAtExcluding(Int32.MaxValue);
+            StartingAfterEventId(Int32.MaxValue);
         #endregion
 
         #region matching
         public bool Matches(string persistenceId, Type type, int id = Int32.MaxValue) =>
             (PersistenceId == null || PersistenceId == persistenceId)
-            && id > StartingAtIndexExcluding
+            && id > StartAfterEventId
             && Events.Count == 0 || Events.Any(e => type.IsAssignableFrom(e));
 
         public bool Matches(string persistenceId, IEvent @event, int id = Int32.MaxValue) =>
@@ -82,8 +82,8 @@ namespace Wki.EventSourcing
         public static EventFilter AnyEvent() =>
             new EventFilter().AnyEvent();
 
-        public static EventFilter StartingAtExcluding(int index) =>
-            new EventFilter().StartingAtExcluding(index);
+        public static EventFilter StartingAfterEventId(int index) =>
+            new EventFilter().StartingAfterEventId(index);
 
         public static EventFilter StartFromBeginning() =>
             new EventFilter().StartFromBeginning();

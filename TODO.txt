@@ -2,18 +2,6 @@
 
 ## Generell
 
-TODO: einheitliches Vokabular für "EventPos", "EventId", "StartAtExcluding", "LastEventId"
--> EventId / StartAtEventIdExcluding / LastEventId
-
-TODO: subscribing Actor weg -> DurableActor
-
-TODO: Reply Klasse in globalen Namensraum
-
-TODO: Rename "Persist" -> "PersistEvent"
-
-TODO: Namespaces Wki.EventSourcing.Protocol.xxx einführen falls zu viele
-      evtl. eine ".cs" Datei pro Namespace mit x Klassen.
-      macht das "using" explizit als "ich brauche/biete dieses Protokoll"
 
 
 ## EventSourcing
