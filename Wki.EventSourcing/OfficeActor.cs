@@ -4,7 +4,7 @@ using static Wki.EventSourcing.Util.Constant;
 
 namespace Wki.EventSourcing.Actors
 {
-    public abstract class OfficeActor<TAggregate, TIndex>: UntypedActor
+    public abstract class OfficeActor<TClerk, TIndex>: UntypedActor
     {
         public IActorRef EventStore;
 

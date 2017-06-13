@@ -4,7 +4,6 @@ using System.Linq;
 
 namespace Wki.EventSourcing
 {
-
     public class EventFilter
     {
         // TODO: performance benchmark.

@@ -9,8 +9,11 @@
      - Observer bedienen, Rekonstruktion ausführen
 
    Verhalten:
-     - Schreib- / Lese-Operationen an JournalWriter + JournalReader weiterleiten
+     - Schreib- / Lese-Operationen an Journal weiterleiten
      - Rekonstruktion ausführen
+  
+   Anlage:
+     - mit Referenz auf Journal, damit Implementierung gewählt
 
 
 1. Office
@@ -39,7 +42,8 @@
    Ausreichend?
      - mit diesem Ansatz muss 1 Process Manager alle laufenden Dinge beobachten
      - evtl. wäre ein Office-ähnliches Dispatching sinnvoll
-     - doch: wie restaurieren ohne Probleme? wie vermeiden von zig Kind-Aktoren?
+     - regelmäßige Snapshots vermeiden zig Kind-Aktoren
+     - pro echtem Workflow gibt es dann noch einen eigenen DurableActor<...>
 
 
 3. Aggregate Root
@@ -54,6 +58,7 @@
      - während Rekonstruktion Commands zwischenpuffern
      - immer Events verarbeiten und Zustand verändern
      - Nach Konstruktion Commands + Events verarbeiten
+     - Zustand losgelöst vom Aktor (State/IState)
 
 
 4. View
@@ -65,49 +70,82 @@
      - wahlweise PersistenceId berücksichtigen
      - bestimmte Events mitlesen
      - Zustand ableiten
+     - bei Änderungen am Zustand: mitteilen damit Clients sich aktualisieren können
 
 
-## Aktor-Basisklassen
+## Namensräume
 
-1. DurableActor, DurableActor&lt;TIndex&gt;
+ * Wki.EventSourcing -- Aktor Basisklassen, Interfaces etc.
+ * Wki.EventSourcing.Persistence -- Gemeinsamkeiten
+ * Wki.EventSourcing.Persistence.Ef -- Entity Framework Core
+ * Wki.EventSourcing.Persistence.Npgsql -- NpgSql
+ * Wki.EventSourcing.Protocol -- interne Nachrichten
+ * Wki.EventSourcing.Statistics -- Statistik-Klassen
+ * Wki.EventSourcing.Util -- Konstanten, Serialisierer etc.
+
+
+## Diverse (Basis-)Klassen
+
+ * ```IEvent```, ```IEvent<TIndex>``` -- Event Interface
+ 
+ * ```ICommand```, ```ICommand<TIndex>``` -- Command Interface
+
+ * ```EventFilter```, ```WantEvents``` -- Event Filter DSL
+
+ * ```EventRecord``` -- persistierte Form eines Events
+
+ * ```State<TState>``` FIXME: besser ```IState<TState>```? 
+
+ * ```SubscribingActor``` -- Basisklasse für DurableActor // notwendig?
+
+ * ```OfficeActor<TClerk, TIndex>``` -- Erzeugung und Verteilung an Clerks
+
+   Für Aggregate, View Offices
+
+ * ```DurableActor```, ```DurableActor<TIndex>```
+   
+   Für Aggregate Clerks, Views oder View Clerks und ProcessManager
+
+
+1. ```DurableActor```, ```DurableActor<TIndex, TState>```
 
    Unterschied: generische Version besitzt eine Id und lauscht nur auf 
    Kommandos vom Typ ```DispatchableCommand<TIndex>``` 
 
-   * Receive&lt;TCommand&gt;(handler)
-
-     DSL innerhalb Konstruktor. Legt Verhalten bei Kommandos fest.
-
-   * Recover&lt;TEvent&gt;(handler)
-
-     DSL innerhalb Konstruktor. Legt Verhalten bei Ereignissen fest.
-
-   * Persist(event)
+   * Persist(IEvent)
 
      Teil der Kommando-Behandlung. Sorgt für Persistierung des angegebenen 
-     Ereignisses und ruft nach erfolgreicher Persistierung alle 
-     Behandlungsroutinen für dieses Ereignis auf.
+     Ereignisses und ruft nach erfolgreicher Persistierung Apply() auf.
+  
+   * CreateSnapshot() // nur ```DurableActor<TIndex, TState>```
 
-2. OfficeActor&lt;TActor, TIndex&gt;
+     erstellt einen Snapshot des aktuellen Zustandes. Kann fehl schlagen, wird aber dann ignoriert.
+  
+   * Apply(IEvent)
+
+     muss im Aktor überladen werden, damit Event auf den Aktor angewandt wird.
+
+   * BuildInitialState() // nur ```DurableActor<TIndex, TState>```
+
+    muss im Aktor überladen werden.
+
+2. ```OfficeActor<TClerk, TIndex>```
 
    erlaubt das eigene Behandeln beliebiger Nachrichten. Werden Nachrichten
    nicht behandelt und handelt es sich um ```DispatchableCommand``` 
    Nachrichten, so werden diese an einen notfalls erzeugten Aktor vom Typ
-   ```TActor``` gesandt.
+   ```TClerk``` gesandt.
 
-3. EventStore
+3. ```EventStore```
 
    kümmert sich um alle Persistierungs-Belange.
 
-4. JournalReader
+4. ```Journal```
 
    liest alle gespeicherten Ereignisse und übergibt sie dem EventStore
    zur Pufferung.
-
-5. JournalWriter
-
    Erhält ein Ereignis zur Persistierung und meldet die erfolgreiche
-   SPeicherung, damit danach erst das Ereignis weiterverarbeiet wird.
+   Speicherung, damit danach erst das Ereignis weiterverarbeiet wird.
 
 
 **Aktoren**
@@ -167,17 +205,16 @@ Typ         | Basisklasse
 | ES  | EventStore    | load, subscribe, reconstitute, persist
 | DA  | DurableActor  | subscribe, reconstitute, livecycle, persist
 | OA  | OfficeActor   | forward, livecycle
-| JR  | JournalReader | load
-| JW  | JournalWriter | persist
+| J   | Journal       | load, persist
 
 
  * load (Journal)
 
    - solange bis alle Events geladen: Bearbeitung von Blöcken zu n Ereignissen
-     - ES -> JR: LoadNextEvents(n)
-     - JR -> ES: n x EventLoaded(event)
+     - ES -> J: LoadNextEvents(n)
+     - J -> ES: evtl. OfferSnapshot falls start Index = -1 und Snapshot vorhanden
    - wenn fertig:
-     - JR -> ES: End
+     - J -> ES: End
 
  * subscribe
 
@@ -189,8 +226,12 @@ Typ         | Basisklasse
    - Voraussetzung: Subscribe ist erfolgt
    - Vorbereitung
      - DA -> ES: StartRestore
+   - Snapshot anfordern (falls vorhanden)
+     - ES -> J: LoadSnapshot
+     - J -> ES: OfferSnapshot / NoSnapshot
+     - ES -> DA: OfferSnapshot
    - solange bis alle Events geladen: Restaurieren von Blöcken zu n Ereignissen
-     - DA -> ES: ResotreEvents(n) 
+     - DA -> ES: RestoreEvents(n) 
      - ES -> DA: n x Event
    - wenn fertig
      - ES -> DA: End
@@ -217,9 +258,13 @@ Typ         | Basisklasse
 
  * persist
 
-   - Persistierung
+   - wahlweise: Persistierung Snapshot
+     - DA -> ES: PersistSnapshot(state)
+     - ES -> J: PersistSnapshot(state)
+
+   - Persistierung Event
      - DA -> ES: PersistEvent(event)
-     - ES -> JW: PersistEvent(event)
-     - JW -> ES: EventPersisted(event)
+     - ES -> J: PersistEvent(event)
+     - J -> ES: EventPersisted(event)
    - Benachrichtigung aller Subscriber (incl. Absender)
      - ES -> (Subscribers): event

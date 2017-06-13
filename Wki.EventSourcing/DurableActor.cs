@@ -80,6 +80,11 @@ namespace Wki.EventSourcing.Actors
                 case ReceiveTimeout _:
                     throw new PersistException("Timeout reached during Load");
 
+    ///             case OfferSnapshot s:
+    ///                 HandleSnapshot(s);
+    ///                 break;
+    ///
+
                 case EventRecord r:
                     HandleEventRecord(r);
                     break;
@@ -162,8 +167,6 @@ namespace Wki.EventSourcing.Actors
     ///             case Xxx.Event e:
     ///                 Apply(e);
     ///                 break;
-    ///                 
-    ///             // maybe handle more messages
     ///         }
     ///     }
     ///     
