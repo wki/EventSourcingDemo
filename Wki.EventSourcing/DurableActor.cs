@@ -5,7 +5,6 @@ using Wki.EventSourcing.Statistics;
 using static Wki.EventSourcing.Util.Constant;
 using Wki.EventSourcing.Protocol.Load;
 using Wki.EventSourcing.Protocol.Persistence;
-using Wki.EventSourcing.Persistence;
 using Wki.EventSourcing.Protocol.Subscription;
 
 namespace Wki.EventSourcing.Actors
@@ -18,6 +17,7 @@ namespace Wki.EventSourcing.Actors
         public IActorRef EventStore;
         public string PersistenceId;
         public bool HasState;
+        public Type StateType;
         public int LastEventId;
         public IActorRef LastCommandSender;
         public TimeSpan DefaultReceiveTimeout;
@@ -30,6 +30,7 @@ namespace Wki.EventSourcing.Actors
             EventStore = eventStore;
             PersistenceId = GetType().Name;
             HasState = false;
+            StateType = typeof(object);
             LastEventId = -1;
             LastCommandSender = null;
             DefaultReceiveTimeout = MaxActorIdleTimeSpan;
@@ -51,7 +52,7 @@ namespace Wki.EventSourcing.Actors
         protected override void PreStart()
         {
             base.PreStart();
-            EventStore.Tell(new LoadSnapshot(PersistenceId));
+            EventStore.Tell(new LoadSnapshot(PersistenceId, StateType));
             SetReceiveTimeout(MaxRestoreIdleTimeSpan);
             if (HasState)
                 BecomeStacked(WaitingForSnapshot);
@@ -206,6 +207,7 @@ namespace Wki.EventSourcing.Actors
             : base(eventStore)
         {
             State = BuildInitialState();
+            StateType = typeof(TState);
         }
 
         /// <summary>

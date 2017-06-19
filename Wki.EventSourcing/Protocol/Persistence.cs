@@ -39,11 +39,11 @@
     /// </summary>
     public class EventPersisted
     {
-        public EventRecord Event { get; private set; }
+        public EventRecord EventRecord { get; private set; }
 
-        public EventPersisted(EventRecord @event)
+        public EventPersisted(EventRecord eventRecord)
         {
-            Event = @event;
+            EventRecord = eventRecord;
         }
     }
 

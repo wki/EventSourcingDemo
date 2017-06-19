@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Wki.EventSourcing.Protocol.Load;
 
 namespace Wki.EventSourcing.Persistence
@@ -14,7 +15,7 @@ namespace Wki.EventSourcing.Persistence
         // snapshot operations
         bool HasSnapshot(string persistenceId);
         void SaveSnapshot<TState>(string persistenceId, TState state, int lastEventId);
-        Snapshot LoadSnapshot<TState>(string persistenceId);
+        Snapshot LoadSnapshot(string persistenceId, Type stateType);
 
         // journal operations
         void AppendEvent(string persistenceId, IEvent @event);

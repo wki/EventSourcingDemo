@@ -1,4 +1,6 @@
-﻿namespace Wki.EventSourcing.Protocol.Load
+﻿using System;
+
+namespace Wki.EventSourcing.Protocol.Load
 {
     // Load Protocol
     //
@@ -12,9 +14,12 @@
     {
         public string PersistenceId { get; private set; }
 
-        public LoadSnapshot(string persistenceId)
+        public Type StateType { get; private set; }
+
+        public LoadSnapshot(string persistenceId, Type stateType)
         {
             PersistenceId = persistenceId;
+            StateType = stateType;
         }
     }
 

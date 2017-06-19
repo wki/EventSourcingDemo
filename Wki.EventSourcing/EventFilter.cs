@@ -6,6 +6,9 @@ namespace Wki.EventSourcing
 {
     public class EventFilter
     {
+        // a secret event type that never occurs anywhere
+        private class NotMatchedEvent: IEvent {}
+
         // TODO: performance benchmark.
         // evtl. List<Type> durch HashSet<Type> mit allen abgeleiteten Typen ersetzen...
         public string PersistenceId { get; set; } = null;
@@ -26,7 +29,7 @@ namespace Wki.EventSourcing
         }
 
         public EventFilter When<TEvent>()
-            where TEvent: IEvent
+            where TEvent : IEvent
         {
             Events.Add(typeof(TEvent));
             return this;
@@ -35,6 +38,13 @@ namespace Wki.EventSourcing
         public EventFilter AnyEvent()
         {
             Events.Clear();
+            return this;
+        }
+
+        public EventFilter NoEvent()
+        {
+            Events.Clear();
+            Events.Add(typeof(NotMatchedEvent));
             return this;
         }
 
@@ -81,6 +91,9 @@ namespace Wki.EventSourcing
 
         public static EventFilter AnyEvent() =>
             new EventFilter().AnyEvent();
+
+        public static EventFilter NoEvent() =>
+            new EventFilter().NoEvent();
 
         public static EventFilter StartingAfterEventId(int index) =>
             new EventFilter().StartingAfterEventId(index);

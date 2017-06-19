@@ -116,7 +116,7 @@ namespace Wki.EventSourcing.Persistence.Npgsql
             }
         }
 
-        public Snapshot LoadSnapshot<TState>(string persistenceId)
+        public Snapshot LoadSnapshot(string persistenceId, Type stateType)
         {
             using (var cmd = new NpgsqlCommand(SelectSnapshot))
             {
@@ -125,7 +125,7 @@ namespace Wki.EventSourcing.Persistence.Npgsql
                 using (var reader = cmd.ExecuteReader())
                 {
                     return new Snapshot(
-                        Deserialize<TState>(reader.GetString(2)),
+                        Deserialize(reader.GetString(2), stateType),
                         reader.GetInt32(1)
                     );
                 }

@@ -40,5 +40,13 @@ namespace Wki.EventSourcing.Persistence
                 if (Subscribers[subscriber].Matches(eventRecord))
                     yield return subscriber;
         }
+
+        public EventFilter EventsWantedFor(IActorRef actor)
+        {
+            if (!Subscribers.ContainsKey(actor))
+                return WantEvents.NoEvent();
+            else
+                return Subscribers[actor];
+        }
     }
 }
