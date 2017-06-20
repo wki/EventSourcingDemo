@@ -28,7 +28,11 @@ namespace Wki.EventSourcing.Protocol.Load
     /// </summary>
     public class NoSnapshot
     {
-        public static NoSnapshot Instance = new NoSnapshot();
+        private static NoSnapshot _instance;
+
+        public static NoSnapshot Instance =>
+            _instance ?? (_instance = new NoSnapshot());
+
 
         private NoSnapshot() {}
     }
@@ -75,7 +79,10 @@ namespace Wki.EventSourcing.Protocol.Load
     /// </summary>
     public class End
     {
-        public static End Instance = new End();
+        private End _instance;
+
+        public End Instance =>
+            _instance ?? (_instance = new End());
 
         private End() {}
     }

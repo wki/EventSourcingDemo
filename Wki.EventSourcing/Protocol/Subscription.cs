@@ -18,7 +18,10 @@
     /// </summary>
     public class Unsubscribe
     {
-        public static Unsubscribe Instance = new Unsubscribe();
+        private static Unsubscribe _instance;
+
+        public static Unsubscribe Instance =>
+            _instance ?? (_instance = new Unsubscribe());
 
         private Unsubscribe() {}
     }

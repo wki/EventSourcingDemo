@@ -5,7 +5,10 @@
     /// </summary>
     public class StillAlive
     {
-        public static StillAlive Instance = new StillAlive();
+        private static StillAlive _instance;
+
+        public static StillAlive Instance =>
+            _instance ?? (_instance = new StillAlive());
 
         private StillAlive() {}
     }
@@ -15,7 +18,10 @@
     /// </summary>
     public class Passivate
     {
-        public static Passivate Instance = new Passivate();
+        private static Passivate _instance;
+
+        public static Passivate Instance =>
+            _instance ?? (_instance = new Passivate());
 
         private Passivate() {}
     }
@@ -25,7 +31,10 @@
     /// </summary>
     public class RemoveInactiveActors
     {
-        public static RemoveInactiveActors Instance = new RemoveInactiveActors();
+        private static RemoveInactiveActors _instance;
+
+        public static RemoveInactiveActors Instance =>
+            _instance ?? (_instance = new RemoveInactiveActors());
 
         private RemoveInactiveActors() {}
     }
