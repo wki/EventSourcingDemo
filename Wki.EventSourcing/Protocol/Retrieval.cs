@@ -1,11 +1,9 @@
 ﻿using System;
+using static Wki.EventSourcing.Util.Constant;
 
-namespace Wki.EventSourcing.Protocol.Load
+namespace Wki.EventSourcing.Protocol.Retrieval
 {
-    // Load Protocol
-    //
-    // LoadSnapshot(persistenceId) -> Snapshot / NoSnapshot
-    // LoadNextEvents -> EventRecord* ... End
+    // Retrieval Protocol
    
     /// <summary>
     /// Requests a snapshot for a given PersistenceId to be loaded if present
@@ -58,20 +56,26 @@ namespace Wki.EventSourcing.Protocol.Load
     /// </summary>
     public class LoadNextEvents
     {
-        public int StartAfterEventId { get; private set; }
+        public EventFilter EventFilter { get; private set; }
         public int NrEvents { get; private set; }
 
-        private LoadNextEvents(int startAfterEventId)
+        private LoadNextEvents(EventFilter eventFilter)
         {
-            StartAfterEventId = startAfterEventId;
-            NrEvents = 1000;
+            EventFilter = eventFilter;
+            NrEvents = DefaultNrEvents;
         }
 
-        public static LoadNextEvents FromBeginning =>
-            After(-1);
+        public static LoadNextEvents FromBeginning() =>
+            new LoadNextEvents(WantEvents.StartFromBeginning());
 
         public static LoadNextEvents After(int startAfterEventId) =>
-            new LoadNextEvents(startAfterEventId);
+            new LoadNextEvents(WantEvents.StartingAfterEventId(startAfterEventId));
+
+        public LoadNextEvents Load(int nrEvents)
+        {
+            NrEvents = nrEvents;
+            return this;
+        }
     }
 
     /// <summary>
@@ -79,9 +83,9 @@ namespace Wki.EventSourcing.Protocol.Load
     /// </summary>
     public class End
     {
-        private End _instance;
+        private static End _instance;
 
-        public End Instance =>
+        public static End Instance =>
             _instance ?? (_instance = new End());
 
         private End() {}

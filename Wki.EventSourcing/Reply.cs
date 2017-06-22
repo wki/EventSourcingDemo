@@ -1,7 +1,7 @@
 ﻿namespace Wki.EventSourcing
 {
     /// <summary>
-    /// Reply to a command: either OK or Error(Message)
+    /// Reply to a command: either OK with optional Value or Error(Message)
     /// </summary>
     public class Reply
     {

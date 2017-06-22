@@ -15,6 +15,12 @@ namespace Wki.EventSourcing
         public List<Type> Events { get; set; } = new List<Type>();
         public int StartAfterEventId { get; set; } = -1;
 
+        public bool FiltersPersistenceId =>
+            PersistenceId != null;
+
+        public bool FiltersEvents =>
+            Events.Any();
+
         #region Builder DSL
         public EventFilter ForPersistenceId(string persistenceId)
         {

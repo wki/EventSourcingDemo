@@ -5,7 +5,7 @@ using Akka.Actor;
 using Wki.EventSourcing.Util;
 using Wki.EventSourcing.Protocol;
 using Wki.EventSourcing.Protocol.Statistics;
-using Wki.EventSourcing.Protocol.LiveCycle;
+using Wki.EventSourcing.Protocol.LifeCycle;
 using Wki.EventSourcing.Protocol.Subscription;
 using Wki.EventSourcing.Protocol.EventStore;
 using Wki.EventSourcing.Protocol.Misc;

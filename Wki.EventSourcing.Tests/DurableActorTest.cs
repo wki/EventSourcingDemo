@@ -7,7 +7,7 @@ using Wki.EventSourcing.Actors;
 using Wki.EventSourcing.Messages;
 using static Wki.EventSourcing.Util.Constant;
 using Wki.EventSourcing.Protocol.EventStore;
-using Wki.EventSourcing.Protocol.LiveCycle;
+using Wki.EventSourcing.Protocol.LifeCycle;
 using Wki.EventSourcing.Protocol.Misc;
 using Wki.EventSourcing.Protocol.Subscription;
 using Wki.EventSourcing.Protocol.Statistics;

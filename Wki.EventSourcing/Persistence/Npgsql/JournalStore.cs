@@ -3,11 +3,15 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
-using Wki.EventSourcing.Protocol.Load;
+using System.Text;
+using Wki.EventSourcing.Protocol.Retrieval;
 using static Wki.EventSourcing.Util.Serializer;
 
 namespace Wki.EventSourcing.Persistence.Npgsql
 {
+    /// <summary>
+    /// Synchrounusly working Npgsql based storage engine
+    /// </summary>
     public class JournalStore : IJournalStore, IDisposable
     {
         public int LastEventId { get; private set; }
@@ -23,6 +27,8 @@ namespace Wki.EventSourcing.Persistence.Npgsql
             @"select id, created_at, persistence_id, type, data
               from event
               where id > @FromPosExcluding
+                /* and */
+              order by id
               limit @NrEvents";
 
         private const string ExistsSnapshot = "select exists(select * from snapshot where persistence_id = @PersistenceId)";
@@ -43,8 +49,9 @@ namespace Wki.EventSourcing.Persistence.Npgsql
         #endregion
 
         private NpgsqlConnection Connection;
-        private Dictionary<string, Type> EventTypeLookup;
 
+        // Name -> Event Type
+        private Dictionary<string, Type> EventTypeLookup;
 
         public JournalStore()
         {
@@ -53,11 +60,11 @@ namespace Wki.EventSourcing.Persistence.Npgsql
             Connection = new NpgsqlConnection(connectionString);
             Connection.Open();
 
-            var eventType = typeof(IEvent);
+            var iEvent = typeof(IEvent);
 
             EventTypeLookup = AppDomain.CurrentDomain
                 .GetAssemblies()
-                .SelectMany(a => a.GetTypes().Where(eventType.IsAssignableFrom))
+                .SelectMany(a => a.GetTypes().Where(iEvent.IsAssignableFrom))
                 .ToDictionary(t => t.Name);
         }
 
@@ -80,30 +87,77 @@ namespace Wki.EventSourcing.Persistence.Npgsql
             }
         }
 
-        public IEnumerable<EventRecord> LoadNextEvents(int fromPosExcluding, int nrEvents = 1000)
+        #region removed from interface
+
+        //public IEnumerable<EventRecord> LoadNextEvents(int fromPosExcluding, int nrEvents)
+        //{
+        //    using (var cmd = new NpgsqlCommand(SelectEvents))
+        //    {
+        //        cmd.Parameters.AddWithValue("FromPosExcluding", NpgsqlTypes.NpgsqlDbType.Integer, fromPosExcluding);
+        //        cmd.Parameters.AddWithValue("NrEvents", NpgsqlTypes.NpgsqlDbType.Integer, nrEvents);
+
+        //        cmd.Prepare();
+
+        //        using (var reader = cmd.ExecuteReader())
+        //        {
+        //            LastEventId = reader.GetInt32(0);
+
+        //            yield return new EventRecord(
+        //                LastEventId,
+        //                reader.GetDateTime(1),
+        //                reader.GetString(2),
+        //                (IEvent)Deserialize(reader.GetString(4), EventTypeLookup[reader.GetString(3)])
+        //            );
+        //        }
+        //    }
+        //}
+        #endregion
+
+        public IEnumerable<EventRecord> LoadNextEvents(EventFilter filter, int nrEvents)
         {
-            using (var cmd = new NpgsqlCommand(SelectEvents))
+            var condition = new StringBuilder();
+            var parameters = new Dictionary<string, string>();
+
+            if (filter.FiltersPersistenceId)
             {
-                cmd.Parameters.AddWithValue("FromPosExcluding", NpgsqlTypes.NpgsqlDbType.Integer, fromPosExcluding);
+                condition.Append(" and persistence_id = @PersistenceId");
+                parameters.Add("PersistenceId", filter.PersistenceId);
+            }
+
+            if (filter.FiltersEvents)
+            {
+                condition.Append(" and type in (");
+                for (var i = 0; i < filter.Events.Count; i++)
+                {
+                    var paramName = $"E{i}";
+                    condition.Append("@" + paramName);
+                    parameters.Add(paramName, filter.Events[i].Name);
+                }
+                condition.Append(")");
+            }
+
+            using (var cmd = new NpgsqlCommand(SelectEvents.Replace("/* and */", condition.ToString())))
+            {
+                cmd.Parameters.AddWithValue("FromPosExcluding", NpgsqlTypes.NpgsqlDbType.Integer, filter.StartAfterEventId);
                 cmd.Parameters.AddWithValue("NrEvents", NpgsqlTypes.NpgsqlDbType.Integer, nrEvents);
+
+                foreach (var paramName in parameters.Keys)
+                    cmd.Parameters.AddWithValue(paramName, NpgsqlTypes.NpgsqlDbType.Text, parameters[paramName]);
 
                 cmd.Prepare();
 
                 using (var reader = cmd.ExecuteReader())
                 {
+                    LastEventId = reader.GetInt32(0);
+
                     yield return new EventRecord(
-                        reader.GetInt32(0),
+                        LastEventId,
                         reader.GetDateTime(1),
                         reader.GetString(2),
                         (IEvent)Deserialize(reader.GetString(4), EventTypeLookup[reader.GetString(3)])
                     );
                 }
             }
-        }
-
-        public IEnumerable<EventRecord> LoadNextEvents(EventFilter filter, int nrEvents = 1000)
-        {
-            throw new NotImplementedException();
         }
 
         public bool HasSnapshot(string persistenceId)

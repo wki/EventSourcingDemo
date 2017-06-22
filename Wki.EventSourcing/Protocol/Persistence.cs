@@ -1,4 +1,6 @@
-﻿namespace Wki.EventSourcing.Protocol.Persistence
+﻿using System;
+
+namespace Wki.EventSourcing.Protocol.Persistence
 {
     // Persist Protocol: Persist Snapshots and events
 
@@ -65,4 +67,12 @@
             LastEventId = lastEventId;
         }
     }
+
+    ///// <summary>
+    ///// Exception indicating failure during Persisting
+    ///// </summary>
+    //public class PersistTimeoutException : Exception
+    //{
+    //    public PersistTimeoutException(string message) : base(message) { }
+    //}
 }

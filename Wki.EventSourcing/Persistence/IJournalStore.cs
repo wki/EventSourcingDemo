@@ -1,26 +1,57 @@
 ﻿using System;
 using System.Collections.Generic;
-using Wki.EventSourcing.Protocol.Load;
+using Wki.EventSourcing.Protocol.Retrieval;
 
 namespace Wki.EventSourcing.Persistence
 {
     /// <summary>
-    /// define the API needed for implementing a journal
+    /// define the API needed for implementing a synchronous journal
     /// </summary>
     public interface IJournalStore
     {
-        // last ID in DB (highest read or last written)
+        /// <summary>
+        /// last ID in DB (highest read or last written)
+        /// </summary>
         int LastEventId { get; }
 
-        // snapshot operations
+        /// <summary>
+        /// Find out if we have a snapshot for a given persistenceId
+        /// </summary>
+        /// <param name="persistenceId"></param>
+        /// <returns>true if present</returns>
         bool HasSnapshot(string persistenceId);
+
+        /// <summary>
+        /// Save a typed snapshot for a persistenceId
+        /// </summary>
+        /// <typeparam name="TState"></typeparam>
+        /// <param name="persistenceId"></param>
+        /// <param name="state"></param>
+        /// <param name="lastEventId"></param>
         void SaveSnapshot<TState>(string persistenceId, TState state, int lastEventId);
+
+        /// <summary>
+        /// Load a typed snapshot for a snapshot 
+        /// </summary>
+        /// <param name="persistenceId"></param>
+        /// <param name="stateType"></param>
+        /// <returns></returns>
         Snapshot LoadSnapshot(string persistenceId, Type stateType);
 
-        // journal operations
+        
+        /// <summary>
+        /// Appends an event for a persistenceId
+        /// </summary>
+        /// <param name="persistenceId"></param>
+        /// <param name="event"></param>
         void AppendEvent(string persistenceId, IEvent @event);
-        IEnumerable<EventRecord> LoadNextEvents(int fromPosExcluding, int nrEvents = 1000);
-        IEnumerable<EventRecord> LoadNextEvents(EventFilter filter, int nrEvents = 1000);
-        // TODO: wie EOF entscheiden?
+
+        /// <summary>
+        /// Load a given count of events filtered
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <param name="nrEvents"></param>
+        /// <returns></returns>
+        IEnumerable<EventRecord> LoadNextEvents(EventFilter filter, int nrEvents);
     }
 }

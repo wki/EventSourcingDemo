@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Wki.EventSourcing.Util;
 using Newtonsoft.Json;
 using System.Linq;
-using Wki.EventSourcing.Protocol.Load;
+using Wki.EventSourcing.Protocol.Retrieval;
 
 namespace Wki.EventSourcing.Persistence.Ef
 {
@@ -83,12 +83,12 @@ namespace Wki.EventSourcing.Persistence.Ef
         public bool HasSnapshot(string persistenceId) =>
             Context.SnapshotRows.Find(persistenceId) != null;
 
-        public Snapshot LoadSnapshot<TState>(string persistenceId)
+        public Snapshot LoadSnapshot(string persistenceId, Type stateType)
         {
             var snapshotRow = Context.SnapshotRows.Find(persistenceId);
             if (snapshotRow != null)
             {
-                var state = JsonConvert.DeserializeObject<TState>(snapshotRow.Data);
+                var state = JsonConvert.DeserializeObject(snapshotRow.Data, stateType);
                 return new Snapshot(state, snapshotRow.LastEventId);
             }
             else

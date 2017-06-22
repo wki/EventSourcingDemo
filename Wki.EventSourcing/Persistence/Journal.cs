@@ -1,13 +1,16 @@
 ﻿using System;
 using Akka.Actor;
-using Wki.EventSourcing.Protocol.Load;
+using Wki.EventSourcing.Protocol.Retrieval;
 using Wki.EventSourcing.Protocol.Persistence;
 
 namespace Wki.EventSourcing.Persistence
 {
+    /// <summary>
+    /// Journal Actor handles all (possibly failing) journalling commands via a IJournalStore implementation
+    /// </summary>
     public class Journal: UntypedActor
     {
-        public IJournalStore JournalStore;
+        private IJournalStore JournalStore;
 
         public Journal(IJournalStore journalStore)
         {
@@ -18,14 +21,15 @@ namespace Wki.EventSourcing.Persistence
         {
             switch(message)
             {
+                // a Durable wants a snapshot
                 case LoadSnapshot loadSnapshot:
-                    var loadedSnapshot = false;
+                    var loaded = false;
                     try
                     {
                         if (JournalStore.HasSnapshot(loadSnapshot.PersistenceId))
                         {
                             Sender.Tell(JournalStore.LoadSnapshot(loadSnapshot.PersistenceId, loadSnapshot.StateType));
-                            loadedSnapshot = true;
+                            loaded = true;
                         }
                         else
                             Context.System.Log.Debug("No snapshot found for '{0}'", loadSnapshot.PersistenceId);
@@ -35,18 +39,27 @@ namespace Wki.EventSourcing.Persistence
                         Context.System.Log.Warning("Could not load Snapshot for '{0}': {1}", loadSnapshot.PersistenceId, e.Message);
                     }
 
-                    if (!loadedSnapshot)
+                    if (!loaded)
                         Sender.Tell(NoSnapshot.Instance);
 
                     break;
 
+                // EventStore wants next Events without filtering
+                // a Durable wants next filtered Events (unless EventStore caches them all)
                 case LoadNextEvents loadNextEvents:
-                    var filter = WantEvents.StartingAfterEventId(loadNextEvents.StartAfterEventId);
-                    foreach (var e in JournalStore.LoadNextEvents(filter))
-                        Sender.Tell(e);
-                    // FIXME: wie EOF entscheiden? -- NrEvents + 1 laden, wenn noch einer übrig -> kein EOF
+                    // request one event more than we need
+                    // if we get all, we do not have EOF
+                    var count = 0;
+                    foreach (var e in JournalStore.LoadNextEvents(loadNextEvents.EventFilter, loadNextEvents.NrEvents + 1))
+                    {
+                        if (++count <= loadNextEvents.NrEvents)
+                            Sender.Tell(e);
+                        else
+                            Sender.Tell(End.Instance);
+                    }
                     break;
 
+                // a Durable wants to persist an event
                 case PersistEvent persistEvent:
                     try
                     {
@@ -56,10 +69,12 @@ namespace Wki.EventSourcing.Persistence
                     }
                     catch(Exception e)
                     {
+                        Context.System.Log.Error("Failed persisting Event {0} for {1}: {2}", persistEvent.)
                         Sender.Tell(new PersistEventFailed(persistEvent.PersistenceId, persistEvent.Event, e.Message));
                     }
                     break;
 
+                // a Durable wants to persist a snapshot
                 case PersistSnapshot persistSnapshot:
                     try
                     {

@@ -1,4 +1,4 @@
-﻿namespace Wki.EventSourcing.Protocol.LiveCycle
+﻿namespace Wki.EventSourcing.Protocol.LifeCycle
 {
     public class RemoveInactiveActors { }
 }

@@ -64,9 +64,8 @@
     <Compile Include="EventRecord.cs" />
     <Compile Include="IState.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Protocol\PersistTimeoutException.cs" />
     <Compile Include="Reply.cs" />
-    <Compile Include="Protocol\LiveCycle.cs" />
+    <Compile Include="Protocol\LifeCycle.cs" />
     <Compile Include="Protocol\Subscription.cs" />
     <Compile Include="Statistics\DurableActorStatistics.cs" />
     <Compile Include="Statistics\DurableActorStatus.cs" />

@@ -1,4 +1,4 @@
-﻿namespace Wki.EventSourcing.Protocol.LiveCycle
+﻿namespace Wki.EventSourcing.Protocol.LifeCycle
 {
     /// <summary>
     /// A Durable actor indicates to its office that it is still alive

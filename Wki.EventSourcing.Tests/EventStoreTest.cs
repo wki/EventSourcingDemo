@@ -13,7 +13,7 @@ using Wki.EventSourcing.Tests.Messages;
 using Wki.EventSourcing.Protocol.EventStore;
 using Wki.EventSourcing.Protocol.Statistics;
 using Wki.EventSourcing.Protocol.Subscription;
-using Wki.EventSourcing.Protocol.LiveCycle;
+using Wki.EventSourcing.Protocol.LifeCycle;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Wki.EventSourcing.Tests

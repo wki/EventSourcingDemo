@@ -1,5 +1,5 @@
 ﻿using Akka.Actor;
-using Wki.EventSourcing.Protocol.LiveCycle;
+using Wki.EventSourcing.Protocol.LifeCycle;
 using static Wki.EventSourcing.Util.Constant;
 
 namespace Wki.EventSourcing.Actors

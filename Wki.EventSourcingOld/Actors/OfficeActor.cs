@@ -3,7 +3,7 @@ using Akka.Actor;
 using Wki.EventSourcing.Messages;
 using static Wki.EventSourcing.Util.Constant;
 using Wki.EventSourcing.Protocol.Statistics;
-using Wki.EventSourcing.Protocol.LiveCycle;
+using Wki.EventSourcing.Protocol.LifeCycle;
 using System.Collections.Generic;
 using System;
 

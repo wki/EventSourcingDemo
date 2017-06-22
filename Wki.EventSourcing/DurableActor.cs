@@ -3,7 +3,7 @@ using Akka.Actor;
 using Wki.EventSourcing.Protocol;
 using Wki.EventSourcing.Statistics;
 using static Wki.EventSourcing.Util.Constant;
-using Wki.EventSourcing.Protocol.Load;
+using Wki.EventSourcing.Protocol.Retrieval;
 using Wki.EventSourcing.Protocol.Persistence;
 using Wki.EventSourcing.Protocol.Subscription;
 

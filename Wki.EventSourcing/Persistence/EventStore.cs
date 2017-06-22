@@ -1,6 +1,6 @@
 ﻿using System;
 using Akka.Actor;
-using Wki.EventSourcing.Protocol.Load;
+using Wki.EventSourcing.Protocol.Retrieval;
 using Wki.EventSourcing.Protocol.Persistence;
 using Wki.EventSourcing.Protocol.Subscription;
 
@@ -22,7 +22,7 @@ namespace Wki.EventSourcing.Persistence
         {
             Journal = journal;
 
-            var loadNextEvents = LoadNextEvents.FromBeginning;
+            var loadNextEvents = LoadNextEvents.FromBeginning();
             nrEventsExpected = loadNextEvents.NrEvents;
             Journal.Tell(loadNextEvents);
             Become(Loading);
@@ -41,7 +41,7 @@ namespace Wki.EventSourcing.Persistence
                     break;
 
                 case PersistSnapshot persistSnapshot:
-                    Journal.Tell(persistSnapshot);
+                    Journal.Forward(persistSnapshot);
                     break;
 
                 case Subscribe subscribe:
@@ -66,7 +66,7 @@ namespace Wki.EventSourcing.Persistence
                 case LoadNextEvents loadNextEvents:
                     var wantEvents = Subscriptions
                         .EventsWantedFor(Sender)
-                        .StartingAfterEventId(loadNextEvents.StartAfterEventId);
+                        .StartingAfterEventId(loadNextEvents.EventFilter.StartAfterEventId);
                     foreach (var eventRecord in EventCache.NextEventsMatching(wantEvents, loadNextEvents.NrEvents))
                         Sender.Tell(eventRecord);
                     break;

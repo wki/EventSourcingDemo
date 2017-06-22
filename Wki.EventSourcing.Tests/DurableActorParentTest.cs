@@ -7,7 +7,7 @@ using System.Threading;
 using Wki.EventSourcing.Actors;
 using Wki.EventSourcing.Protocol;
 using Wki.EventSourcing.Protocol.EventStore;
-using Wki.EventSourcing.Protocol.LiveCycle;
+using Wki.EventSourcing.Protocol.LifeCycle;
 using Wki.EventSourcing.Protocol.Misc;
 using Wki.EventSourcing.Util;
 
