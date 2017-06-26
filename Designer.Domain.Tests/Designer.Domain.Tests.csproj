@@ -41,10 +41,6 @@
       <Project>{718E17E5-802C-4B18-AC57-AB2CE51BBA52}</Project>
       <Name>Designer.Domain</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Wki.EventSourcingOld\Wki.EventSourcingOld.csproj">
-      <Project>{041C375E-55DC-4E76-9010-D6F9A0D0300D}</Project>
-      <Name>Wki.EventSourcingOld</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

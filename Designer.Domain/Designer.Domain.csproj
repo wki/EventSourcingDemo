@@ -68,12 +68,6 @@
     <Compile Include="PersonManagement\Messages\GetPersonInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Wki.EventSourcingOld\Wki.EventSourcingOld.csproj">
-      <Project>{041C375E-55DC-4E76-9010-D6F9A0D0300D}</Project>
-      <Name>Wki.EventSourcingOld</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>

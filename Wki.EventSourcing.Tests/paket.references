@@ -1,6 +1,7 @@
 Akka
 Akka.TestKit
 Akka.TestKit.NUnit
+FakeItEasy
 Newtonsoft.Json
 NUnit
 System.Collections.Immutable

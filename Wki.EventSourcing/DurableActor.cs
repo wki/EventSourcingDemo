@@ -1,6 +1,5 @@
 ﻿using System;
 using Akka.Actor;
-using Wki.EventSourcing.Protocol;
 using Wki.EventSourcing.Statistics;
 using static Wki.EventSourcing.Util.Constant;
 using Wki.EventSourcing.Protocol.Retrieval;
@@ -12,7 +11,7 @@ namespace Wki.EventSourcing.Actors
     /// <summary>
     /// Base class for a durable actor
     /// </summary>
-    public abstract class DurableActor: UntypedActor, IWithUnboundedStash
+    public abstract class DurableActor : UntypedActor, IWithUnboundedStash
     {
         public IActorRef EventStore;
         public string PersistenceId;
@@ -52,12 +51,17 @@ namespace Wki.EventSourcing.Actors
         protected override void PreStart()
         {
             base.PreStart();
-            EventStore.Tell(new LoadSnapshot(PersistenceId, StateType));
             SetReceiveTimeout(MaxRestoreIdleTimeSpan);
             if (HasState)
+            {
+                EventStore.Tell(new LoadSnapshot(PersistenceId, StateType));
                 BecomeStacked(WaitingForSnapshot);
+            }
             else
+            {
+                EventStore.Tell(LoadNextEvents.After(LastEventId));
                 BecomeStacked(Loading);
+            }
             Statistics.StartRestoring();
         }
 
@@ -95,12 +99,12 @@ namespace Wki.EventSourcing.Actors
         /// Save the state obtained state. default behavior: do nothing
         /// </summary>
         /// <param name="state"></param>
-        virtual protected void SaveSnapshot(Snapshot snapshot) { }
+        virtual protected void SaveSnapshot(Snapshot snapshot) {}
 
         // Wait for Snapshot behavior
         protected virtual void WaitingForSnapshot(object message)
         {
-            switch(message)
+            switch (message)
             {
                 case ReceiveTimeout _:
                 case NoSnapshot _:
@@ -119,7 +123,7 @@ namespace Wki.EventSourcing.Actors
         // Loading behavior
         public void Loading(object message)
         {
-            switch(message)
+            switch (message)
             {
                 case ReceiveTimeout _:
                     throw new PersistTimeoutException("Timeout reached during Load");
@@ -144,7 +148,7 @@ namespace Wki.EventSourcing.Actors
         // Persisting behavior
         public void Persisting(object message)
         {
-            switch(message)
+            switch (message)
             {
                 case ReceiveTimeout _:
                     var error = "Timeout during persisting";
@@ -198,12 +202,12 @@ namespace Wki.EventSourcing.Actors
     ///         new XxxState(Id, "foo");
     /// }
     /// </example>
-    public abstract class DurableActor<TState>: DurableActor
-        where TState: IState<TState>
+    public abstract class DurableActor<TState> : DurableActor
+        where TState : IState<TState>
     {
         public IState<TState> State;
 
-        public DurableActor(IActorRef eventStore) 
+        public DurableActor(IActorRef eventStore)
             : base(eventStore)
         {
             State = BuildInitialState();
@@ -238,7 +242,7 @@ namespace Wki.EventSourcing.Actors
     /// </summary>
     /// <typeparam name="TIndex"></typeparam>
     public abstract class DurableActor<TState, TIndex> : DurableActor<TState>
-        where TState: IState<TState>
+        where TState : IState<TState>
     {
         public TIndex Id;
 

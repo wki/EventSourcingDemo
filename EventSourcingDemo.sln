@@ -7,8 +7,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{042E77
 		paket.dependencies = paket.dependencies
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wki.EventSourcingOld", "Wki.EventSourcingOld\Wki.EventSourcingOld.csproj", "{041C375E-55DC-4E76-9010-D6F9A0D0300D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wki.EventSourcing.Tests", "Wki.EventSourcing.Tests\Wki.EventSourcing.Tests.csproj", "{6C7B3BA9-73FE-4A08-BDC7-20991286B078}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Designer.Domain", "Designer.Domain\Designer.Domain.csproj", "{718E17E5-802C-4B18-AC57-AB2CE51BBA52}"
@@ -38,10 +36,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{041C375E-55DC-4E76-9010-D6F9A0D0300D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{041C375E-55DC-4E76-9010-D6F9A0D0300D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{041C375E-55DC-4E76-9010-D6F9A0D0300D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{041C375E-55DC-4E76-9010-D6F9A0D0300D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6C7B3BA9-73FE-4A08-BDC7-20991286B078}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6C7B3BA9-73FE-4A08-BDC7-20991286B078}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6C7B3BA9-73FE-4A08-BDC7-20991286B078}.Release|Any CPU.ActiveCfg = Release|Any CPU

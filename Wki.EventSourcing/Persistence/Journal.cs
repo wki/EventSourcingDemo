@@ -69,7 +69,7 @@ namespace Wki.EventSourcing.Persistence
                     }
                     catch(Exception e)
                     {
-                        Context.System.Log.Error("Failed persisting Event {0} for {1}: {2}", persistEvent.)
+                        Context.System.Log.Error("Failed persisting Event {0} for {1}: {2}", persistEvent.Event.GetType().Name, persistEvent.PersistenceId, e.Message);
                         Sender.Tell(new PersistEventFailed(persistEvent.PersistenceId, persistEvent.Event, e.Message));
                     }
                     break;

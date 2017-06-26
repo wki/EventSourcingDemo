@@ -7,7 +7,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Wki.EventSourcing.Tests</RootNamespace>
     <AssemblyName>Wki.EventSourcing.Tests</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -26,7 +26,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
@@ -34,31 +33,18 @@
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DurableActorParentTest.cs" />
-    <Compile Include="EventSerializerTest.cs" />
-    <Compile Include="InterestingEventsTest.cs" />
+    <Compile Include="DurableRetrievalTest.cs" />
     <Compile Include="SystemTimeTest.cs" />
-    <Compile Include="EventStoreTest.cs" />
-    <Compile Include="DurableActorTest.cs" />
-    <Compile Include="FileJournalBaseTest.cs" />
     <Compile Include="TempDir.cs" />
-    <Compile Include="FileJournalWriterTest.cs" />
-    <Compile Include="Messages\SomethingHappened.cs" />
-    <Compile Include="EventTest.cs" />
-    <Compile Include="Messages\TestEvent.cs" />
-    <Compile Include="Messages\AnotherEvent.cs" />
-    <Compile Include="FileJournalReaderTest.cs" />
-    <Compile Include="OfficeActorTest.cs" />
-    <Compile Include="Messages\SomeCommand.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Wki.EventSourcingOld\Wki.EventSourcingOld.csproj">
-      <Project>{041C375E-55DC-4E76-9010-D6F9A0D0300D}</Project>
-      <Name>Wki.EventSourcingOld</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Wki.EventSourcing\Wki.EventSourcing.csproj">
+      <Project>{b6e1353d-a251-4dbb-a7e6-c8bd322bc71e}</Project>
+      <Name>Wki.EventSourcing</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
@@ -97,6 +83,17 @@
       <ItemGroup>
         <Reference Include="Akka.TestKit.NUnit">
           <HintPath>..\packages\Akka.TestKit.NUnit\lib\net45\Akka.TestKit.NUnit.dll</HintPath>
+          <Private>True</Private>
+          <Paket>True</Paket>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Choose>
+    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1' Or $(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3' Or $(TargetFrameworkVersion) == 'v4.7')">
+      <ItemGroup>
+        <Reference Include="FakeItEasy">
+          <HintPath>..\packages\FakeItEasy\lib\net45\FakeItEasy.dll</HintPath>
           <Private>True</Private>
           <Paket>True</Paket>
         </Reference>

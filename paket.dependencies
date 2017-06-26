@@ -7,6 +7,7 @@ nuget Akka.TestKit.NUnit
 nuget FSharp.Core
 nuget JsonNet.PrivateSettersContractResolvers.Source 0.1.0
 nuget NUnit 2.6.4
+nuget FakeItEasy
 # CAUTION: NUNIT-3 works but only shows very few tests...
 # nuget NUnit 3.6.0
 nuget System.Collections.Immutable
