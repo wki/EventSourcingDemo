@@ -2,76 +2,15 @@
 using Akka.Actor;
 using Akka.TestKit;
 using Akka.TestKit.NUnit;
-using Wki.EventSourcing;
-using Wki.EventSourcing.Actors;
 using System;
-using System.Collections.Generic;
 using Wki.EventSourcing.Protocol.Retrieval;
+using static Wki.EventSourcing.Util.Constant;
 
 namespace Wki.EventSourcing.Tests
 {
     [TestFixture]
-    public class DurableRetrievalTest : TestKit
+    public partial class DurableRetrievalTest : TestKit
     {
-        #region durable actor classes
-        public class DurableWithoutState : DurableActor
-        {
-            public DurableWithoutState(IActorRef eventStore) : base(eventStore)
-            {
-            }
-
-            protected override void Apply(IEvent e)
-            {
-                // TODO
-            }
-
-            protected override EventFilter BuildEventFilter() =>
-                WantEvents.AnyEvent();
-
-            protected override void OnReceive(object message)
-            {
-                // TODO: noch machen
-            }
-        }
-
-        public class DurableState : IState<DurableState>
-        {
-            public List<string> AppliedEvents { get; set; } = new List<string>();
-
-            public IState<DurableState> Apply(IEvent @event)
-            {
-                AppliedEvents.Add(@event.GetType().Name);
-                return this;
-            }
-        }
-
-        public class DurableWithState : DurableActor<DurableState>
-        {
-
-            public DurableState State { get; set; }
-
-            public DurableWithState(IActorRef eventStore) : base(eventStore)
-            {
-                HasState = true; // triggers snapshot loading
-                State = new DurableState();
-            }
-
-            protected override void Apply(IEvent e) =>
-                State.Apply(e);
-
-            protected override EventFilter BuildEventFilter() =>
-                WantEvents.AnyEvent();
-
-            protected override void OnReceive(object message)
-            {
-                // TODO: noch machen
-            }
-
-            protected override DurableState BuildInitialState() =>
-                new DurableState();
-        }
-        #endregion
-
         private TestProbe eventStore;
 
         [SetUp]
@@ -101,7 +40,7 @@ namespace Wki.EventSourcing.Tests
             d.Tell(NoSnapshot.Instance, eventStore);
 
             // Assert
-            eventStore.ExpectMsg<LoadNextEvents>(l => !l.EventFilter.FiltersEvents && l.EventFilter.StartAfterEventId == -1);
+            eventStore.ExpectMsg<LoadNextEvents>(LoadEventsFromBeginning);
         }
 
         [Test]
@@ -121,6 +60,7 @@ namespace Wki.EventSourcing.Tests
         [Test]
         public void DurableWithState_SnapshotTimeout_RequestsEventsFromBeginning()
         {
+
             // Arrange
             var d = Sys.ActorOf(Props.Create<DurableWithState>(eventStore));
 
@@ -129,7 +69,30 @@ namespace Wki.EventSourcing.Tests
             d.Tell(ReceiveTimeout.Instance, d);
 
             // Assert
-            eventStore.ExpectMsg<LoadNextEvents>(l => !l.EventFilter.FiltersEvents && l.EventFilter.StartAfterEventId == -1);
+            eventStore.ExpectMsg<LoadNextEvents>(LoadEventsFromBeginning);
+        }
+
+        private bool LoadEventsFromBeginning(LoadNextEvents loadNextEvents)
+        {
+            if (loadNextEvents.EventFilter.FiltersEvents)
+            {
+                Console.WriteLine("Filtering events -- expected: no");
+                return false;
+            }
+
+            if (loadNextEvents.EventFilter.StartAfterEventId != -1)
+            {
+                Console.WriteLine("Starting after {0}, expected -1", loadNextEvents.EventFilter.StartAfterEventId);
+                return false;
+            }
+
+            if (loadNextEvents.NrEvents != DefaultNrEvents)
+            {
+                Console.WriteLine("Requested {0} events, expected {1}", loadNextEvents.NrEvents, DefaultNrEvents);
+                return false;
+            }
+
+            return true;
         }
 
         [Test]
@@ -139,7 +102,41 @@ namespace Wki.EventSourcing.Tests
             var d = Sys.ActorOf(Props.Create<DurableWithoutState>(eventStore));
 
             // Assert
-            eventStore.ExpectMsg<LoadNextEvents>(l => !l.EventFilter.FiltersEvents && l.EventFilter.StartAfterEventId == -1);
+            eventStore.ExpectMsg<LoadNextEvents>(LoadEventsFromBeginning);
+        }
+
+        [Test]
+        public void DurableWithoutState_LoadEvents_RegularOperationAfterEnd()
+        {
+            // Arrange
+            var d = Sys.ActorOf(Props.Create<DurableWithoutState>(eventStore));
+            eventStore.FishForMessage<LoadNextEvents>(_ => true);
+
+            // Act
+            d.Tell("huhu"); // must be deferred
+            d.Tell(new EventRecord(1, DateTime.Now, "", new DurableState.SomethingHappened()));
+            d.Tell(new EventRecord(2, DateTime.Now, "", new DurableState.FooHandled()));
+            d.Tell(new EventRecord(7, DateTime.Now, "", new DurableState.FooHandled()));
+            d.Tell(End.Instance);
+
+            // Assert
+            ExpectMsg<string>("Reply to 'huhu' 7");
+        }
+
+        [Test]
+        public void DurableWithoutState_LoadEvents_RequestMoreWhenProcessed()
+        {
+            // Arrange
+            var d = Sys.ActorOf(Props.Create<DurableWithoutState>(eventStore));
+            eventStore.FishForMessage<LoadNextEvents>(_ => true);
+
+            // Act
+            d.Tell("huhu"); // must be deferred
+            for (var i = 1; i <= DefaultNrEvents; i++)
+                d.Tell(new EventRecord(i, DateTime.Now, "", new DurableState.FooHandled()));
+
+            // Assert
+            eventStore.ExpectMsg<LoadNextEvents>(l => l.EventFilter.StartAfterEventId == DefaultNrEvents);
         }
     }
 }

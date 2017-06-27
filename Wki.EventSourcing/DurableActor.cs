@@ -1,10 +1,10 @@
 ﻿using System;
 using Akka.Actor;
 using Wki.EventSourcing.Statistics;
-using static Wki.EventSourcing.Util.Constant;
 using Wki.EventSourcing.Protocol.Retrieval;
 using Wki.EventSourcing.Protocol.Persistence;
 using Wki.EventSourcing.Protocol.Subscription;
+using static Wki.EventSourcing.Util.Constant;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -15,11 +15,26 @@ namespace Wki.EventSourcing.Actors
     {
         public IActorRef EventStore;
         public string PersistenceId;
+
+        // flag for deciding if snapshot wanted
         public bool HasState;
+
+        // type of (snapshot) state
         public Type StateType;
+
+        // count received events against requested events. Re-Request if all received
+        private int NrEventsMissing;
+
+        // latest events Id
         public int LastEventId;
+
+        // actor sending the latest command. Will receive an answer after persisting
         public IActorRef LastCommandSender;
+
+        // a customizable receive timeout for regular operation
         public TimeSpan DefaultReceiveTimeout;
+
+        // statistics about current operation
         public DurableActorStatistics Statistics;
 
         public IStash Stash { get; set; }
@@ -30,6 +45,7 @@ namespace Wki.EventSourcing.Actors
             PersistenceId = GetType().Name;
             HasState = false;
             StateType = typeof(object);
+            NrEventsMissing = 0;
             LastEventId = -1;
             LastCommandSender = null;
             DefaultReceiveTimeout = MaxActorIdleTimeSpan;
@@ -59,10 +75,19 @@ namespace Wki.EventSourcing.Actors
             }
             else
             {
-                EventStore.Tell(LoadNextEvents.After(LastEventId));
                 BecomeStacked(Loading);
+                RequestNextEvents();
             }
             Statistics.StartRestoring();
+        }
+
+        // inherited from ReceiveActor - handle EventRecord
+        protected override void OnReceive(object message)
+        {
+            if (message is EventRecord eventRecord)
+                HandleEventRecord(eventRecord);
+            else
+                Handle(message);
         }
 
         /// <summary>
@@ -77,7 +102,13 @@ namespace Wki.EventSourcing.Actors
         }
 
         /// <summary>
-        /// To be implemented by each actor implementation: Apply an event
+        /// handle incoming messages
+        /// </summary>
+        /// <param name="message"></param>
+        protected abstract void Handle(object message);
+
+        /// <summary>
+        /// Apply an event
         /// </summary>
         /// <param name="e"></param>
         protected abstract void Apply(IEvent e);
@@ -116,8 +147,15 @@ namespace Wki.EventSourcing.Actors
                     break;
             }
 
-            EventStore.Tell(LoadNextEvents.After(LastEventId));
             Become(Loading);
+            RequestNextEvents();
+        }
+
+        private void RequestNextEvents()
+        {
+            var loadNextEvents = LoadNextEvents.After(LastEventId);
+            NrEventsMissing += loadNextEvents.NrEvents;
+            EventStore.Tell(loadNextEvents);
         }
 
         // Loading behavior
@@ -130,12 +168,14 @@ namespace Wki.EventSourcing.Actors
 
                 case EventRecord r:
                     HandleEventRecord(r);
-                    // TODO: nach 1000 Messages ist Schluss... 
+                    if (--NrEventsMissing <= 0)
+                        RequestNextEvents();
                     break;
 
                 case End _:
                     Statistics.FinishedRestoring();
                     SetReceiveTimeout(DefaultReceiveTimeout);
+                    Stash.UnstashAll();
                     UnbecomeStacked();
                     break;
 
@@ -157,6 +197,7 @@ namespace Wki.EventSourcing.Actors
 
                 case EventRecord r:
                     HandleEventRecord(r);
+                    Stash.UnstashAll();
                     UnbecomeStacked();
                     break;
 
@@ -180,8 +221,18 @@ namespace Wki.EventSourcing.Actors
     ///     {
     ///     // TODO: Subscribe auf alle Events für PersistenceId
     ///     }
-    /// 
-    ///     protected override void OnReceive(object message)
+    ///     
+    ///     public DurableWithoutState(IActorRef eventStore): base(eventStore) {}
+    ///
+    ///     // overload if default implementation does not work for you
+    ///     protected override void Apply(IEvent e) {}
+    ///
+    ///     // overload mostly always
+    ///     protected override EventFilter BuildEventFilter() =>
+    ///        WantEvents.AnyEvent();
+    ///
+    ///     // regular handling
+    ///     protected override void Handle(object message)
     ///     {
     ///         switch (message)
     ///         {
@@ -197,9 +248,9 @@ namespace Wki.EventSourcing.Actors
     ///         }
     ///     }
     ///     
-    ///     // only BuildInitialState() is needed, Apply() has a default implementation
-    ///     protected override IState<XxxState> BuildInitialState() =>
-    ///         new XxxState(Id, "foo");
+    ///     // overload to construct initial state
+    ///     protected override Xxx BuildInitialState() =>
+    ///         new Xxx(Id, "foo", "bar", 42);
     /// }
     /// </example>
     public abstract class DurableActor<TState> : DurableActor
@@ -210,21 +261,22 @@ namespace Wki.EventSourcing.Actors
         public DurableActor(IActorRef eventStore)
             : base(eventStore)
         {
+            HasState = true;
             State = BuildInitialState();
             StateType = typeof(TState);
         }
 
         /// <summary>
-        /// initially construct the state
+        /// initially construct the state. default: construct new state
         /// </summary>
         /// <returns></returns>
         protected abstract TState BuildInitialState();
 
         /// <summary>
-        /// Default implementation: let the state consume the event
+        /// apply the event to state. default: call state.Apply()
         /// </summary>
         /// <param name="event"></param>
-        override protected void Apply(IEvent @event) =>
+        protected override void Apply(IEvent @event) =>
             State = State.Apply(@event);
 
         protected override void SaveSnapshot(Snapshot snapshot)
@@ -242,7 +294,7 @@ namespace Wki.EventSourcing.Actors
     /// </summary>
     /// <typeparam name="TIndex"></typeparam>
     public abstract class DurableActor<TState, TIndex> : DurableActor<TState>
-        where TState : IState<TState>
+        where TState : IState<TState>, new()
     {
         public TIndex Id;
 
