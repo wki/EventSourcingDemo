@@ -129,7 +129,7 @@ namespace Wki.EventSourcing.Actors
         /// <summary>
         /// Save the state obtained state. default behavior: do nothing
         /// </summary>
-        /// <param name="state"></param>
+        /// <param name="snapshot"></param>
         virtual protected void SaveSnapshot(Snapshot snapshot) {}
 
         // Wait for Snapshot behavior

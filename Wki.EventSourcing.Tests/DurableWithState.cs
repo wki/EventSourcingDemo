@@ -1,24 +1,36 @@
-﻿using System;
-using Akka.Actor;
-using Akka.TestKit.NUnit;
+﻿using Akka.Actor;
 using Wki.EventSourcing.Actors;
 
 namespace Wki.EventSourcing.Tests
 {
-    public partial class DurableRetrievalTest : TestKit
+    public class DurableWithState : DurableActor<DurableState>
     {
-        public class DurableWithState : DurableActor<DurableState>
+        public DurableWithState(IActorRef eventStore) : base(eventStore) { }
+
+        protected override EventFilter BuildEventFilter() =>
+            WantEvents.AnyEvent();
+
+        protected override DurableState BuildInitialState() =>
+            new DurableState();
+
+        protected override void Handle(object message)
         {
-            public DurableWithState(IActorRef eventStore): base(eventStore) {}
+            // Sender.Tell($"Reply to '{message}' {LastEventId}");
 
-            protected override EventFilter BuildEventFilter() =>
-                WantEvents.AnyEvent();
+            switch(message)
+            {
+                case DurableState.LetSomethingHappen l:
+                    Persist(new DurableState.SomethingHappened());
+                    break;
 
-            protected override DurableState BuildInitialState() =>
-                new DurableState();
+                case DurableState.HandleFoo h:
+                    Persist(new DurableState.FooHandled());
+                    break;
 
-            protected override void Handle(object message) =>
-                Sender.Tell($"Reply to '{message}'");
+                case DurableState.GetState _:
+                    Sender.Tell(State);
+                    break;
+            }
         }
     }
 }

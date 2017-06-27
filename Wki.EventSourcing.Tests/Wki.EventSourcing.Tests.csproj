@@ -33,6 +33,7 @@
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DurablePersistTest.cs" />
     <Compile Include="DurableRetrievalTest.cs" />
     <Compile Include="DurableState.cs" />
     <Compile Include="DurableWithoutState.cs" />
