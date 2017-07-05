@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Wki.EventSourcing.Tests
 {
@@ -32,10 +33,15 @@ namespace Wki.EventSourcing.Tests
             Id = id;
         }
 
-        public IState<DurableState> Apply(IEvent @event)
+        public DurableState ApplyEvent(IEvent @event)
         {
             AppliedEvents.Add(@event.GetType().Name);
             return this;
+        }
+
+        public IEvent HandleCommand(ICommand command)
+        {
+            throw new NotImplementedException();
         }
     }
 }

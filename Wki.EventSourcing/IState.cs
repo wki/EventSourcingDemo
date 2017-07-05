@@ -1,4 +1,6 @@
-﻿namespace Wki.EventSourcing
+﻿using System.Collections.Generic;
+
+namespace Wki.EventSourcing
 {
     /// <summary>
     /// Interface for an immutable state getting updated by events
@@ -35,7 +37,7 @@
     ///     {
     ///     }
     /// 
-    ///     public IState<Xxx> Apply(DomainEvent @event)
+    ///     public IState<Xxx> Apply(IEvent @event)
     ///     {
     ///         switch(@event)
     ///         {
@@ -54,6 +56,13 @@
         /// </summary>
         /// <param name="event"></param>
         /// <returns>a new state instance</returns>
-        IState<TState> Apply(IEvent @event);
+        TState ApplyEvent(IEvent @event);
+
+        /// <summary>
+        /// verifies if a command may be executable and returns the event to be fired, null or throws
+        /// </summary>
+        /// <param name="command"></param>
+        /// <returns></returns>
+        IEvent HandleCommand(ICommand command);
     }
 }

@@ -11,6 +11,6 @@
     /// <typeparam name="TIndex"></typeparam>
     public interface ICommand<TIndex>: ICommand
     {
-        TIndex Id { get; set; }
+        TIndex Id { get; }
     }
 }

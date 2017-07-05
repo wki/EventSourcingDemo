@@ -84,10 +84,24 @@ namespace Wki.EventSourcing.Actors
         // inherited from ReceiveActor - handle EventRecord
         protected override void OnReceive(object message)
         {
-            if (message is EventRecord eventRecord)
-                HandleEventRecord(eventRecord);
-            else
-                Handle(message);
+            //if (message is EventRecord eventRecord)
+            //    HandleEventRecord(eventRecord);
+            //else
+            //    Handle(message);
+            switch(message)
+            {
+                case EventRecord eventRecord:
+                    HandleEventRecord(eventRecord);
+                    break;
+
+                case ICommand command:
+                    HandleCommand(command);
+                    break;
+
+                default:
+                    Handle(message);
+                    break;
+            }
         }
 
         /// <summary>
@@ -98,20 +112,26 @@ namespace Wki.EventSourcing.Actors
         {
             Statistics.EventReceived();
             LastEventId = eventRecord.Id;
-            Apply(eventRecord.Event);
+            ApplyEvent(eventRecord.Event);
         }
 
         /// <summary>
-        /// handle incoming messages
+        /// To be implemented: a command handler
+        /// </summary>
+        /// <param name="command"></param>
+        abstract protected void HandleCommand(ICommand command);
+
+        /// <summary>
+        /// handle incoming messages if wanted
         /// </summary>
         /// <param name="message"></param>
-        protected abstract void Handle(object message);
+        protected virtual void Handle(object message) { }
 
         /// <summary>
         /// Apply an event
         /// </summary>
         /// <param name="e"></param>
-        protected abstract void Apply(IEvent e);
+        protected abstract void ApplyEvent(IEvent e);
 
         /// <summary>
         /// Persist a given domain Event to the event Store
@@ -197,6 +217,7 @@ namespace Wki.EventSourcing.Actors
 
                 case EventRecord r:
                     HandleEventRecord(r);
+                    LastCommandSender.Tell(Reply.Ok());
                     Stash.UnstashAll();
                     UnbecomeStacked();
                     break;
@@ -273,11 +294,32 @@ namespace Wki.EventSourcing.Actors
         protected abstract TState BuildInitialState();
 
         /// <summary>
-        /// apply the event to state. default: call state.Apply()
+        /// apply the event to state. default: call state.ApplyEvent()
         /// </summary>
         /// <param name="event"></param>
-        protected override void Apply(IEvent @event) =>
-            State = State.Apply(@event);
+        protected override void ApplyEvent(IEvent @event) =>
+            State = State.ApplyEvent(@event);
+
+        /// <summary>
+        /// default command handler: persist the matching events
+        /// </summary>
+        /// <param name="command"></param>
+        protected override void HandleCommand(ICommand command)
+        {
+            try
+            {
+                // the first statement could throw if business case is currently not valid
+                var @event = State.HandleCommand(command);
+                if (@event != null)
+                    Persist(@event);
+                else
+                    LastCommandSender.Tell(Reply.Ok());
+            }
+            catch (Exception e)
+            {
+                LastCommandSender.Tell(Reply.Error(e.Message));
+            }
+        }
 
         protected override void SaveSnapshot(Snapshot snapshot)
         {
@@ -304,5 +346,9 @@ namespace Wki.EventSourcing.Actors
             Id = id;
             PersistenceId = $"{this.GetType().Name}-{id}";
         }
+
+        // a primitive default only considering persistence-Id
+        protected override EventFilter BuildEventFilter() =>
+            WantEvents.ForPersistenceId(PersistenceId);
     }
 }

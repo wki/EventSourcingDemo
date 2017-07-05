@@ -11,6 +11,6 @@
     /// <typeparam name="TIndex"></typeparam>
     public interface IEvent<TIndex> : IEvent
     {
-        TIndex Id { get; set; }
+        TIndex Id { get; }
     }
 }
