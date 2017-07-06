@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace LabelDesigner.Domain
 {
     /// <summary>
-    /// Label aggregate root
+    /// Label aggregate root containing actor
     /// </summary>
     public class LabelActor : DurableActor<Label, int>
     {
@@ -17,8 +17,8 @@ namespace LabelDesigner.Domain
 
         protected override EventFilter BuildEventFilter() =>
             WantEvents
-                .ForPersistenceId(PersistenceId)
-                .When<Label.Event>();
+                .For(PersistenceId)
+                .Allow<Label.Event>();
 
         protected override Label BuildInitialState() =>
             new Label(Id);

@@ -3,18 +3,30 @@ using Wki.EventSourcing.Actors;
 
 namespace LabelDesigner.Domain
 {
+    /// <summary>
+    /// Central hub for all label-related commands
+    /// </summary>
     public class LabelOffice : OfficeActor<LabelActor, int>
     {
+        private IActorRef labelCreator;
+
         public LabelOffice(IActorRef eventStore) : base(eventStore)
         {
+            labelCreator = Context.ActorOf(Props.Create<LabelCreator>(eventStore), "creator");
         }
 
-        // if we have to handle special cases...
-        //protected override void HandleMessage(object message)
-        //{
-        //    base.HandleMessage(message);
+        protected override void HandleMessage(object message)
+        {
+            switch(message)
+            {
+                case Label.Create create:
+                    labelCreator.Forward(create);
+                    break;
 
-        //    // do our own.
-        //}
+                case Label.Clone clone:
+                    labelCreator.Forward(clone);
+                    break;
+            }
+        }
     }
 }

@@ -5,6 +5,7 @@ using Wki.EventSourcing.Protocol.Retrieval;
 using Wki.EventSourcing.Protocol.Persistence;
 using Wki.EventSourcing.Protocol.Subscription;
 using static Wki.EventSourcing.Util.Constant;
+using System.Text.RegularExpressions;
 
 namespace Wki.EventSourcing.Actors
 {
@@ -42,7 +43,7 @@ namespace Wki.EventSourcing.Actors
         public DurableActor(IActorRef eventStore)
         {
             EventStore = eventStore;
-            PersistenceId = GetType().Name;
+            PersistenceId = DefaultPersistenceId;
             HasState = false;
             StateType = typeof(object);
             NrEventsMissing = 0;
@@ -51,6 +52,9 @@ namespace Wki.EventSourcing.Actors
             DefaultReceiveTimeout = MaxActorIdleTimeSpan;
             Statistics = new DurableActorStatistics();
         }
+
+        protected string DefaultPersistenceId =>
+            Regex.Replace(GetType().Name, "Actor$", "");
 
         protected void Subscribe() =>
             Subscribe(BuildEventFilter());
@@ -137,11 +141,11 @@ namespace Wki.EventSourcing.Actors
         /// Persist a given domain Event to the event Store
         /// </summary>
         /// <param name="domainEvent"></param>
-        protected void Persist(IEvent domainEvent)
+        protected void Persist(IEvent domainEvent, string forPersistenceId = null)
         {
             Statistics.EventPersisted();
             LastCommandSender = Sender;
-            EventStore.Tell(new PersistEvent(PersistenceId, domainEvent));
+            EventStore.Tell(new PersistEvent(forPersistenceId ?? PersistenceId, domainEvent));
             SetReceiveTimeout(MaxPersistIdleTimeSpan);
             BecomeStacked(Persisting);
         }
@@ -344,11 +348,11 @@ namespace Wki.EventSourcing.Actors
             : base(eventStore)
         {
             Id = id;
-            PersistenceId = $"{this.GetType().Name}-{id}";
+            PersistenceId = $"{DefaultPersistenceId}-{id}";
         }
 
         // a primitive default only considering persistence-Id
         protected override EventFilter BuildEventFilter() =>
-            WantEvents.ForPersistenceId(PersistenceId);
+            WantEvents.For(PersistenceId);
     }
 }

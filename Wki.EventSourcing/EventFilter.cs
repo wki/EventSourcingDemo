@@ -22,24 +22,23 @@ namespace Wki.EventSourcing
             Events.Any();
 
         #region Builder DSL
-        public EventFilter ForPersistenceId(string persistenceId)
+        public EventFilter For(string persistenceId)
         {
             PersistenceId = persistenceId;
             return this;
         }
 
-        public EventFilter AnyPersistenceId()
+        public EventFilter All() =>
+            For(null);
+
+        public EventFilter Allow(Type type)
         {
-            PersistenceId = null;
+            Events.Add(type);
             return this;
         }
 
-        public EventFilter When<TEvent>()
-            where TEvent : IEvent
-        {
-            Events.Add(typeof(TEvent));
-            return this;
-        }
+        public EventFilter Allow<TEvent>() where TEvent : IEvent =>
+            Allow(typeof(TEvent));
 
         public EventFilter AnyEvent()
         {
@@ -47,24 +46,20 @@ namespace Wki.EventSourcing
             return this;
         }
 
-        public EventFilter NoEvent()
-        {
-            Events.Clear();
-            Events.Add(typeof(NotMatchedEvent));
-            return this;
-        }
+        public EventFilter NoEvent() =>
+            AnyEvent().Allow<NotMatchedEvent>();
 
-        public EventFilter StartingAfterEventId(int index)
+        public EventFilter After(int index)
         {
             StartAfterEventId = index;
             return this;
         }
 
-        public EventFilter StartFromBeginning() => 
-            StartingAfterEventId(-1);
+        public EventFilter FromBeginning() => 
+            After(-1);
 
-        public EventFilter OnlyFutureEvents() => 
-            StartingAfterEventId(Int32.MaxValue);
+        public EventFilter OnlyFuture() => 
+            After(Int32.MaxValue);
         #endregion
 
         #region matching
@@ -78,22 +73,44 @@ namespace Wki.EventSourcing
 
         public bool Matches(EventRecord eventRecord) =>
             Matches(eventRecord.PersistenceId, eventRecord.Event.GetType(), eventRecord.Id);
+
         #endregion
     }
 
     /// <summary>
     /// DSL for setting up an EventFilter
     /// </summary>
+    /// <example>
+    /// WantEvents
+    ///         // persitenceId - default: no filter
+    ///     .All()
+    ///     .For("product-42")
+    ///     
+    ///         // Events - default: no filter
+    ///     .NoEvent()
+    ///     .AnyEvent()
+    ///     .Allow(typeof(E1))
+    ///     .Allow<E1>()
+    ///     
+    ///         // index - default: from beginning
+    ///     .FromBeginning()
+    ///     .After(4711)
+    ///     .OnlyFuture()
+    /// 
+    /// </example>
     public static class WantEvents
     {
-        public static EventFilter ForPersistenceId(string persistenceId) =>
-            new EventFilter().ForPersistenceId(persistenceId);
+        public static EventFilter For(string persistenceId) =>
+            new EventFilter().For(persistenceId);
 
-        public static EventFilter AnyPersistenceId() =>
-            new EventFilter().AnyPersistenceId();
+        public static EventFilter All() =>
+            new EventFilter().All();
 
-        public static EventFilter When<TEvent>() where TEvent : IEvent =>
-            new EventFilter().When<TEvent>();
+        public static EventFilter Allow(Type type) =>
+            new EventFilter().Allow(type);
+
+        public static EventFilter Allow<TEvent>() where TEvent : IEvent =>
+            new EventFilter().Allow<TEvent>();
 
         public static EventFilter AnyEvent() =>
             new EventFilter().AnyEvent();
@@ -101,13 +118,13 @@ namespace Wki.EventSourcing
         public static EventFilter NoEvent() =>
             new EventFilter().NoEvent();
 
-        public static EventFilter StartingAfterEventId(int index) =>
-            new EventFilter().StartingAfterEventId(index);
+        public static EventFilter After(int index) =>
+            new EventFilter().After(index);
 
-        public static EventFilter StartFromBeginning() =>
-            new EventFilter().StartFromBeginning();
+        public static EventFilter FromBeginning() =>
+            new EventFilter().FromBeginning();
 
-        public static EventFilter OnlyFutureEvents() =>
-            new EventFilter().OnlyFutureEvents();
+        public static EventFilter OnlyFuture() =>
+            new EventFilter().OnlyFuture();
     }
 }

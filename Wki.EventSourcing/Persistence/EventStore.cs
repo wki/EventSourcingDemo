@@ -66,7 +66,7 @@ namespace Wki.EventSourcing.Persistence
                 case LoadNextEvents loadNextEvents:
                     var wantEvents = Subscriptions
                         .EventsWantedFor(Sender)
-                        .StartingAfterEventId(loadNextEvents.EventFilter.StartAfterEventId);
+                        .After(loadNextEvents.EventFilter.StartAfterEventId);
                     foreach (var eventRecord in EventCache.NextEventsMatching(wantEvents, loadNextEvents.NrEvents))
                         Sender.Tell(eventRecord);
                     break;

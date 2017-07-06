@@ -8,7 +8,15 @@ namespace LabelDesigner.Domain
     /// </summary>
     public class Label : IState<Label>
     {
-        #region commands
+        #region general commands
+        public class Create : ICommand { }
+        public class Clone : ICommand
+        {
+            public string WhateverWeNeed { get; private set; }
+        }
+        #endregion
+
+        #region commands for individual labels
         public class Command : ICommand<int>
         {
             public int Id { get; protected set; }
@@ -26,10 +34,26 @@ namespace LabelDesigner.Domain
         }
         #endregion
 
-        #region events
+        #region events from individual labels
         public class Event : IEvent<int>
         {
             public int Id { get; protected set; }
+        }
+
+        public class Created: Event
+        {
+            public Created(int id)
+            {
+                Id = id;
+            }
+        }
+
+        public class Cloned: Event
+        {
+            public Cloned(int id)
+            {
+                Id = id;
+            }
         }
 
         public class NameChanged: Event

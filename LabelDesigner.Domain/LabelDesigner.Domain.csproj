@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="Label.cs" />
     <Compile Include="LabelActor.cs" />
+    <Compile Include="LabelCreator.cs" />
     <Compile Include="LabelOffice.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

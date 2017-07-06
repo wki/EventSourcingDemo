@@ -66,10 +66,10 @@ namespace Wki.EventSourcing.Protocol.Retrieval
         }
 
         public static LoadNextEvents FromBeginning() =>
-            new LoadNextEvents(WantEvents.StartFromBeginning());
+            new LoadNextEvents(WantEvents.FromBeginning());
 
         public static LoadNextEvents After(int startAfterEventId) =>
-            new LoadNextEvents(WantEvents.StartingAfterEventId(startAfterEventId));
+            new LoadNextEvents(WantEvents.After(startAfterEventId));
 
         public LoadNextEvents Load(int nrEvents)
         {
