@@ -71,8 +71,8 @@ namespace Wki.EventSourcing.Protocol.Persistence
     /// <summary>
     /// Exception indicating failure during Persisting
     /// </summary>
-    public class PersistTimeoutException : Exception
+    public class PersistException : Exception
     {
-        public PersistTimeoutException(string message) : base(message) { }
+        public PersistException(string message) : base(message) { }
     }
 }

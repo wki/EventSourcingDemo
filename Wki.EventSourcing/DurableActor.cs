@@ -151,10 +151,15 @@ namespace Wki.EventSourcing.Actors
         }
 
         /// <summary>
-        /// Save the state obtained state. default behavior: do nothing
+        /// Apply the snapshot by rehydrating the sate from it. Must be implemented in child classes
         /// </summary>
         /// <param name="snapshot"></param>
-        virtual protected void SaveSnapshot(Snapshot snapshot) {}
+        protected virtual void ApplySnapshot(Snapshot snapshot) {}
+
+        /// <summary>
+        /// Create a snapshot. Must be implemented in child classes
+        /// </summary>
+        protected virtual void CreateSnapshot() {}
 
         // Wait for Snapshot behavior
         protected virtual void WaitingForSnapshot(object message)
@@ -167,7 +172,7 @@ namespace Wki.EventSourcing.Actors
                     break;
 
                 case Snapshot snapshot:
-                    SaveSnapshot(snapshot);
+                    ApplySnapshot(snapshot);
                     break;
             }
 
@@ -188,7 +193,7 @@ namespace Wki.EventSourcing.Actors
             switch (message)
             {
                 case ReceiveTimeout _:
-                    throw new PersistTimeoutException("Timeout reached during Load");
+                    throw new PersistException("Timeout reached during Load");
 
                 case EventRecord r:
                     HandleEventRecord(r);
@@ -212,12 +217,19 @@ namespace Wki.EventSourcing.Actors
         // Persisting behavior
         public void Persisting(object message)
         {
+            string error;
+
             switch (message)
             {
                 case ReceiveTimeout _:
-                    var error = "Timeout during persisting";
+                    error = "Timeout during persisting";
                     LastCommandSender.Tell(Reply.Error(error));
-                    throw new PersistTimeoutException(error);
+                    throw new PersistException(error);
+
+                case PersistEventFailed persistEventFailed:
+                    error = persistEventFailed.Message;
+                    LastCommandSender.Tell(Reply.Error(error));
+                    throw new PersistException(error);
 
                 case EventRecord r:
                     HandleEventRecord(r);
@@ -325,7 +337,11 @@ namespace Wki.EventSourcing.Actors
             }
         }
 
-        protected override void SaveSnapshot(Snapshot snapshot)
+        /// <summary>
+        /// Applies the snapshot: State is restored
+        /// </summary>
+        /// <param name="snapshot"></param>
+        protected override void ApplySnapshot(Snapshot snapshot)
         {
             if (snapshot.State is TState state)
             {

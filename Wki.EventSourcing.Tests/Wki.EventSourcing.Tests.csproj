@@ -35,9 +35,9 @@
   <ItemGroup>
     <Compile Include="DurablePersistTest.cs" />
     <Compile Include="DurableRetrievalTest.cs" />
-    <Compile Include="DurableState.cs" />
-    <Compile Include="DurableWithoutState.cs" />
-    <Compile Include="DurableWithState.cs" />
+    <Compile Include="Actors\DurableState.cs" />
+    <Compile Include="Actors\DurableWithoutState.cs" />
+    <Compile Include="Actors\DurableWithState.cs" />
     <Compile Include="SystemTimeTest.cs" />
     <Compile Include="TempDir.cs" />
   </ItemGroup>

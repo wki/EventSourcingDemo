@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Wki.EventSourcing.Tests
+namespace Wki.EventSourcing.Tests.Actors
 {
     // a simple aggregate root
     public class DurableState : IState<DurableState>
@@ -41,7 +41,17 @@ namespace Wki.EventSourcing.Tests
 
         public IEvent HandleCommand(ICommand command)
         {
-            throw new NotImplementedException();
+            switch(command)
+            {
+                case LetSomethingHappen _:
+                    return new SomethingHappened();
+
+                case HandleFoo _:
+                    return new FooHandled();
+
+                default:
+                    return null;
+            }
         }
     }
 }

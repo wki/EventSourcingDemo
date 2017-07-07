@@ -1,11 +1,11 @@
 ﻿using Akka.Actor;
 using Wki.EventSourcing.Actors;
 
-namespace Wki.EventSourcing.Tests
+namespace Wki.EventSourcing.Tests.Actors
 {
     public class DurableWithState : DurableActor<DurableState>
     {
-        public DurableWithState(IActorRef eventStore) : base(eventStore) { }
+        public DurableWithState(IActorRef eventStore) : base(eventStore) {}
 
         protected override EventFilter BuildEventFilter() =>
             WantEvents.AnyEvent();

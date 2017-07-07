@@ -5,6 +5,7 @@ using Akka.TestKit.NUnit;
 using System;
 using Wki.EventSourcing.Protocol.Retrieval;
 using static Wki.EventSourcing.Util.Constant;
+using Wki.EventSourcing.Tests.Actors;
 
 namespace Wki.EventSourcing.Tests
 {
@@ -120,7 +121,10 @@ namespace Wki.EventSourcing.Tests
             d.Tell(End.Instance);
 
             // Assert
-            ExpectMsg<string>("Reply to 'huhu' 7");
+            ExpectMsg<string>("Reply to Event 'SomethingHappened' 1");
+            ExpectMsg<string>("Reply to Event 'FooHandled' 2");
+            ExpectMsg<string>("Reply to Event 'FooHandled' 7");
+
         }
 
         [Test]
