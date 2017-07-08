@@ -14,7 +14,7 @@ namespace Wki.EventSourcing.Persistence.Npgsql
     /// </summary>
     public class JournalStore : IJournalStore, IDisposable
     {
-        public int LastEventId { get; private set; }
+        public int LastEventId { get; set; }
 
         #region queries
         private const string InsertEvent =
@@ -186,7 +186,7 @@ namespace Wki.EventSourcing.Persistence.Npgsql
             }
         }
 
-        public void SaveSnapshot<TState>(string persistenceId, TState state, int lastEventId)
+        public void SaveSnapshot(string persistenceId, object state, int lastEventId)
         {
             var sql = HasSnapshot(persistenceId) ? UpdateSnapshot : InsertSnapshot;
             using (var cmd = new NpgsqlCommand(sql))

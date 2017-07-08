@@ -78,6 +78,7 @@ namespace Wki.EventSourcing.Persistence
                 case PersistSnapshot persistSnapshot:
                     try
                     {
+                        Console.WriteLine("persisting...");
                         JournalStore.SaveSnapshot(persistSnapshot.PersistenceId, persistSnapshot.State, persistSnapshot.LastEventId);
                     }
                     catch(Exception e)

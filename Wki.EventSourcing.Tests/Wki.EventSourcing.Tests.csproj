@@ -38,6 +38,8 @@
     <Compile Include="Actors\DurableState.cs" />
     <Compile Include="Actors\DurableWithoutState.cs" />
     <Compile Include="Actors\DurableWithState.cs" />
+    <Compile Include="EventStorePersistTest.cs" />
+    <Compile Include="JournalPersistenceTest.cs" />
     <Compile Include="SystemTimeTest.cs" />
     <Compile Include="TempDir.cs" />
   </ItemGroup>

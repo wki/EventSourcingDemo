@@ -12,7 +12,10 @@ namespace Wki.EventSourcing.Persistence
         /// <summary>
         /// last ID in DB (highest read or last written)
         /// </summary>
-        int LastEventId { get; }
+        /// <remarks>
+        /// setting is needed to make tests work
+        /// </remarks>
+        int LastEventId { get; set; }
 
         /// <summary>
         /// Find out if we have a snapshot for a given persistenceId
@@ -24,11 +27,10 @@ namespace Wki.EventSourcing.Persistence
         /// <summary>
         /// Save a typed snapshot for a persistenceId
         /// </summary>
-        /// <typeparam name="TState"></typeparam>
         /// <param name="persistenceId"></param>
         /// <param name="state"></param>
         /// <param name="lastEventId"></param>
-        void SaveSnapshot<TState>(string persistenceId, TState state, int lastEventId);
+        void SaveSnapshot(string persistenceId, object state, int lastEventId);
 
         /// <summary>
         /// Load a typed snapshot for a snapshot 

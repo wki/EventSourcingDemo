@@ -9,7 +9,7 @@ namespace Wki.EventSourcing.Persistence.Ef
 {
     public class JournalStore : IJournalStore
     {
-        public int LastEventId { get; private set; }
+        public int LastEventId { get; set; }
 
         private Dictionary<string, Type> EventTypeLookup;
         private EventStoreContext Context = new EventStoreContext();
@@ -95,7 +95,7 @@ namespace Wki.EventSourcing.Persistence.Ef
                 return null;
         }
 
-        public void SaveSnapshot<TState>(string persistenceId, TState state, int lastEventId)
+        public void SaveSnapshot(string persistenceId, object state, int lastEventId)
         {
             var snapshotRow = new SnapshotRow
             {
