@@ -10,7 +10,7 @@ using Wki.EventSourcing.Tests.Actors;
 namespace Wki.EventSourcing.Tests
 {
     [TestFixture]
-    public partial class DurableRetrievalTest : TestKit
+    public partial class DurableRehydrateTest : TestKit
     {
         private TestProbe eventStore;
 

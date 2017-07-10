@@ -34,12 +34,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DurablePersistTest.cs" />
-    <Compile Include="DurableRetrievalTest.cs" />
+    <Compile Include="DurableRehydrateTest.cs" />
     <Compile Include="Actors\DurableState.cs" />
     <Compile Include="Actors\DurableWithoutState.cs" />
     <Compile Include="Actors\DurableWithState.cs" />
     <Compile Include="EventStorePersistTest.cs" />
+    <Compile Include="EventStoreRehydrateTest.cs" />
     <Compile Include="JournalPersistenceTest.cs" />
+    <Compile Include="JournalRehydrateTest.cs" />
     <Compile Include="SystemTimeTest.cs" />
     <Compile Include="TempDir.cs" />
   </ItemGroup>
