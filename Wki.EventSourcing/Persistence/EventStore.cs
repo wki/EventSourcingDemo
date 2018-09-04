@@ -3,8 +3,6 @@ using Akka.Actor;
 using Wki.EventSourcing.Protocol.Retrieval;
 using Wki.EventSourcing.Protocol.Persistence;
 using Wki.EventSourcing.Protocol.Subscription;
-using System.Linq;
-using System.Collections.Generic;
 
 namespace Wki.EventSourcing.Persistence
 {
@@ -27,6 +25,7 @@ namespace Wki.EventSourcing.Persistence
             var loadNextEvents = LoadNextEvents.FromBeginning();
             nrEventsExpected = loadNextEvents.NrEvents;
             Journal.Tell(loadNextEvents);
+
             Become(Loading);
         }
 
@@ -60,34 +59,25 @@ namespace Wki.EventSourcing.Persistence
                     break;
 
                 case LoadSnapshot loadSnapshot:
-                    // simply forward -- we are not interested.
-                    Journal.Forward(loadSnapshot);
+                    HandleLoadSnapshot(loadSnapshot);
                     break;
 
                 case LoadNextEvents loadNextEvents:
-                    int nrEventsSent = 0;
-                    foreach (var eventRecord in EventCache.NextEventsMatching(loadNextEvents.EventFilter, loadNextEvents.NrEvents))
-                    {
-                        Sender.Tell(eventRecord);
-                        nrEventsSent++;
-                    }
-
-                    if (nrEventsSent < loadNextEvents.NrEvents)
-                        Sender.Tell(End.Instance);
+                    HandleLoadNextEvents(loadNextEvents);
                     break;
             }
         }
 
-        // Loading cache behavior
+        // Loading cache behavior happening initially
         private void Loading(object message)
         {
             switch(message)
             {
                 case EventRecord eventRecord:
-                    EventCache.Append(eventRecord);
+                    EventCache.Add(eventRecord);
                     if (--nrEventsExpected == 0)
                     {
-                        var l = LoadNextEvents.After(EventCache.LastId);
+                        var l = Protocol.Retrieval.LoadNextEvents.After(EventCache.LastId);
                         nrEventsExpected = l.NrEvents;
                         Journal.Tell(l);
                     }
@@ -104,14 +94,16 @@ namespace Wki.EventSourcing.Persistence
             }
         }
 
-        // Persisting behavior
+        // Persisting behavior -- do not persist anything else while waiting for an actor to be persisted
+        // also do not forward any messages to subscribers while waiting for persist to be done
+        // but: load events and snapshots
         private void Persisting(object message)
         {
             switch(message)
             {
                 case EventPersisted eventPersisted:
                     DispatchToSubscribers(eventPersisted.EventRecord);
-                    EventCache.Append(eventPersisted.EventRecord);
+                    EventCache.Add(eventPersisted.EventRecord);
                     Stash.UnstashAll();
                     Become(OnReceive);
                     break;
@@ -121,13 +113,40 @@ namespace Wki.EventSourcing.Persistence
                     Stash.UnstashAll();
                     Become(OnReceive);
                     break;
+                
+                    // TODO: Timeout ?
 
-                // TODO: Timeout ?
+                case LoadSnapshot loadSnapshot:
+                    HandleLoadSnapshot(loadSnapshot);
+                    break;
+
+                case LoadNextEvents loadNextEvents:
+                    HandleLoadNextEvents(loadNextEvents);
+                    break;
 
                 default:
                     Stash.Stash();
                     break;
             }
+        }
+
+        private void HandleLoadNextEvents(LoadNextEvents loadNextEvents)
+        {
+            int nrEventsSent = 0;
+            foreach (var eventRecord in EventCache.NextEventsMatching(loadNextEvents.EventFilter, loadNextEvents.NrEvents))
+            {
+                Sender.Tell(eventRecord);
+                nrEventsSent++;
+            }
+
+            if (nrEventsSent < loadNextEvents.NrEvents)
+                Sender.Tell(End.Instance);
+        }
+
+        private void HandleLoadSnapshot(LoadSnapshot loadSnapshot)
+        {
+            // simply forward -- we are not interested.
+            Journal.Forward(loadSnapshot);
         }
 
         private void DispatchToSubscribers(EventRecord eventRecord)
