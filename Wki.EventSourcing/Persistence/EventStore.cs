@@ -3,6 +3,8 @@ using Akka.Actor;
 using Wki.EventSourcing.Protocol.Retrieval;
 using Wki.EventSourcing.Protocol.Persistence;
 using Wki.EventSourcing.Protocol.Subscription;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Wki.EventSourcing.Persistence
 {
@@ -51,7 +53,6 @@ namespace Wki.EventSourcing.Persistence
                     // usually we expect just a few but we request _all_
                     foreach (var eventRecord in EventCache.NextEventsMatching(subscribe.EventFilter, Int32.MaxValue))
                         Sender.Tell(eventRecord);
-
                     break;
 
                 case Unsubscribe _:
@@ -64,11 +65,15 @@ namespace Wki.EventSourcing.Persistence
                     break;
 
                 case LoadNextEvents loadNextEvents:
-                    var wantEvents = Subscriptions
-                        .EventsWantedFor(Sender)
-                        .After(loadNextEvents.EventFilter.StartAfterEventId);
-                    foreach (var eventRecord in EventCache.NextEventsMatching(wantEvents, loadNextEvents.NrEvents))
+                    int nrEventsSent = 0;
+                    foreach (var eventRecord in EventCache.NextEventsMatching(loadNextEvents.EventFilter, loadNextEvents.NrEvents))
+                    {
                         Sender.Tell(eventRecord);
+                        nrEventsSent++;
+                    }
+
+                    if (nrEventsSent < loadNextEvents.NrEvents)
+                        Sender.Tell(End.Instance);
                     break;
             }
         }
