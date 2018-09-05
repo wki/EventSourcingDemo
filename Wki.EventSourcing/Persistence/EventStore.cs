@@ -9,14 +9,15 @@ namespace Wki.EventSourcing.Persistence
     public class EventStore : UntypedActor, IWithUnboundedStash
     {
         public IStash Stash { get; set; }
-        public IActorRef Journal;
-        public Subscriptions Subscriptions = new Subscriptions();
-        public EventCache EventCache = new EventCache();
+        private IActorRef Journal;
+        private Subscriptions Subscriptions = new Subscriptions();
+        private EventCache EventCache = new EventCache();
 
         // set before switching to Persisting for telling "PersistEventFailed"
-        public IActorRef LastPersistingActor;
+        private IActorRef LastPersistingActor;
 
-        public int nrEventsExpected;
+        // countdown during load time
+        private int nrEventsExpected;
 
         public EventStore(IActorRef journal)
         {
@@ -36,6 +37,11 @@ namespace Wki.EventSourcing.Persistence
             {
                 case PersistEvent persistEvent:
                     // we do not forward because we want the reply.
+                    // during persist we do nothing else. Bottleneck but ensures order of persisted events.
+                    // Alternative:
+                    // Persist weiterleiten.
+                    // solange Persist läuft, weitere Persist Anforderungen "merken"
+                    // Persist-Timeout?
                     Journal.Tell(persistEvent);
                     LastPersistingActor = Sender;
                     Become(Persisting);
@@ -77,9 +83,9 @@ namespace Wki.EventSourcing.Persistence
                     EventCache.Add(eventRecord);
                     if (--nrEventsExpected == 0)
                     {
-                        var l = Protocol.Retrieval.LoadNextEvents.After(EventCache.LastId);
-                        nrEventsExpected = l.NrEvents;
-                        Journal.Tell(l);
+                        var loadNextEvents = LoadNextEvents.After(EventCache.LastId);
+                        nrEventsExpected = loadNextEvents.NrEvents;
+                        Journal.Tell(loadNextEvents);
                     }
                     break;
 

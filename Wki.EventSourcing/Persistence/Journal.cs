@@ -6,11 +6,11 @@ using Wki.EventSourcing.Protocol.Persistence;
 namespace Wki.EventSourcing.Persistence
 {
     /// <summary>
-    /// Journal Actor handles all (possibly failing) journalling commands via a IJournalStore implementation
+    /// Journal Actor handles all (possibly failing) journalling commands via an IJournalStore implementation
     /// </summary>
-    public class Journal: UntypedActor
+    public class Journal : UntypedActor
     {
-        private IJournalStore JournalStore;
+        private readonly IJournalStore JournalStore;
 
         public Journal(IJournalStore journalStore)
         {
@@ -19,7 +19,7 @@ namespace Wki.EventSourcing.Persistence
 
         protected override void OnReceive(object message)
         {
-            switch(message)
+            switch (message)
             {
                 // a Durable wants a snapshot
                 case LoadSnapshot loadSnapshot:
@@ -47,16 +47,16 @@ namespace Wki.EventSourcing.Persistence
                 // EventStore wants next Events without filtering
                 // a Durable wants next filtered Events (unless EventStore caches them all)
                 case LoadNextEvents loadNextEvents:
-                    // request one event more than we need
-                    // if we get all, we do not have EOF
                     var count = 0;
-                    foreach (var e in JournalStore.LoadNextEvents(loadNextEvents.EventFilter, loadNextEvents.NrEvents + 1))
+                    foreach (var e in JournalStore.LoadNextEvents(loadNextEvents.EventFilter, loadNextEvents.NrEvents))
                     {
-                        if (++count <= loadNextEvents.NrEvents)
-                            Sender.Tell(e);
-                        else
-                            Sender.Tell(End.Instance);
+                        count++;
+                        Sender.Tell(e);
                     }
+
+                    // if we didn't get all, we have EOF
+                    if (count < loadNextEvents.NrEvents)
+                        Sender.Tell(End.Instance);
                     break;
 
                 // a Durable wants to persist an event
@@ -67,7 +67,7 @@ namespace Wki.EventSourcing.Persistence
                         var eventRecord = new EventRecord(JournalStore.LastEventId, DateTime.Now, persistEvent.PersistenceId, persistEvent.Event);
                         Sender.Tell(new EventPersisted(eventRecord));
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         Context.System.Log.Error("Failed persisting Event {0} for {1}: {2}", persistEvent.Event.GetType().Name, persistEvent.PersistenceId, e.Message);
                         Sender.Tell(new PersistEventFailed(persistEvent.PersistenceId, persistEvent.Event, e.Message));
@@ -78,10 +78,9 @@ namespace Wki.EventSourcing.Persistence
                 case PersistSnapshot persistSnapshot:
                     try
                     {
-                        Console.WriteLine("persisting...");
                         JournalStore.SaveSnapshot(persistSnapshot.PersistenceId, persistSnapshot.State, persistSnapshot.LastEventId);
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         // a failing snapshot save is not fatal. Just log and we are fine.
                         Context.System.Log.Warning("Failed creating a snapshot for {0}: {1}", persistSnapshot.PersistenceId, e.Message);
